@@ -28,9 +28,20 @@
 
 | 区域 | 路径 / 远程 | 职责 | 约束 |
 |------|-------------|------|------|
-| **TBOX 产品主仓（预期）** | 本仓库：开源 RAGFlow 的 **fork** | **后端 API、Agent、解析、新 UI（web）**、爬取相关服务与任务、Docker 编排 | 二次开发尽量**模块化**（便于跟踪上游）；新 UI 与后端契约（OpenAPI/内部 DTO）需文档化。 |
+| **TBOX 产品主仓（预期）** | 本仓库：开源 RAGFlow 的 **fork** | **后端 API**（含 **`/v1/tbox/*`** 扩展，见 `api/apps/tbox_app.py`）、Agent、解析、**独立前端 `web-tbox/`**、官方 `web/`、爬取与 Docker 编排 | 二次开发尽量**模块化**；契约见 `docs/TBOX_API_BOUNDARY.md`；环境与端口见 `docs/TBOX_ENV_AND_VERSIONS.md`。 |
 | **可选：流水线与契约仓** | `tbox-ragflow-platform` 等 | `tbox-pipelines`、webhook、文档门闸、运维同步 | **非 §1 四条之替代**；若采用，须写明与本产品 KB/爬取数据流如何衔接（子模块 / 版本 / 仅文档引用）。 |
 | Harness 组件 | 本仓 `common/harness_monitor.py`、`test/adversarial_tests.py`、`.github/workflows/harness_engineering.yml` 等（若存在） | 安全与可观测边界 | **§7**：`harness_engineering` 使用 **`ubuntu-latest`**；**不在 PR 上触发**；对抗测试为发布前验证，见 §7。 |
+
+### 2.1 UI 设计与参考实现（文档入口）
+
+| 文档 | 用途 |
+|------|------|
+| **`docs/TBOX_UI_DESIGN_OVERVIEW.md`** | UI **概要设计**：目标、IA 原则、与 `web-tbox/` 及参考原型的关系。 |
+| **`docs/TBOX_UI_DESIGN_DETAIL.md`** | UI **详细设计**：路由、权限键、逐页规格、响应式、与 API 衔接及 **`web-tbox` 实现映射**。 |
+
+**参考原型路径**（平台仓内，**非**主产品强制技术栈）：`tbox-ragflow-platform/others/apps/web/`（Vue 3 + Vite + Element Plus）。用于 **信息架构、权限语义、布局与色板** 对齐；交付主线前端仍为同仓 **`web-tbox/`**（见 §2 表「TBOX 产品主仓」行）。
+
+**门禁**：§1 第 2 条与 §7.2 不变；若调整一级导航、权限键名或单库/合规相关展示，须 **先改上述 UI 文档** 再改代码。
 
 ---
 
@@ -127,6 +138,11 @@
 - **需登录站点 / API 拉取**：凭据与密钥管理须单独设计（环境变量/密钥卷），不得写入仓库。
 - **独立前端 + 上游合并**：建议明确 **API 版本化** 与 **RAGFlow 版本钉扎**，避免前端与后端漂移。
 
+### 7.5 第三方模型（可选验收）
+
+- RAGFlow 上游已支持在租户中配置 **DeepSeek** 等供应商（见 `conf/models/deepseek.json`、`rag/llm/`、官方 `web/` 模型常量）。**非 TBOX 独占功能**，随上游合并保持即可。
+- **可选发版前手测**：在目标环境为租户添加 DeepSeek（或兼容 OpenAI-API 的网关）API Key，在应用或默认模型中选一条 DeepSeek 对话模型，经 **`web-tbox/` 对话页** 或官方 `web/` 完成一轮流式对话，确认无鉴权/代理错误。
+
 ---
 
 ## 8. 修订记录
@@ -136,3 +152,77 @@
 | 2026-05-01 | 初版：总纲 + 问卷 + 分期骨架 |
 | 2026-05-01 | 对齐「TBOX 知识库」四条产品线定义；重写 §2/§4/§6/§7；区分与初稿假设差异 |
 | 2026-05-01 | §6 问卷已答复；§7 写入全部约束；§5 上游/分支；`harness_engineering` 改为 ubuntu-latest 并取消 PR 触发 |
+| 2026-05-01 | 新增 §9「下一步开发计划表」（与 §4、§7 对齐） |
+| 2026-05-01 | §9.0 进度：`web-tbox/`、`tbox_app.py`、TBOX 环境与 API 边界、快速启动文档；§2/§9.2 同步 |
+| 2026-05-01 | 登录页 + `/v1/tbox/me`、`/v1/tbox/logout`；文档与 `web-tbox` 依赖更新 |
+| 2026-05-01 | S3 首包：`/kbs` 知识库列表与删除（官方 datasets API）、`NavBar` |
+| 2026-05-01 | 新增 **§2.1** UI 设计文档索引；`TBOX_UI_DESIGN_OVERVIEW.md` / `TBOX_UI_DESIGN_DETAIL.md`；§9.0 S2 与参考原型路径对齐 |
+| 2026-05-01 | `web-tbox`：主布局、全路由与 `RequirePermission`；`/me` 增加 `permissions`（契约 **v3**）；`TBOX_ENV_AND_VERSIONS.md` §2 填基线 commit；§9.0 S3 更新 |
+| 2026-05-01 | `web-tbox`：对话流式、知识库检索、租户用户列表对接官方 API；`TBOX_API_BOUNDARY` / 快速启动 / §9.0 同步 |
+| 2026-05-01 | `web-tbox` 对话：应用列表 + 会话创建/复用 + 引用侧栏（`reference.chunks`）；`chats.ts` / `ReferenceChunks.tsx` |
+| 2026-05-01 | `web-tbox` 对话：**会话列表/切换/刷新**（`GET .../sessions`、`GET .../sessions/:id`）；新增 **§7.5** DeepSeek 等可选发版手测说明 |
+| 2026-05-01 | **`/documents`**：**数据集文档** `GET/POST/DELETE .../documents`（上传 multipart）；§9.0 S3、API 边界、快速启动同步 |
+| 2026-05-01 | **`/crawl`** 采集壳 + **`crawl.manage`**（`/me` 契约 **v4**）；**`/audit`** 对接 **`GET .../ingestions`**；UI 概要/详细设计 §4/IA 同步 |
+| 2026-05-01 | **`/v1/tbox/crawl/tasks`** CRUD + **`tbox_crawl_task`** 表；`TBOX_API_BOUNDARY` §1.2；§9.0 **S4** 说明更新 |
+| 2026-05-01 | **`web-tbox` `/crawl`**：`CrawlPage` 对接 **`crawlTasks`** API（列表/新建/编辑/删、租户筛选） |
+| 2026-05-01 | **`rag/svr/tbox_crawl_worker.py`** + `docker/entrypoint.sh` **`ENABLE_TBOX_CRAWL_WORKER`**；`TBOX_API_BOUNDARY` §1.3、`TBOX_QUICKSTART` §3.1 |
+| 2026-05-01 | **`POST /v1/tbox/crawl/tasks/<id>/run`** + `execute_crawl_task_stub_tick`；**`web-tbox`** 采集表「执行一次」 |
+| 2026-05-01 | worker 增加 `schedule_cron` 到点判断 + 同分钟去重（`is_task_due_now`）；S4 状态描述同步 |
+| 2026-05-01 | worker 增加 **Redis 非阻塞分布式锁**（`tbox_crawl_tick:<id>`） |
+| 2026-05-01 | crawl tick：**HTTP 种子探测**（`common/tbox_crawl_http_probe.py`）、**`tbox_skip_http_probe`**；`TBOX_API_BOUNDARY` §1.2–1.3 |
+| 2026-05-01 | crawl tick：**真实入库**（`tbox_crawl_ingest_service` + `common/tbox_crawl_ssrf_fetch.py`）、**`tbox_skip_ingest`**；`TBOX_API_BOUNDARY` §1.3 |
+| 2026-05-01 | crawl tick：**RSS** 入库（`RSSConnector` + **`TBOX_CRAWL_RSS_*`**）；`TBOX_API_BOUNDARY` §1.3 |
+| 2026-05-01 | crawl tick：**robots.txt 预检**（`common/tbox_crawl_robots.py`）、**`tbox_skip_robots_check`** |
+| 2026-05-01 | crawl **HTTP 探测**：与抓取同源 **`_ssrf_redirecting_stream_get`**（每 hop robots + SSRF） |
+| 2026-05-01 | **`web-tbox` `CrawlPage`**：**`extra_config` 完整 JSON 开关**（与 `TBOX_UI_DESIGN_DETAIL` §4、`TBOX_API_BOUNDARY` §1.2 同步） |
+
+---
+
+## 9. 下一步开发计划表
+
+下表按**依赖顺序**排列：同一阶段内可并行；**前置未完成则不建议启动后置**。时间列为「建议顺序」而非硬期限（见 §7.2 排期）。
+
+### 9.0 迭代进度（大步伐落地记录）
+
+| 阶段 | 状态 | 说明 |
+|------|------|------|
+| **S0** | **部分完成** | 已新增 `docs/TBOX_ENV_AND_VERSIONS.md`、`docs/TBOX_QUICKSTART.md`；**独立前端目录已定为同仓 `web-tbox/`**（Vite + React）。**基线 commit 表仍须维护者填写**。 |
+| **S1** | **已推进** | `docs/TBOX_API_BOUNDARY.md`；`api/apps/tbox_app.py`：`/health`、`/contract`；**`/me`（鉴权）**、**`/logout`**；`/me` 契约版本当前为 **v4**（`permissions` 含 `crawl.manage` 等；以 `TBOX_API_CONTRACT_VERSION` 与 `GET /v1/tbox/contract` 为准）。租户列表来自 `UserTenant`；更细「一一对应」字段表仍可在 S3 补全。 |
+| **S2** | **已推进** | `web-tbox/`：**`/login` 邮箱密码登录**（RSA → `/api/v1/auth/login`）、**`/` 控制台**拉取 **`/v1/tbox/me`**（带 `Authorization`）、**退出** 调 **`POST /v1/tbox/logout`**。IA/权限/视觉以 **`docs/TBOX_UI_DESIGN_OVERVIEW.md`**、**`docs/TBOX_UI_DESIGN_DETAIL.md`** 为准；参考原型见 **§2.1**。 |
+| **S3** | **已启动** | **知识库 `/documents`**（含 **文档列表/上传/删除**）；**对话 `/`**；**检索 `/search`**；**用户 `/users`**；**审计 `/audit`**（ingestions）；**`permissions`**（**v4** 含 `crawl.manage`）。**整库 ZIP 导出** 仍视官方 REST 暴露情况。 |
+| **S4** | **部分启动** | **`/crawl`** + **`crawl.manage`**；**`/v1/tbox/crawl/tasks` CRUD**；**`rag/svr/tbox_crawl_worker.py`** 轮询 + tick：**探测** + **`robots.txt` 预检**（可跳过）+ **`dataset_id`** 时 **`static_web`/`rss`** 入库；**`docker/entrypoint.sh`** **`ENABLE_TBOX_CRAWL_WORKER`**；**`web-tbox` `CrawlPage`**（含 **`extra_config` 勾选 + JSON / 完整 JSON 模式**）；Crawl-delay/全量合规等仍待 §9.1。 |
+| **S5–S7** | 未开始 | 按 §9.1 继续排期。 |
+
+### 9.1 阶段总览
+
+| 阶段 | 目标 | 主要交付物 | 验收要点（与 §7 对齐） |
+|------|------|------------|------------------------|
+| **S0 工程基线** | 分支、上游节奏、目录/API 契约打底 | 功能分支约定；钉扎/记录当前 RAGFlow 基线 commit；**同仓 `web-tbox/`**；中文《环境与版本》《快速启动》 | 新人按 `docs/TBOX_QUICKSTART.md` 可联调后端 + 占位前端；**不在 `main` 直开**（§5）；**基线 commit 须补填**（`TBOX_ENV_AND_VERSIONS.md`） |
+| **S1 后端隔离层** | 可插拔扩展，少动上游核心 | **`/v1/tbox/*` 首包** + 边界文档；用户/租户/团队/角色 **一一映射** 的数据模型与后续 API；**无 SSO** 首版路径 | 映射规则与鉴权随接口迭代补文档；密钥走环境变量（§7.4） |
+| **S2 独立前端骨架** | UI 技术栈落地，对接 API | **`web-tbox/`**（Vite）；代理与 **health 联调**；后续路由与登录 | 当前：**health 联调**；登录与完整布局在 UI 设计阶段（§6 题 1） |
+| **S3 用户与 KB 管理** | §1 第 2 条能力 | 用户管理界面 + API；知识库 **导入/导出/删除** 等与 **RAGFlow 首版格式一致** 的封装或直连 | 与官方行为对齐的用例表 + 手测/自动化冒烟；不可逆操作有确认与日志（§4 P2） |
+| **S4 爬取子系统** | §1 第 3 条 | 数据源：**静态网页、RSS、需登录、API**；**遵守 robots.txt**；**默认定时 + 支持手动**；任务与状态 UI；与 KB 入库流水线对接 | 端到端：配置源 → 定时/手动触发 → 可检索；合规与凭据策略成文（§6 题 4、§7.4） |
+| **S5 Docker 交付** | §1 第 4 条 | **仅 Compose** 的 `docker-compose.yml`（及必要 `.env.example`）；目标 **Linux / amd64** 说明与验证 | 第三方新机器按文档冷启动成功；架构扩展须更新文档（§6 题 5） |
+| **S6 上游同步例行化** | 控制漂移 | **每 2～4 周**合并 `infiniflow/ragflow` **main** 的流程（负责人、合并窗口、冲突处理清单） | 至少完成一轮合并演练并记录（§5、§7.2） |
+| **S7 发布前质量** | 非 PR 门禁 | **对抗测试**在发版前或 `workflow_dispatch` 执行；结果归档 | 与 §7.3 一致：PR 不依赖对抗测试通过 |
+
+### 9.2 建议立即启动的 5 项（S0 内）
+
+| 序号 | 工作项 | 产出 | 说明 |
+|------|--------|------|------|
+| 1 | 冻结本 fork **基线 commit** 与 **Node/Python** 大版本 | `docs/TBOX_ENV_AND_VERSIONS.md`（**§2 表须填写**） | 与独立前端、后端 lockfile 一致 |
+| 2 | 定 **独立前端** 目录策略（同仓 `web-tbox/` vs 独立 git 仓库） | **已定：同仓 `web-tbox/`**（见 §9.0）；若改独立 git 须先更新 §2 与本表 | 影响 CI 与发布流水线 |
+| 3 | 起草 **REST/Web API 边界**（现有 RAGFlow API vs TBOX 扩展前缀） | **`docs/TBOX_API_BOUNDARY.md`** + `tbox_app.py` 首端点 | OpenAPI 机器可读稿可后补 |
+| 4 | 从上游 **拉一次 main** 到集成分支并解决冲突 | 合并记录或 PR | 落实 §5「2～4 周」节奏前先跑通流程 |
+| 5 | **Compose** 当前能否覆盖「后端 + 依赖服务 +（占位）前端」 |  compose 片段 + README 步骤 | 为 S5 打样，可迭代 |
+
+### 9.3 可选并行（不阻塞 S0–S2）
+
+| 工作项 | 说明 |
+|--------|------|
+| 若使用 `tbox-ragflow-platform` | 明确与本产品数据流关系（§2），仅作流水线/契约配套 |
+| Harness 脚本/workflow 在 `ubuntu-latest` 上跑通与调优 | 若 Docker 步骤超时，再拆 job 或缩小范围（与 §7.3 一致） |
+
+---
+
+**执行约定**：本表随迭代更新；行项状态可用团队看板勾选，但**范围变更须先改 §1/§7 再改本表**。
