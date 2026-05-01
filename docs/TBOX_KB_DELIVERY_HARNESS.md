@@ -177,6 +177,7 @@
 | 2026-05-01 | **`web-tbox` `CrawlPage`**：**`extra_config` 完整 JSON 开关**（与 `TBOX_UI_DESIGN_DETAIL` §4、`TBOX_API_BOUNDARY` §1.2 同步） |
 | 2026-05-01 | 新增 **§9.4**「S4 爬取合规与 Crawl-delay 待办」；§9.0/§9.1 **S4** 行改为引用 §9.4 |
 | 2026-05-01 | **§9.4.2**：落地 **`OriginFetchThrottler`** + **`Crawl-delay`**；**`TBOX_API_BOUNDARY` §1.3** 同步 |
+| 2026-05-01 | **§9.4.2**：落地 **429/503 礼貌退避**（`Retry-After` + backoff）；补 **`TBOX_CRAWL_RETRY_*`** 参数 |
 
 ---
 
@@ -245,7 +246,7 @@
 |----|------|-------------|
 | **`Crawl-delay` + 最小间隔** | **已实现（首版）**：`common/tbox_crawl_origin_throttle.py` 的 **`OriginFetchThrottler`** 在 **`fetch_url_body_capped` / `probe_url_streaming_cap`** 的 **每 hop GET 前** 与 **`/robots.txt` 拉取时间戳**对齐后 **`sleep`**；**`RobotsOriginCache.crawl_delay_seconds`** 读 **`RobotFileParser.crawl_delay`**；环境变量 **`TBOX_CRAWL_MIN_ORIGIN_INTERVAL`**、**`TBOX_CRAWL_MAX_CRAWL_DELAY_SEC`**、**`TBOX_CRAWL_SKIP_CRAWL_DELAY`**。探测、**`static_web`** 入库、**RSS** 每 Feed 入口均传入同一 tick 内共享的 throttler。 | **RSS 条目** 若由 **`RSSConnector`** 内部再拉 URL，**尚未**经同一节流器（见 §9.4.3 或后续 RSS 改造）。 |
 | **非标准 Request-rate** | **未**解析 Google 扩展等非 **`urllib.robotparser`** 字段。 | 若合规要求覆盖，须自定义解析或第三方 robots 库。 |
-| **429 / 503 与退避** | 当前以超时与单次错误为主，**无**统一「礼貌退避 + 最大重试」策略文档化。 | 定义每类响应的退避与任务级 **`last_error`** 语义，避免对源站形成冲击。 |
+| **429 / 503 与退避** | **已实现（首版）**：`common/tbox_crawl_ssrf_fetch.py` 在 **429/503** 按 **`Retry-After`**（delta/http-date，带上限）或指数退避重试，参数 **`TBOX_CRAWL_RETRY_MAX_ATTEMPTS`**、**`TBOX_CRAWL_RETRY_BACKOFF_BASE`**、**`TBOX_CRAWL_RETRY_BACKOFF_MAX`**、**`TBOX_CRAWL_RETRY_AFTER_CAP_SEC`**。 | 后续可补「按状态码差异化策略」与 **`last_error`** 结构化语义。 |
 
 #### 9.4.3 待办：robots 全量语义与产品合规
 

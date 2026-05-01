@@ -18,8 +18,11 @@
 
 from __future__ import annotations
 
+import datetime
 import os
+import time
 from typing import Any
+from email.utils import parsedate_to_datetime
 
 from urllib.parse import urljoin, urlparse
 
@@ -30,10 +33,48 @@ from common.tbox_crawl_origin_throttle import OriginFetchThrottler
 
 _MAX_REDIRECTS = 10
 _REDIRECT_STATUSES = frozenset({301, 302, 303, 307, 308})
+_RETRY_STATUSES = frozenset({429, 503})
 _DEFAULT_UA = os.environ.get(
     "TBOX_CRAWL_HTTP_USER_AGENT",
     "TBOX-RAGFlow-Crawl/1.0 (+https://github.com/infiniflow/ragflow)",
 )
+_RETRY_MAX_ATTEMPTS = max(0, int(os.environ.get("TBOX_CRAWL_RETRY_MAX_ATTEMPTS", "2")))
+_RETRY_BACKOFF_BASE = max(0.0, float(os.environ.get("TBOX_CRAWL_RETRY_BACKOFF_BASE", "1.0")))
+_RETRY_BACKOFF_MAX = max(0.0, float(os.environ.get("TBOX_CRAWL_RETRY_BACKOFF_MAX", "15")))
+_RETRY_AFTER_CAP_SEC = max(0.0, float(os.environ.get("TBOX_CRAWL_RETRY_AFTER_CAP_SEC", "30")))
+
+
+def _retry_delay_seconds(response: requests.Response, attempt_idx: int) -> float:
+    """
+    Delay before retry for transient statuses.
+
+    Priority: ``Retry-After`` (delta-seconds / HTTP-date, capped) > exponential backoff.
+    """
+    ra = (response.headers.get("Retry-After") or "").strip()
+    if ra:
+        try:
+            sec = float(ra)
+            if sec >= 0.0:
+                return min(sec, _RETRY_AFTER_CAP_SEC) if _RETRY_AFTER_CAP_SEC > 0.0 else sec
+        except ValueError:
+            try:
+                dt = parsedate_to_datetime(ra)
+                if dt is not None:
+                    if dt.tzinfo is None:
+                        dt = dt.replace(tzinfo=datetime.timezone.utc)
+                    now = datetime.datetime.now(datetime.timezone.utc)
+                    sec = (dt - now).total_seconds()
+                    if sec > 0.0:
+                        return min(sec, _RETRY_AFTER_CAP_SEC) if _RETRY_AFTER_CAP_SEC > 0.0 else sec
+            except Exception:
+                pass
+
+    if _RETRY_BACKOFF_BASE <= 0.0:
+        return 0.0
+    sec = _RETRY_BACKOFF_BASE * (2 ** max(0, attempt_idx))
+    if _RETRY_BACKOFF_MAX > 0.0:
+        sec = min(sec, _RETRY_BACKOFF_MAX)
+    return max(0.0, sec)
 
 
 def _ssrf_redirecting_stream_get(
@@ -57,20 +98,35 @@ def _ssrf_redirecting_stream_get(
     response: requests.Response | None = None
     for _ in range(_MAX_REDIRECTS + 1):
         current_hostname, current_ip = assert_url_is_safe(current_url)
-        if robots_preflight is not None:
-            ok_r, msg_r = robots_preflight.allowed(current_url)
-            if not ok_r:
-                raise ValueError(msg_r)
-        if origin_throttle is not None:
-            origin_throttle.wait_before_hop(current_url)
-        with pin_dns(current_hostname, current_ip):
-            response = requests.get(
-                current_url,
-                timeout=timeout,
-                allow_redirects=False,
-                headers=headers,
-                stream=True,
-            )
+        attempt = 0
+        while True:
+            if robots_preflight is not None:
+                ok_r, msg_r = robots_preflight.allowed(current_url)
+                if not ok_r:
+                    raise ValueError(msg_r)
+            if origin_throttle is not None:
+                origin_throttle.wait_before_hop(current_url)
+            with pin_dns(current_hostname, current_ip):
+                response = requests.get(
+                    current_url,
+                    timeout=timeout,
+                    allow_redirects=False,
+                    headers=headers,
+                    stream=True,
+                )
+            if response.status_code in _RETRY_STATUSES and attempt < _RETRY_MAX_ATTEMPTS:
+                wait_sec = _retry_delay_seconds(response, attempt)
+                if origin_throttle is not None:
+                    try:
+                        origin_throttle.record_hop_finished(response.url or current_url)
+                    except Exception:
+                        pass
+                response.close()
+                if wait_sec > 0.0:
+                    time.sleep(wait_sec)
+                attempt += 1
+                continue
+            break
 
         if response.status_code not in _REDIRECT_STATUSES:
             return response
