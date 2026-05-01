@@ -176,7 +176,7 @@
 
 备选 **方案 B**（`/documents/crawl`）未启用；若未来合并导航可再评估。
 
-页面内需包含：**数据源类型**（静态/RSS/登录站/API）、**robots 遵守开关（默认开）**、**调度（默认定时 + 手动触发）**、**凭据环境变量提示**（不落库）。**后端**：`GET/POST /v1/tbox/crawl/tasks`、`GET/PATCH/DELETE /v1/tbox/crawl/tasks/<id>`、`POST .../tasks/<id>/run` 与 worker tick（探测、robots、按类型入库）见 `docs/TBOX_API_BOUNDARY.md` §1.2–1.3。**`web-tbox`**：`CrawlPage` 已对接列表/新建/编辑/删除、租户筛选、**`extra_config` 勾选**（`tbox_skip_*`、`worker_stub_fail`）、**`extra_config` JSON 高级编辑**（默认展示**已剥离**四键的其余键；可选 **「JSON 含勾选四键」** 展开为完整对象；完整模式下**勾选变更**会按当前文本重新合并四键；**保存**时先解析 JSON 再与勾选合并，**勾选优先**）、列表列「extra 选项」摘要、**执行一次**；登录站/API 源类型与凭据 UI 仍可按总纲迭代。
+页面内需包含：**数据源类型**（静态/RSS/登录站/API）、**robots 遵守开关（默认开）**、**调度（默认定时 + 手动触发）**、**凭据环境变量提示**（不落库）。**后端**：`GET/POST /v1/tbox/crawl/tasks`、`GET/PATCH/DELETE /v1/tbox/crawl/tasks/<id>`、`POST .../tasks/<id>/run` 与 worker tick（探测、robots、按类型入库）见 `docs/TBOX_API_BOUNDARY.md` §1.2–1.3。**`web-tbox`**：`CrawlPage` 已对接列表/新建/编辑/删除、租户筛选、**`extra_config` 勾选**（`tbox_skip_*`、`worker_stub_fail`）、**`extra_config` JSON 高级编辑**（默认展示**已剥离**四键的其余键；可选 **「JSON 含勾选四键」** 展开为完整对象；完整模式下**勾选变更**会按当前文本重新合并四键；**保存**时先解析 JSON 再与勾选合并，**勾选优先**）、列表列「extra 选项」摘要、**执行一次**；登录站/API 源类型与凭据 UI 仍可按总纲迭代。**合规能力边界**（含 **`Crawl-delay` 未在 worker 强制**、ToS/全量 robots 等）见 **`docs/TBOX_KB_DELIVERY_HARNESS.md` §9.4**。
 
 ---
 
@@ -229,3 +229,4 @@
 | 2026-05-01 | §4：`CrawlPage` **`extra_config` 勾选**（`tbox_skip_*`、`worker_stub_fail`）、列表「extra 选项」；与 §1.3 tick 行为对齐 |
 | 2026-05-01 | §4：`CrawlPage` **`extra_config` JSON 高级编辑**（PATCH 保留非表单键；与勾选合并、勾选优先） |
 | 2026-05-01 | §4：`CrawlPage` **完整 `extra_config` JSON 开关**（可选含四键；勾选变更时重合并；保存仍勾选优先） |
+| 2026-05-01 | §4：补充 **合规边界** 指针至 **`TBOX_KB_DELIVERY_HARNESS.md` §9.4**（Crawl-delay、登录/API 源等） |

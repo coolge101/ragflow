@@ -175,6 +175,7 @@
 | 2026-05-01 | crawl tick：**robots.txt 预检**（`common/tbox_crawl_robots.py`）、**`tbox_skip_robots_check`** |
 | 2026-05-01 | crawl **HTTP 探测**：与抓取同源 **`_ssrf_redirecting_stream_get`**（每 hop robots + SSRF） |
 | 2026-05-01 | **`web-tbox` `CrawlPage`**：**`extra_config` 完整 JSON 开关**（与 `TBOX_UI_DESIGN_DETAIL` §4、`TBOX_API_BOUNDARY` §1.2 同步） |
+| 2026-05-01 | 新增 **§9.4**「S4 爬取合规与 Crawl-delay 待办」；§9.0/§9.1 **S4** 行改为引用 §9.4 |
 
 ---
 
@@ -190,7 +191,7 @@
 | **S1** | **已推进** | `docs/TBOX_API_BOUNDARY.md`；`api/apps/tbox_app.py`：`/health`、`/contract`；**`/me`（鉴权）**、**`/logout`**；`/me` 契约版本当前为 **v4**（`permissions` 含 `crawl.manage` 等；以 `TBOX_API_CONTRACT_VERSION` 与 `GET /v1/tbox/contract` 为准）。租户列表来自 `UserTenant`；更细「一一对应」字段表仍可在 S3 补全。 |
 | **S2** | **已推进** | `web-tbox/`：**`/login` 邮箱密码登录**（RSA → `/api/v1/auth/login`）、**`/` 控制台**拉取 **`/v1/tbox/me`**（带 `Authorization`）、**退出** 调 **`POST /v1/tbox/logout`**。IA/权限/视觉以 **`docs/TBOX_UI_DESIGN_OVERVIEW.md`**、**`docs/TBOX_UI_DESIGN_DETAIL.md`** 为准；参考原型见 **§2.1**。 |
 | **S3** | **已启动** | **知识库 `/documents`**（含 **文档列表/上传/删除**）；**对话 `/`**；**检索 `/search`**；**用户 `/users`**；**审计 `/audit`**（ingestions）；**`permissions`**（**v4** 含 `crawl.manage`）。**整库 ZIP 导出** 仍视官方 REST 暴露情况。 |
-| **S4** | **部分启动** | **`/crawl`** + **`crawl.manage`**；**`/v1/tbox/crawl/tasks` CRUD**；**`rag/svr/tbox_crawl_worker.py`** 轮询 + tick：**探测** + **`robots.txt` 预检**（可跳过）+ **`dataset_id`** 时 **`static_web`/`rss`** 入库；**`docker/entrypoint.sh`** **`ENABLE_TBOX_CRAWL_WORKER`**；**`web-tbox` `CrawlPage`**（含 **`extra_config` 勾选 + JSON / 完整 JSON 模式**）；Crawl-delay/全量合规等仍待 §9.1。 |
+| **S4** | **部分启动** | **`/crawl`** + **`crawl.manage`**；**`/v1/tbox/crawl/tasks` CRUD**；**`rag/svr/tbox_crawl_worker.py`** 轮询 + tick：**探测** + **`robots.txt` 预检**（可跳过）+ **`dataset_id`** 时 **`static_web`/`rss`** 入库；**`docker/entrypoint.sh`** **`ENABLE_TBOX_CRAWL_WORKER`**；**`web-tbox` `CrawlPage`**（含 **`extra_config` 勾选 + JSON / 完整 JSON 模式**）。**Crawl-delay、全量 robots 语义、登录/API 源等**见 **§9.4 待办**。 |
 | **S5–S7** | 未开始 | 按 §9.1 继续排期。 |
 
 ### 9.1 阶段总览
@@ -201,7 +202,7 @@
 | **S1 后端隔离层** | 可插拔扩展，少动上游核心 | **`/v1/tbox/*` 首包** + 边界文档；用户/租户/团队/角色 **一一映射** 的数据模型与后续 API；**无 SSO** 首版路径 | 映射规则与鉴权随接口迭代补文档；密钥走环境变量（§7.4） |
 | **S2 独立前端骨架** | UI 技术栈落地，对接 API | **`web-tbox/`**（Vite）；代理与 **health 联调**；后续路由与登录 | 当前：**health 联调**；登录与完整布局在 UI 设计阶段（§6 题 1） |
 | **S3 用户与 KB 管理** | §1 第 2 条能力 | 用户管理界面 + API；知识库 **导入/导出/删除** 等与 **RAGFlow 首版格式一致** 的封装或直连 | 与官方行为对齐的用例表 + 手测/自动化冒烟；不可逆操作有确认与日志（§4 P2） |
-| **S4 爬取子系统** | §1 第 3 条 | 数据源：**静态网页、RSS、需登录、API**；**遵守 robots.txt**；**默认定时 + 支持手动**；任务与状态 UI；与 KB 入库流水线对接 | 端到端：配置源 → 定时/手动触发 → 可检索；合规与凭据策略成文（§6 题 4、§7.4） |
+| **S4 爬取子系统** | §1 第 3 条 | 数据源：**静态网页、RSS、需登录、API**；**遵守 robots.txt**；**默认定时 + 支持手动**；任务与状态 UI；与 KB 入库流水线对接 | 端到端：配置源 → 定时/手动触发 → 可检索；合规与凭据策略成文（§6 题 4、§7.4）。**当前实现与 §6「必须遵守 robots」的差距**（如 **Crawl-delay**、扩展指令）见 **§9.4**。 |
 | **S5 Docker 交付** | §1 第 4 条 | **仅 Compose** 的 `docker-compose.yml`（及必要 `.env.example`）；目标 **Linux / amd64** 说明与验证 | 第三方新机器按文档冷启动成功；架构扩展须更新文档（§6 题 5） |
 | **S6 上游同步例行化** | 控制漂移 | **每 2～4 周**合并 `infiniflow/ragflow` **main** 的流程（负责人、合并窗口、冲突处理清单） | 至少完成一轮合并演练并记录（§5、§7.2） |
 | **S7 发布前质量** | 非 PR 门禁 | **对抗测试**在发版前或 `workflow_dispatch` 执行；结果归档 | 与 §7.3 一致：PR 不依赖对抗测试通过 |
@@ -222,6 +223,35 @@
 |--------|------|
 | 若使用 `tbox-ragflow-platform` | 明确与本产品数据流关系（§2），仅作流水线/契约配套 |
 | Harness 脚本/workflow 在 `ubuntu-latest` 上跑通与调优 | 若 Docker 步骤超时，再拆 job 或缩小范围（与 §7.3 一致） |
+
+### 9.4 S4 爬取合规与 Crawl-delay 待办（与 §6 题 4、§7 对齐）
+
+本节记录 **已实现** 与 **仍待产品/工程闭环** 的边界，避免将「有 robots 预检」误等同「已完全满足站点 robots 与礼貌爬取」。
+
+#### 9.4.1 已实现（可验收）
+
+| 项 | 说明 |
+|----|------|
+| **Disallow / Allow + UA** | `common/tbox_crawl_robots.py` 使用 **`urllib.robotparser.RobotFileParser`**，对目标 URL 调用 **`can_fetch`**（与 **`TBOX_CRAWL_HTTP_USER_AGENT`** 一致）；探测与 **`fetch_url_body_capped`** 路径在适当时机做 **`robots_preflight`**（见 `docs/TBOX_API_BOUNDARY.md` §1.2–1.3）。 |
+| **按 origin 缓存** | 同一 tick 内对 **scheme+host** 复用已拉取的 **`/robots.txt`**，减少重复请求。 |
+| **404 / 拉取失败** | **`/robots.txt`** 为 **404** 时视为无规则放行；拉取或解析异常时 **放行并打日志**（规则未知，不阻断业务）。 |
+| **SSRF 边界** | robots 与页面/Feed 拉取均走 **受控 GET**（体积与超时上限），与内网 SSRF 防护一致。 |
+| **可关闭** | 任务 **`extra_config.tbox_skip_robots_check`** 跳过预检（**`web-tbox` `/crawl`** 有勾选）。 |
+
+#### 9.4.2 待办：Crawl-delay 与请求节奏
+
+| 项 | 现状 | 建议方向 |
+|----|------|----------|
+| **`Crawl-delay`（及非标准 Request-rate）** | 代码路径 **仅**使用 **`can_fetch`**，**未**读取 **`RobotFileParser.crawl_delay`**，也 **未**在 seed 之间、RSS 多条目之间、多 hop 之间按 robots 声明做 **sleep / 令牌桶**。同一 tick 内仍可能对同一 origin **连续发起多次请求**。 | 在 **worker / `tbox_crawl_ssrf_fetch` / ingest** 层增加 **按 origin 的节流**（至少尊重 **`crawl_delay`** 与可配置默认最小间隔）；与 **`TBOX_CRAWL_FETCH_TIMEOUT`**、**`TBOX_CRAWL_INGEST_*`** 等环境变量一起写入边界文档与运维说明。 |
+| **429 / 503 与退避** | 当前以超时与单次错误为主，**无**统一「礼貌退避 + 最大重试」策略文档化。 | 定义每类响应的退避与任务级 **`last_error`** 语义，避免对源站形成冲击。 |
+
+#### 9.4.3 待办：robots 全量语义与产品合规
+
+| 项 | 说明 |
+|----|------|
+| **Host、Sitemap 等** | 标准 **`RobotFileParser`** 对 **`Host`** 等支持有限；若产品需要「跟 sitemap 全站爬」须 **单独设计**（数据源类型、范围、与 §6「仅首版四类源」的关系）。 |
+| **§6 题 4：需登录站点、API 拉取** | 总纲要求的数据源类型；**凭据**见 §7.4（环境变量/密钥卷）。**任务模型、鉴权注入与 UI** 仍待与 **`/crawl`**、worker 对齐，**不属于**本节「robots 子集」已闭合。 |
+| **全量合规与条款** | 「遵守 robots」**不等于**自动满足各站 **ToS / 版权 / 地域限制**；若面向公网生产，需 **产品策略**（可配置域名白名单、默认关闭公网爬、用户确认文案等）与 **法务/运维** 结论，并在 **`TBOX_UI_DESIGN_*`** 与对外手册中写明 **能力边界与免责**。 |
 
 ---
 
