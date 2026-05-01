@@ -176,6 +176,7 @@
 | 2026-05-01 | crawl **HTTP 探测**：与抓取同源 **`_ssrf_redirecting_stream_get`**（每 hop robots + SSRF） |
 | 2026-05-01 | **`web-tbox` `CrawlPage`**：**`extra_config` 完整 JSON 开关**（与 `TBOX_UI_DESIGN_DETAIL` §4、`TBOX_API_BOUNDARY` §1.2 同步） |
 | 2026-05-01 | 新增 **§9.4**「S4 爬取合规与 Crawl-delay 待办」；§9.0/§9.1 **S4** 行改为引用 §9.4 |
+| 2026-05-01 | **§9.4.2**：落地 **`OriginFetchThrottler`** + **`Crawl-delay`**；**`TBOX_API_BOUNDARY` §1.3** 同步 |
 
 ---
 
@@ -238,11 +239,12 @@
 | **SSRF 边界** | robots 与页面/Feed 拉取均走 **受控 GET**（体积与超时上限），与内网 SSRF 防护一致。 |
 | **可关闭** | 任务 **`extra_config.tbox_skip_robots_check`** 跳过预检（**`web-tbox` `/crawl`** 有勾选）。 |
 
-#### 9.4.2 待办：Crawl-delay 与请求节奏
+#### 9.4.2 Crawl-delay 与请求节奏
 
-| 项 | 现状 | 建议方向 |
-|----|------|----------|
-| **`Crawl-delay`（及非标准 Request-rate）** | 代码路径 **仅**使用 **`can_fetch`**，**未**读取 **`RobotFileParser.crawl_delay`**，也 **未**在 seed 之间、RSS 多条目之间、多 hop 之间按 robots 声明做 **sleep / 令牌桶**。同一 tick 内仍可能对同一 origin **连续发起多次请求**。 | 在 **worker / `tbox_crawl_ssrf_fetch` / ingest** 层增加 **按 origin 的节流**（至少尊重 **`crawl_delay`** 与可配置默认最小间隔）；与 **`TBOX_CRAWL_FETCH_TIMEOUT`**、**`TBOX_CRAWL_INGEST_*`** 等环境变量一起写入边界文档与运维说明。 |
+| 项 | 现状 | 说明 / 待办 |
+|----|------|-------------|
+| **`Crawl-delay` + 最小间隔** | **已实现（首版）**：`common/tbox_crawl_origin_throttle.py` 的 **`OriginFetchThrottler`** 在 **`fetch_url_body_capped` / `probe_url_streaming_cap`** 的 **每 hop GET 前** 与 **`/robots.txt` 拉取时间戳**对齐后 **`sleep`**；**`RobotsOriginCache.crawl_delay_seconds`** 读 **`RobotFileParser.crawl_delay`**；环境变量 **`TBOX_CRAWL_MIN_ORIGIN_INTERVAL`**、**`TBOX_CRAWL_MAX_CRAWL_DELAY_SEC`**、**`TBOX_CRAWL_SKIP_CRAWL_DELAY`**。探测、**`static_web`** 入库、**RSS** 每 Feed 入口均传入同一 tick 内共享的 throttler。 | **RSS 条目** 若由 **`RSSConnector`** 内部再拉 URL，**尚未**经同一节流器（见 §9.4.3 或后续 RSS 改造）。 |
+| **非标准 Request-rate** | **未**解析 Google 扩展等非 **`urllib.robotparser`** 字段。 | 若合规要求覆盖，须自定义解析或第三方 robots 库。 |
 | **429 / 503 与退避** | 当前以超时与单次错误为主，**无**统一「礼貌退避 + 最大重试」策略文档化。 | 定义每类响应的退避与任务级 **`last_error`** 语义，避免对源站形成冲击。 |
 
 #### 9.4.3 待办：robots 全量语义与产品合规

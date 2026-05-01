@@ -43,9 +43,9 @@
 | 入口 | **`rag/svr/tbox_crawl_worker.py`**（独立进程；与 **`rag/svr/sync_data_source.py`** 同类，不经 Quart）。 |
 | 轮询条件 | **`tbox_crawl_task`**：`status` 有效、`enabled=true`、**`run_state=ready`** 且 `schedule_cron` 与当前分钟匹配。**同一分钟去重**（`last_run_at`）+ **Redis 分布式锁**（`tbox_crawl_tick:<task_id>`，非阻塞；Redis 不可用时降级无锁并打日志）。 |
 | 当前行为 | 写 **`last_run_at`** / **`last_error`**。默认 **HTTP 探测**（`common/tbox_crawl_http_probe.py`）；**`robots.txt`**：`common/tbox_crawl_robots.py`（`urllib.robotparser` + SSRF 安全拉取 **`/robots.txt`**，404 视为允许；拉取/解析失败则**放行**并打日志）。**`extra_config.tbox_skip_robots_check`** 关闭 robots。若 **`dataset_id`** 非空：**`static_web`** / **`rss`** 入库路径见前；入库 GET **每个重定向 hop 前**均 `can_fetch`（`common/tbox_crawl_ssrf_fetch.py` 的 **`robots_preflight`**）。**`tbox_skip_http_probe`** / **`tbox_skip_ingest`** 见 §1.2。**`worker_stub_fail`** 在 tick 最前抛错。 |
-| robots 节奏 | 当前 **仅** **`can_fetch`（Disallow/Allow）**；**未**按 **`Crawl-delay` / Request-rate** 在请求间 **sleep** 或令牌桶节流。产品与待办见 **`docs/TBOX_KB_DELIVERY_HARNESS.md` §9.4**。 |
+| robots 节奏 | **`can_fetch`（Disallow/Allow）** + **`OriginFetchThrottler`**（`common/tbox_crawl_origin_throttle.py`）：同一 tick 内对同一 origin 的 **GET** 之间按 **`Crawl-delay`**（`RobotFileParser.crawl_delay`，上限 **`TBOX_CRAWL_MAX_CRAWL_DELAY_SEC`** 默认 **60**）与 **`TBOX_CRAWL_MIN_ORIGIN_INTERVAL`**（默认 **0**）取较大值节流；可与 **`TBOX_CRAWL_SKIP_CRAWL_DELAY`** 关闭 **Crawl-delay** 部分。**`/robots.txt`** 拉取时间计入间隔。**Request-rate / 429 退避** 仍待 **`docs/TBOX_KB_DELIVERY_HARNESS.md` §9.4**。 |
 | Docker | 环境变量 **`ENABLE_TBOX_CRAWL_WORKER=1`**，或 **`docker/entrypoint.sh`** 传入 **`--enable-tbox-crawl-worker`**。 |
-| 可调参数 | Worker：**`TBOX_CRAWL_WORKER_INTERVAL`**（默认 **30**）、**`TBOX_CRAWL_WORKER_POLL_LIMIT`**（默认 **20**）。探测：**`TBOX_CRAWL_FETCH_PROBE_MAX`**、**`TBOX_CRAWL_FETCH_TIMEOUT`**、**`TBOX_CRAWL_HTTP_USER_AGENT`**、**`TBOX_CRAWL_HTTP_READ_BYTES`**（默认 **8192**）。**robots**：**`TBOX_CRAWL_ROBOTS_TIMEOUT`**（默认 **10**）、**`TBOX_CRAWL_ROBOTS_MAX_BYTES`**（默认 **262144**）。**static_web** 入库：**`TBOX_CRAWL_INGEST_*`**。**rss** 入库：**`TBOX_CRAWL_RSS_*`**。 |
+| 可调参数 | Worker：**`TBOX_CRAWL_WORKER_INTERVAL`**（默认 **30**）、**`TBOX_CRAWL_WORKER_POLL_LIMIT`**（默认 **20**）。探测：**`TBOX_CRAWL_FETCH_PROBE_MAX`**、**`TBOX_CRAWL_FETCH_TIMEOUT`**、**`TBOX_CRAWL_HTTP_USER_AGENT`**、**`TBOX_CRAWL_HTTP_READ_BYTES`**（默认 **8192**）。**robots**：**`TBOX_CRAWL_ROBOTS_TIMEOUT`**（默认 **10**）、**`TBOX_CRAWL_ROBOTS_MAX_BYTES`**（默认 **262144**）。**origin 节流**：**`TBOX_CRAWL_MIN_ORIGIN_INTERVAL`**（秒，默认 **0**）、**`TBOX_CRAWL_MAX_CRAWL_DELAY_SEC`**（默认 **60**）、**`TBOX_CRAWL_SKIP_CRAWL_DELAY`**（真值则忽略 **Crawl-delay**）。**static_web** 入库：**`TBOX_CRAWL_INGEST_*`**。**rss** 入库：**`TBOX_CRAWL_RSS_*`**。 |
 | 本地开发 | 依赖服务已起后：`export PYTHONPATH=$(pwd)`，执行 **`python rag/svr/tbox_crawl_worker.py`**。 |
 
 **S3 知识库（官方 REST，不经 `/v1/tbox` 包装）**：`web-tbox` 路由 **`/documents`**（兼容重定向自 **`/kbs`**）调用 **`GET/DELETE /api/v1/datasets`**，以及 **`GET/POST/DELETE /api/v1/datasets/<dataset_id>/documents`**（列表、本地上传 multipart `file`、按 id 删除文档），与官方 `web/src/utils/api.ts` 契约一致。
@@ -98,5 +98,6 @@
 | 2026-05-01 | **§1.2**：**`web-tbox` `/crawl`** **`extra_config` JSON 高级编辑**（与勾选合并、勾选优先） |
 | 2026-05-01 | **§1.2**：**`web-tbox` `/crawl`** **`extra_config` 完整 JSON 模式**（可选含四键；与 `TBOX_UI_DESIGN_DETAIL` §4 一致） |
 | 2026-05-01 | **§1.3**：表增 **robots 节奏** 行（**`Crawl-delay` 未强制**；待办见 **`TBOX_KB_DELIVERY_HARNESS.md` §9.4**） |
+| 2026-05-01 | **§1.3**：**`OriginFetchThrottler`** 实现 **Crawl-delay** + 可配最小间隔；**robots 节奏** 行与 **可调参数** 更新 |
 | 2026-05-01 | **§1.3**：**`static_web`** + **`dataset_id`**：**SSRF 抓取**（`common/tbox_crawl_ssrf_fetch.py`）→ **`FileService.upload_document`** + **`DocumentService.run`**；**`tbox_skip_ingest`**；**`TBOX_CRAWL_INGEST_*`** |
 | 2026-05-01 | **§1.3**：**`rss`** + **`dataset_id`**：**`RSSConnector`** 条目 → **`.txt`** 入库 + 解析队列；**`TBOX_CRAWL_RSS_*`** |
