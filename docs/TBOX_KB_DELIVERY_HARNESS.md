@@ -131,7 +131,7 @@
 
 - **`harness_engineering.yml`**：`runs-on: **ubuntu-latest**`；**已移除对 `pull_request` 的触发**，仅在 **push（约定分支）、定时、手动** 时运行，避免将对抗与重型 Docker 步骤绑在 PR 合并门禁上。
 - **对抗测试**：在**发布前**或上述工作流触发时执行质量验证；**首版合入 PR 不以对抗测试为必过项**。
-- **PR 轻量门禁（`ubuntu-latest`，路径触发）**：与上条**独立**，在变更相关路径时于 PR 上运行 **`web-tbox.yml`**（前端 typecheck + build）、**`harness-monitor-unit.yml`**（`HarnessMonitor` + `test/adversarial_tests.py` 离线用例）、**`tbox-crawl-common-unit.yml`**（爬取相关 `test/unit_test/common/test_tbox_crawl_*.py` 等）、**`tbox-task-service-unit.yml`**（**`tbox_crawl_task_service`** 纯逻辑单测）、**`tbox-crawl-worker-unit.yml`**（**`tbox_crawl_worker`** 进程冒烟）。索引见 **`docs/TBOX_ENV_AND_VERSIONS.md`** §6。
+- **PR 轻量门禁（`ubuntu-latest`，路径触发）**：与上条**独立**，在变更相关路径时于 PR 上运行 **`web-tbox.yml`**（前端 typecheck + build）、**`harness-monitor-unit.yml`**（`HarnessMonitor` + `test/adversarial_tests.py` 离线用例）、**`tbox-crawl-common-unit.yml`**（爬取相关 `test/unit_test/common/test_tbox_crawl_*.py` 等）、**`tbox-task-service-unit.yml`**（**`tbox_crawl_task_service`** 纯逻辑单测）、**`tbox-crawl-worker-unit.yml`**（**`tbox_crawl_worker`** 进程冒烟）、**`tbox-app-routes-unit.yml`**（**`tbox_app`** **`/health`**、**`/contract`** 隔离冒烟）。索引见 **`docs/TBOX_ENV_AND_VERSIONS.md`** §6。
 - 若后续将部分检查重新纳入 PR，须**先改本文档 §7.3 与 workflow**，再改 CI。
 
 ### 7.4 实施提示（非约束，供排期）
@@ -163,6 +163,7 @@
 | 2026-05-02 | **`TBOX_QUICKSTART.md`** 新增 **§6**：PR 前本地命令与 **`TBOX_ENV_AND_VERSIONS.md`** §6 轻量 CI 对齐说明 |
 | 2026-05-02 | **`web-tbox/README.md`**：链至 **`TBOX_QUICKSTART`** §6 / **`TBOX_ENV_AND_VERSIONS`** §6（PR 自检与 CI 索引） |
 | 2026-05-02 | 新增 **`tbox-crawl-worker-unit.yml`** + **`test/unit_test/rag/svr/test_tbox_crawl_worker.py`**；**`TBOX_QUICKSTART`** / **`TBOX_ENV_AND_VERSIONS`** §6 与本文 §7.3 同步 |
+| 2026-05-02 | 新增 **`tbox-app-routes-unit.yml`** + **`test/unit_test/api/apps/test_tbox_app_health.py`**（隔离 Quart，不导入全量 **`api.apps`**）；**`TBOX_QUICKSTART`** / **`TBOX_ENV_AND_VERSIONS`** §6 与本文 §7.3 同步 |
 | 2026-05-01 | `web-tbox`：主布局、全路由与 `RequirePermission`；`/me` 增加 `permissions`（契约 **v3**）；`TBOX_ENV_AND_VERSIONS.md` §2 填基线 commit；§9.0 S3 更新 |
 | 2026-05-01 | `web-tbox`：对话流式、知识库检索、租户用户列表对接官方 API；`TBOX_API_BOUNDARY` / 快速启动 / §9.0 同步 |
 | 2026-05-01 | `web-tbox` 对话：应用列表 + 会话创建/复用 + 引用侧栏（`reference.chunks`）；`chats.ts` / `ReferenceChunks.tsx` |

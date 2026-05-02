@@ -1,0 +1,47 @@
+name: tbox-app-routes-unit
+permissions:
+  contents: read
+
+on:
+  pull_request:
+    paths:
+      - "api/apps/tbox_app.py"
+      - "test/unit_test/api/apps/test_tbox_app_health.py"
+      - "api/constants.py"
+      - "pyproject.toml"
+      - "uv.lock"
+      - ".github/workflows/tbox-app-routes-unit.yml"
+  push:
+    branches:
+      - main
+      - "*.*.*"
+    paths:
+      - "api/apps/tbox_app.py"
+      - "test/unit_test/api/apps/test_tbox_app_health.py"
+      - "api/constants.py"
+      - "pyproject.toml"
+      - "uv.lock"
+      - ".github/workflows/tbox-app-routes-unit.yml"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  pytest:
+    name: pytest tbox_app public routes (isolated)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v6
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: Sync test dependencies
+        run: uv sync --python 3.12 --group test --frozen
+
+      - name: Run unit tests
+        run: uv run pytest test/unit_test/api/apps/test_tbox_app_health.py -v --tb=short
