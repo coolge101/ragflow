@@ -65,6 +65,34 @@ async def test_crawl_tasks_list_crawl_manage_forbidden(tbox_quart_app, monkeypat
 
 @pytest.mark.p2
 @pytest.mark.asyncio
+async def test_crawl_tasks_list_tenant_filter_error(tbox_quart_app, monkeypatch: pytest.MonkeyPatch):
+    app, mod = tbox_quart_app
+    monkeypatch.setattr(
+        mod,
+        "_active_tenant_memberships",
+        lambda _uid: [{"tenant_id": "t-a", "role": "owner"}],
+    )
+
+    def list_tasks_must_not_run(*_a, **_k):
+        raise AssertionError("list_tasks must not be called")
+
+    fake = SimpleNamespace(
+        tenant_ids_for_crawl=lambda uid, is_sup: ["t-a", "t-b"],
+        resolve_list_tenant_id=lambda tid, allowed: (None, "tenant_id is required when the user belongs to multiple tenants"),
+        list_tasks=list_tasks_must_not_run,
+        task_row_to_dict=lambda t: {},
+    )
+    monkeypatch.setattr(mod, "crawl_svc", fake)
+    TBOX_ROUTE_TEST_USER.is_superuser = False
+    async with app.test_client() as client:
+        resp = await client.get(f"/{API_VERSION}/tbox/crawl/tasks")
+    data = await resp.get_json()
+    assert data["code"] == RetCode.ARGUMENT_ERROR
+    assert "tenant_id" in data["message"].lower()
+
+
+@pytest.mark.p2
+@pytest.mark.asyncio
 async def test_crawl_tasks_get_not_found(tbox_quart_app, monkeypatch: pytest.MonkeyPatch):
     app, mod = tbox_quart_app
     monkeypatch.setattr(mod, "_active_tenant_memberships", lambda _uid: [])
@@ -155,6 +183,35 @@ async def test_crawl_tasks_create_tenant_id_not_permitted(tbox_quart_app, monkey
     assert data["code"] == RetCode.ARGUMENT_ERROR
     assert "tenant_id" in data["message"].lower()
     assert "not permitted" in data["message"].lower()
+
+
+@pytest.mark.p2
+@pytest.mark.asyncio
+async def test_crawl_tasks_create_invalid_source_type(tbox_quart_app, monkeypatch: pytest.MonkeyPatch):
+    app, mod = tbox_quart_app
+    monkeypatch.setattr(mod, "_active_tenant_memberships", lambda _uid: [])
+
+    async def body():
+        return {
+            "name": "x",
+            "source_type": "not_a_real_type",
+            "seed_urls": ["https://example.com/"],
+        }
+
+    st, rs = crawl_allowed_sets()
+    fake = SimpleNamespace(
+        tenant_ids_for_crawl=lambda uid, is_sup: None,
+        ALLOWED_SOURCE_TYPES=st,
+        ALLOWED_RUN_STATES=rs,
+    )
+    monkeypatch.setattr(mod, "crawl_svc", fake)
+    monkeypatch.setattr(mod, "get_request_json", body)
+    TBOX_ROUTE_TEST_USER.is_superuser = True
+    async with app.test_client() as client:
+        resp = await client.post(f"/{API_VERSION}/tbox/crawl/tasks")
+    data = await resp.get_json()
+    assert data["code"] == RetCode.ARGUMENT_ERROR
+    assert "source_type" in data["message"].lower()
 
 
 @pytest.mark.p2
@@ -346,6 +403,65 @@ async def test_crawl_tasks_patch_name_ok(tbox_quart_app, monkeypatch: pytest.Mon
 
 @pytest.mark.p2
 @pytest.mark.asyncio
+async def test_crawl_tasks_patch_forbidden_wrong_tenant(tbox_quart_app, monkeypatch: pytest.MonkeyPatch):
+    app, mod = tbox_quart_app
+    monkeypatch.setattr(
+        mod,
+        "_active_tenant_memberships",
+        lambda _uid: [{"tenant_id": "allowed-ten", "role": "owner"}],
+    )
+    row = SimpleNamespace(id="p4", tenant_id="other-ten", name="x")
+    st, rs = crawl_allowed_sets()
+
+    async def body():
+        return {"name": "  y  "}
+
+    fake = SimpleNamespace(
+        tenant_ids_for_crawl=lambda uid, is_sup: ["allowed-ten"],
+        get_task=lambda tid: row if tid == "p4" else None,
+        user_may_access_task=lambda t, allowed: t.tenant_id in (allowed or []),
+        ALLOWED_SOURCE_TYPES=st,
+        ALLOWED_RUN_STATES=rs,
+    )
+    monkeypatch.setattr(mod, "crawl_svc", fake)
+    monkeypatch.setattr(mod, "get_request_json", body)
+    TBOX_ROUTE_TEST_USER.is_superuser = False
+    async with app.test_client() as client:
+        resp = await client.patch(f"/{API_VERSION}/tbox/crawl/tasks/p4")
+    data = await resp.get_json()
+    assert data["code"] == RetCode.FORBIDDEN
+
+
+@pytest.mark.p2
+@pytest.mark.asyncio
+async def test_crawl_tasks_patch_extra_config_not_object(tbox_quart_app, monkeypatch: pytest.MonkeyPatch):
+    app, mod = tbox_quart_app
+    monkeypatch.setattr(mod, "_active_tenant_memberships", lambda _uid: [])
+    row = SimpleNamespace(id="p5", tenant_id="tbox-route-test-user", name="n")
+    st, rs = crawl_allowed_sets()
+
+    async def body():
+        return {"extra_config": "not-an-object"}
+
+    fake = SimpleNamespace(
+        tenant_ids_for_crawl=lambda uid, is_sup: None,
+        get_task=lambda tid: row if tid == "p5" else None,
+        user_may_access_task=lambda t, allowed: True,
+        ALLOWED_SOURCE_TYPES=st,
+        ALLOWED_RUN_STATES=rs,
+    )
+    monkeypatch.setattr(mod, "crawl_svc", fake)
+    monkeypatch.setattr(mod, "get_request_json", body)
+    TBOX_ROUTE_TEST_USER.is_superuser = True
+    async with app.test_client() as client:
+        resp = await client.patch(f"/{API_VERSION}/tbox/crawl/tasks/p5")
+    data = await resp.get_json()
+    assert data["code"] == RetCode.ARGUMENT_ERROR
+    assert "extra_config" in data["message"].lower()
+
+
+@pytest.mark.p2
+@pytest.mark.asyncio
 async def test_crawl_tasks_delete_ok(tbox_quart_app, monkeypatch: pytest.MonkeyPatch):
     app, mod = tbox_quart_app
     monkeypatch.setattr(mod, "_active_tenant_memberships", lambda _uid: [])
@@ -369,6 +485,34 @@ async def test_crawl_tasks_delete_ok(tbox_quart_app, monkeypatch: pytest.MonkeyP
     assert data["code"] == 0
     assert data["message"] == "deleted"
     assert deleted == ["d1"]
+
+
+@pytest.mark.p2
+@pytest.mark.asyncio
+async def test_crawl_tasks_delete_forbidden_wrong_tenant(tbox_quart_app, monkeypatch: pytest.MonkeyPatch):
+    app, mod = tbox_quart_app
+    monkeypatch.setattr(
+        mod,
+        "_active_tenant_memberships",
+        lambda _uid: [{"tenant_id": "allowed-ten", "role": "owner"}],
+    )
+    row = SimpleNamespace(id="d2", tenant_id="other-ten")
+
+    def soft_delete_task(_t):
+        raise AssertionError("soft_delete_task must not run")
+
+    fake = SimpleNamespace(
+        tenant_ids_for_crawl=lambda uid, is_sup: ["allowed-ten"],
+        get_task=lambda tid: row if tid == "d2" else None,
+        user_may_access_task=lambda t, allowed: t.tenant_id in (allowed or []),
+        soft_delete_task=soft_delete_task,
+    )
+    monkeypatch.setattr(mod, "crawl_svc", fake)
+    TBOX_ROUTE_TEST_USER.is_superuser = False
+    async with app.test_client() as client:
+        resp = await client.delete(f"/{API_VERSION}/tbox/crawl/tasks/d2")
+    data = await resp.get_json()
+    assert data["code"] == RetCode.FORBIDDEN
 
 
 @pytest.mark.p2
@@ -403,6 +547,35 @@ async def test_crawl_tasks_run_ok(tbox_quart_app, monkeypatch: pytest.MonkeyPatc
     assert data["data"]["id"] == "r1"
     assert data["data"]["ran"] is True
     assert ticks == ["r1"]
+
+
+@pytest.mark.p2
+@pytest.mark.asyncio
+async def test_crawl_tasks_run_forbidden_wrong_tenant(tbox_quart_app, monkeypatch: pytest.MonkeyPatch):
+    app, mod = tbox_quart_app
+    monkeypatch.setattr(
+        mod,
+        "_active_tenant_memberships",
+        lambda _uid: [{"tenant_id": "allowed-ten", "role": "owner"}],
+    )
+    row = SimpleNamespace(id="r0", tenant_id="other-ten")
+
+    def execute_crawl_task_stub_tick(_tid):
+        raise AssertionError("execute must not run")
+
+    fake = SimpleNamespace(
+        tenant_ids_for_crawl=lambda uid, is_sup: ["allowed-ten"],
+        get_task=lambda tid: row if tid == "r0" else None,
+        user_may_access_task=lambda t, allowed: t.tenant_id in (allowed or []),
+        execute_crawl_task_stub_tick=execute_crawl_task_stub_tick,
+        record_worker_tick=lambda *a, **k: None,
+    )
+    monkeypatch.setattr(mod, "crawl_svc", fake)
+    TBOX_ROUTE_TEST_USER.is_superuser = False
+    async with app.test_client() as client:
+        resp = await client.post(f"/{API_VERSION}/tbox/crawl/tasks/r0/run")
+    data = await resp.get_json()
+    assert data["code"] == RetCode.FORBIDDEN
 
 
 @pytest.mark.p2
