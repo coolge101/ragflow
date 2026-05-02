@@ -179,6 +179,7 @@
 | 2026-05-01 | **§9.4.2**：落地 **`OriginFetchThrottler`** + **`Crawl-delay`**；**`TBOX_API_BOUNDARY` §1.3** 同步 |
 | 2026-05-01 | **§9.4.2**：落地 **429/503 礼貌退避**（`Retry-After` + backoff）；补 **`TBOX_CRAWL_RETRY_*`** 参数 |
 | 2026-05-01 | **§9.4.2**：**429/503** 重试 **按状态覆盖**；**`last_error`** **`[tbox:CODE]`** 前缀；**`TBOX_API_BOUNDARY` §1.3** 同步 |
+| 2026-05-01 | **§9.4.2**：**`RSSConnector`** Feed 拉取对齐 **throttle / robots hop / 429 退避**（`ingest_rss_seeds_into_kb`） |
 
 ---
 
@@ -245,7 +246,7 @@
 
 | 项 | 现状 | 说明 / 待办 |
 |----|------|-------------|
-| **`Crawl-delay` + 最小间隔** | **已实现（首版）**：`common/tbox_crawl_origin_throttle.py` 的 **`OriginFetchThrottler`** 在 **`fetch_url_body_capped` / `probe_url_streaming_cap`** 的 **每 hop GET 前** 与 **`/robots.txt` 拉取时间戳**对齐后 **`sleep`**；**`RobotsOriginCache.crawl_delay_seconds`** 读 **`RobotFileParser.crawl_delay`**；环境变量 **`TBOX_CRAWL_MIN_ORIGIN_INTERVAL`**、**`TBOX_CRAWL_MAX_CRAWL_DELAY_SEC`**、**`TBOX_CRAWL_SKIP_CRAWL_DELAY`**。探测、**`static_web`** 入库、**RSS** 每 Feed 入口均传入同一 tick 内共享的 throttler。 | **RSS 条目** 若由 **`RSSConnector`** 内部再拉 URL，**尚未**经同一节流器（见 §9.4.3 或后续 RSS 改造）。 |
+| **`Crawl-delay` + 最小间隔** | **已实现（首版）**：`common/tbox_crawl_origin_throttle.py` 的 **`OriginFetchThrottler`** 在 **`fetch_url_body_capped` / `probe_url_streaming_cap`** 的 **每 hop GET 前** 与 **`/robots.txt` 拉取时间戳**对齐后 **`sleep`**；**`RobotsOriginCache.crawl_delay_seconds`** 读 **`RobotFileParser.crawl_delay`**；环境变量 **`TBOX_CRAWL_MIN_ORIGIN_INTERVAL`**、**`TBOX_CRAWL_MAX_CRAWL_DELAY_SEC`**、**`TBOX_CRAWL_SKIP_CRAWL_DELAY`**。探测、**`static_web`** 入库、**TBOX RSS 入库** 均共享 throttler。 | **`RSSConnector._read_feed`**（仅 **Feed URL** 拉取与重定向）在 **`ingest_rss_seeds_into_kb`** 中已传入 **throttle + per-hop robots + 429/503 退避**；**条目正文**仍来自 **feedparser** 解析字段，**不**对 entry **外链**再发 GET。 |
 | **非标准 Request-rate** | **未**解析 Google 扩展等非 **`urllib.robotparser`** 字段。 | 若合规要求覆盖，须自定义解析或第三方 robots 库。 |
 | **429 / 503 与退避** | **已实现（首版）**：`common/tbox_crawl_ssrf_fetch.py` 在 **429/503** 按 **`Retry-After`**（delta/http-date，带上限）或指数退避重试；全局参数 **`TBOX_CRAWL_RETRY_*`**，并支持 **按状态覆盖**（**`_429` / `_503`** 后缀，见 **`docs/TBOX_API_BOUNDARY.md` §1.3**）。 | **`last_error`** 短码前缀见下行。 |
 | **last_error 短码** | tick 失败写入 **`[tbox:CODE] …`**（**`common/tbox_crawl_last_error.py`**），如 **`HTTP_PROBE`**、**`INGEST_STATIC`**、**`INGEST_RSS`**、**`DATASET_TENANT`**、**`KB_NOT_FOUND`**、**`WORKER_EXCEPTION`**、**`WORKER_STUB`**。 | 后续可映射到 UI 固定文案或 i18n key。 |

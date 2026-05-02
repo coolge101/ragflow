@@ -150,9 +150,13 @@ def ingest_rss_seeds_into_kb(
                 if not ok_r:
                     errs.append(f"{fu}: {msg_r}")
                     continue
-            throttle.wait_before_hop(fu)
             inner_batch = min(100, cap)
-            conn = RSSConnector(fu, batch_size=max(1, inner_batch))
+            conn = RSSConnector(
+                fu,
+                batch_size=max(1, inner_batch),
+                origin_throttle=throttle,
+                robots_preflight=robots_cache,
+            )
             conn.load_credentials({})
             for batch in conn.load_from_state():
                 for doc in batch:

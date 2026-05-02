@@ -103,3 +103,4 @@
 | 2026-05-01 | **§1.3**：**429/503** 重试参数支持 **按状态覆盖**；**`last_error`** 写入 **`[tbox:CODE]`** 前缀（见 **`common/tbox_crawl_last_error.py`**） |
 | 2026-05-01 | **§1.3**：**`static_web`** + **`dataset_id`**：**SSRF 抓取**（`common/tbox_crawl_ssrf_fetch.py`）→ **`FileService.upload_document`** + **`DocumentService.run`**；**`tbox_skip_ingest`**；**`TBOX_CRAWL_INGEST_*`** |
 | 2026-05-01 | **§1.3**：**`rss`** + **`dataset_id`**：**`RSSConnector`** 条目 → **`.txt`** 入库 + 解析队列；**`TBOX_CRAWL_RSS_*`** |
+| 2026-05-01 | **§1.3**：**`RSSConnector`** Feed 拉取（**`ingest_rss_seeds_into_kb`**）对齐 **hop robots**、**`OriginFetchThrottler`**、**429/503 退避** 与 **`TBOX_CRAWL_HTTP_USER_AGENT`** |
