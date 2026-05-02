@@ -172,6 +172,7 @@
 | 2026-05-02 | **`tbox_app_isolated`**：**`GET /crawl/tasks/<id>`** 成功；跨租户 **403**；**`POST /crawl/tasks`** **`tenant_id`** 不在允许列表 → **`ARGUMENT_ERROR`** |
 | 2026-05-02 | **`tbox_app_isolated`**：**`GET /crawl/tasks`** 多租户 **`resolve_list_tenant_id`** 错误；**`POST`** 非法 **`source_type`**；**`PATCH`** 跨租户 **403** / **`extra_config`** 非对象；**`DELETE`**/**`POST …/run`** 跨租户 **403** |
 | 2026-05-02 | **`tbox_app_isolated`**：**`POST`** **`run_state`** / **`seed_urls`** / **`extra_config`** / **`dataset_id`**+**`kb_valid`**；**`PATCH`** **`source_type`**/**`run_state`**/**`dataset_id`**/**`seed_urls`** 校验与 **`kb_valid`**；**`_super_create_fake`** 辅助 |
+| 2026-05-02 | **`tbox_app_isolated`**：**`POST`** 空 **`seed_urls`**、**`schedule_cron`** 校验失败、**`dataset_id`** 全空白；**`PATCH`** **404**、**`schedule_cron`**/**`seed_urls`** 空列表错误；**`PATCH`** **`dataset_id: null`** 清空 |
 | 2026-05-01 | `web-tbox`：主布局、全路由与 `RequirePermission`；`/me` 增加 `permissions`（契约 **v3**）；`TBOX_ENV_AND_VERSIONS.md` §2 填基线 commit；§9.0 S3 更新 |
 | 2026-05-01 | `web-tbox`：对话流式、知识库检索、租户用户列表对接官方 API；`TBOX_API_BOUNDARY` / 快速启动 / §9.0 同步 |
 | 2026-05-01 | `web-tbox` 对话：应用列表 + 会话创建/复用 + 引用侧栏（`reference.chunks`）；`chats.ts` / `ReferenceChunks.tsx` |
