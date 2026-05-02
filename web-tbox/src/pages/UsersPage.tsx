@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import { listTenantUsers, type TenantUserRow } from "../api/tenantUsers";
 import { useAuth } from "../context/AuthContext";
 
@@ -48,7 +49,28 @@ export function UsersPage() {
         须与登录用户 id 相同）。
       </p>
 
-      {error ? <p style={{ color: "#b91c1c" }}>{error}</p> : null}
+      {error ? (
+        <div
+          style={{
+            marginBottom: "0.75rem",
+            padding: "0.65rem 0.9rem",
+            borderRadius: 8,
+            border: "1px solid #fecaca",
+            background: "#fef2f2",
+            display: "flex",
+            flexWrap: "wrap",
+            alignItems: "center",
+            gap: "0.65rem",
+          }}
+        >
+          <span style={{ color: "#991b1b", flex: "1 1 12rem" }}>
+            {error} <Link to="/login">去登录</Link>
+          </span>
+          <button type="button" disabled={loading || !tenantId} onClick={() => void load()} style={{ cursor: loading ? "wait" : "pointer" }}>
+            {loading ? "重试中…" : "重试加载"}
+          </button>
+        </div>
+      ) : null}
 
       <p>
         <button type="button" onClick={() => void load()} disabled={loading || !tenantId}>

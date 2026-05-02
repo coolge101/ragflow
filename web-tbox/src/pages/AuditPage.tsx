@@ -25,20 +25,21 @@ export function AuditPage() {
   const [total, setTotal] = useState(0);
   const [logType, setLogType] = useState<"dataset" | "file">("dataset");
   const [logsLoading, setLogsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [kbError, setKbError] = useState<string | null>(null);
+  const [logsError, setLogsError] = useState<string | null>(null);
 
   const reloadKbs = useCallback(async () => {
     setKbLoading(true);
-    setError(null);
+    setKbError(null);
     try {
       const { res, body } = await listDatasets({ page: 1, page_size: 100 });
       if (res.status === 401 || body.code === 401) {
-        setError("未授权");
+        setKbError("未授权");
         setDatasets([]);
         return;
       }
       if (body.code !== 0) {
-        setError(body.message || `错误码 ${body.code}`);
+        setKbError(body.message || `错误码 ${body.code}`);
         setDatasets([]);
         return;
       }
@@ -46,7 +47,7 @@ export function AuditPage() {
       setDatasets(rows);
       setDatasetId((prev) => prev || (rows[0]?.id ? String(rows[0].id) : ""));
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
+      setKbError(e instanceof Error ? e.message : String(e));
       setDatasets([]);
     } finally {
       setKbLoading(false);
@@ -60,7 +61,7 @@ export function AuditPage() {
       return;
     }
     setLogsLoading(true);
-    setError(null);
+    setLogsError(null);
     try {
       const { res, body } = await listIngestionLogs(datasetId, {
         page: 1,
@@ -68,12 +69,12 @@ export function AuditPage() {
         log_type: logType,
       });
       if (res.status === 401 || body.code === 401) {
-        setError("未授权");
+        setLogsError("未授权");
         setLogs([]);
         return;
       }
       if (body.code !== 0) {
-        setError(body.message || `错误码 ${body.code}`);
+        setLogsError(body.message || `错误码 ${body.code}`);
         setLogs([]);
         return;
       }
@@ -81,7 +82,7 @@ export function AuditPage() {
       setLogs(Array.isArray(data?.logs) ? data.logs : []);
       setTotal(typeof data?.total === "number" ? data.total : data?.logs?.length ?? 0);
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
+      setLogsError(e instanceof Error ? e.message : String(e));
       setLogs([]);
     } finally {
       setLogsLoading(false);
@@ -104,11 +105,54 @@ export function AuditPage() {
         <code>log_type=dataset|file</code>）。完整安全审计与 TBOX 扩展见后续迭代。
       </p>
 
-      {error ? (
-        <p style={{ color: "#b91c1c" }}>
-          {error}{" "}
-          <Link to="/login">去登录</Link>
-        </p>
+      {kbError ? (
+        <div
+          style={{
+            marginBottom: "0.75rem",
+            padding: "0.65rem 0.9rem",
+            borderRadius: 8,
+            border: "1px solid #fecaca",
+            background: "#fef2f2",
+            display: "flex",
+            flexWrap: "wrap",
+            alignItems: "center",
+            gap: "0.65rem",
+          }}
+        >
+          <span style={{ color: "#991b1b", flex: "1 1 12rem" }}>
+            知识库列表：{kbError} <Link to="/login">去登录</Link>
+          </span>
+          <button type="button" disabled={kbLoading} onClick={() => void reloadKbs()} style={{ cursor: kbLoading ? "wait" : "pointer" }}>
+            {kbLoading ? "重试中…" : "重试加载知识库"}
+          </button>
+        </div>
+      ) : null}
+      {logsError ? (
+        <div
+          style={{
+            marginBottom: "0.75rem",
+            padding: "0.65rem 0.9rem",
+            borderRadius: 8,
+            border: "1px solid #fecaca",
+            background: "#fef2f2",
+            display: "flex",
+            flexWrap: "wrap",
+            alignItems: "center",
+            gap: "0.65rem",
+          }}
+        >
+          <span style={{ color: "#991b1b", flex: "1 1 12rem" }}>
+            入库日志：{logsError} <Link to="/login">去登录</Link>
+          </span>
+          <button
+            type="button"
+            disabled={logsLoading || !datasetId}
+            onClick={() => void loadLogs()}
+            style={{ cursor: logsLoading ? "wait" : "pointer" }}
+          >
+            {logsLoading ? "重试中…" : "重试加载日志"}
+          </button>
+        </div>
       ) : null}
 
       <div style={{ display: "flex", flexWrap: "wrap", gap: "1rem", alignItems: "center", marginBottom: "1rem" }}>
