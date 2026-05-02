@@ -77,7 +77,7 @@ Workflow 名称、路径触发与职责见 **`docs/TBOX_ENV_AND_VERSIONS.md` §6
 # Harness + 对抗离线用例（与 harness-monitor-unit.yml 一致）
 uv run pytest test/test_harness_monitor.py test/adversarial_tests.py -v --tb=short
 
-# TBOX 爬取 common 单测（与 tbox-crawl-common-unit.yml 一致）
+# TBOX 爬取 common 单测（与 tbox-python-unit.yml 中 crawl_common 矩阵格一致）
 uv run pytest \
   test/unit_test/common/test_tbox_crawl_ssrf_fetch.py \
   test/unit_test/common/test_tbox_crawl_last_error.py \
@@ -87,13 +87,13 @@ uv run pytest \
   test/unit_test/common/test_ssrf_guard.py \
   -v --tb=short
 
-# tbox_crawl_task_service 纯逻辑（与 tbox-task-service-unit.yml 一致）
+# tbox_crawl_task_service 纯逻辑（与 tbox-python-unit.yml 中 task_service 矩阵格一致）
 uv run pytest test/unit_test/api/db/services/test_tbox_crawl_task_service.py -v --tb=short
 
-# tbox_crawl_worker 冒烟（与 tbox-crawl-worker-unit.yml 一致）
+# tbox_crawl_worker 冒烟（与 tbox-python-unit.yml 中 crawl_worker 矩阵格一致）
 uv run pytest test/unit_test/rag/svr/test_tbox_crawl_worker.py -v --tb=short
 
-# tbox_app 隔离路由（/health、/contract、/me、/logout；mock crawl_svc：crawl 任务 CRUD + POST …/run 含错误分支；与 tbox-app-routes-unit.yml 一致）
+# tbox_app 隔离路由（/health、/contract、/me、/logout；mock crawl_svc：crawl 任务 CRUD + POST …/run 含错误分支；与 tbox-python-unit.yml 中 app_routes 矩阵格一致）
 # 目录缩小收集范围；`-m tbox_app_isolated` 与包内 conftest 打标一致，缺标会 0 用例失败。
 uv run pytest test/unit_test/api/apps/tbox_app_isolated -m tbox_app_isolated -v --tb=short
 

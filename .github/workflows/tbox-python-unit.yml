@@ -1,0 +1,175 @@
+# TBOX Python unit tests: one workflow, paths-filter + matrix so only affected suites run.
+# Replaces tbox-app-routes-unit, tbox-crawl-worker-unit, tbox-task-service-unit, tbox-crawl-common-unit.
+name: tbox-python-unit
+permissions:
+  contents: read
+
+on:
+  pull_request:
+    paths:
+      - "api/apps/tbox_app.py"
+      - "test/unit_test/api/apps/tbox_app_isolated/**"
+      - "api/constants.py"
+      - "rag/svr/tbox_crawl_worker.py"
+      - "test/unit_test/rag/svr/test_tbox_crawl_worker.py"
+      - "api/db/services/tbox_crawl_task_service.py"
+      - "test/unit_test/api/db/services/test_tbox_crawl_task_service.py"
+      - "common/tbox_crawl_ssrf_fetch.py"
+      - "common/tbox_crawl_last_error.py"
+      - "common/tbox_crawl_robots.py"
+      - "common/tbox_crawl_http_probe.py"
+      - "common/ssrf_guard.py"
+      - "common/tbox_crawl_origin_throttle.py"
+      - "test/unit_test/common/test_tbox_crawl_ssrf_fetch.py"
+      - "test/unit_test/common/test_tbox_crawl_last_error.py"
+      - "test/unit_test/common/test_tbox_crawl_origin_throttle.py"
+      - "test/unit_test/common/test_tbox_crawl_robots.py"
+      - "test/unit_test/common/test_tbox_crawl_http_probe.py"
+      - "test/unit_test/common/test_ssrf_guard.py"
+      - "pyproject.toml"
+      - "uv.lock"
+      - ".github/workflows/tbox-python-unit.yml"
+  push:
+    branches:
+      - main
+      - "*.*.*"
+    paths:
+      - "api/apps/tbox_app.py"
+      - "test/unit_test/api/apps/tbox_app_isolated/**"
+      - "api/constants.py"
+      - "rag/svr/tbox_crawl_worker.py"
+      - "test/unit_test/rag/svr/test_tbox_crawl_worker.py"
+      - "api/db/services/tbox_crawl_task_service.py"
+      - "test/unit_test/api/db/services/test_tbox_crawl_task_service.py"
+      - "common/tbox_crawl_ssrf_fetch.py"
+      - "common/tbox_crawl_last_error.py"
+      - "common/tbox_crawl_robots.py"
+      - "common/tbox_crawl_http_probe.py"
+      - "common/ssrf_guard.py"
+      - "common/tbox_crawl_origin_throttle.py"
+      - "test/unit_test/common/test_tbox_crawl_ssrf_fetch.py"
+      - "test/unit_test/common/test_tbox_crawl_last_error.py"
+      - "test/unit_test/common/test_tbox_crawl_origin_throttle.py"
+      - "test/unit_test/common/test_tbox_crawl_robots.py"
+      - "test/unit_test/common/test_tbox_crawl_http_probe.py"
+      - "test/unit_test/common/test_ssrf_guard.py"
+      - "pyproject.toml"
+      - "uv.lock"
+      - ".github/workflows/tbox-python-unit.yml"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  paths_filter:
+    name: paths filter
+    runs-on: ubuntu-latest
+    outputs:
+      app_routes: ${{ steps.filter.outputs.app_routes }}
+      crawl_worker: ${{ steps.filter.outputs.crawl_worker }}
+      task_service: ${{ steps.filter.outputs.task_service }}
+      crawl_common: ${{ steps.filter.outputs.crawl_common }}
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            app_routes:
+              - 'api/apps/tbox_app.py'
+              - 'test/unit_test/api/apps/tbox_app_isolated/**'
+              - 'api/constants.py'
+              - 'pyproject.toml'
+              - 'uv.lock'
+              - '.github/workflows/tbox-python-unit.yml'
+            crawl_worker:
+              - 'rag/svr/tbox_crawl_worker.py'
+              - 'test/unit_test/rag/svr/test_tbox_crawl_worker.py'
+              - 'pyproject.toml'
+              - 'uv.lock'
+              - '.github/workflows/tbox-python-unit.yml'
+            task_service:
+              - 'api/db/services/tbox_crawl_task_service.py'
+              - 'test/unit_test/api/db/services/test_tbox_crawl_task_service.py'
+              - 'pyproject.toml'
+              - 'uv.lock'
+              - '.github/workflows/tbox-python-unit.yml'
+            crawl_common:
+              - 'common/tbox_crawl_ssrf_fetch.py'
+              - 'common/tbox_crawl_last_error.py'
+              - 'common/tbox_crawl_robots.py'
+              - 'common/tbox_crawl_http_probe.py'
+              - 'common/ssrf_guard.py'
+              - 'common/tbox_crawl_origin_throttle.py'
+              - 'test/unit_test/common/test_tbox_crawl_ssrf_fetch.py'
+              - 'test/unit_test/common/test_tbox_crawl_last_error.py'
+              - 'test/unit_test/common/test_tbox_crawl_origin_throttle.py'
+              - 'test/unit_test/common/test_tbox_crawl_robots.py'
+              - 'test/unit_test/common/test_tbox_crawl_http_probe.py'
+              - 'test/unit_test/common/test_ssrf_guard.py'
+              - 'pyproject.toml'
+              - 'uv.lock'
+              - '.github/workflows/tbox-python-unit.yml'
+
+  pytest:
+    name: pytest ${{ matrix.suite }}
+    needs: paths_filter
+    if: |
+      (matrix.suite == 'app_routes' && needs.paths_filter.outputs.app_routes == 'true') ||
+      (matrix.suite == 'crawl_worker' && needs.paths_filter.outputs.crawl_worker == 'true') ||
+      (matrix.suite == 'task_service' && needs.paths_filter.outputs.task_service == 'true') ||
+      (matrix.suite == 'crawl_common' && needs.paths_filter.outputs.crawl_common == 'true')
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        suite:
+          - app_routes
+          - crawl_worker
+          - task_service
+          - crawl_common
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v6
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: Sync test dependencies
+        run: uv sync --python 3.12 --group test --frozen
+
+      - name: Run unit tests
+        run: |
+          set -eux
+          case "${{ matrix.suite }}" in
+            app_routes)
+              uv run pytest test/unit_test/api/apps/tbox_app_isolated -m tbox_app_isolated -v --tb=short
+              ;;
+            crawl_worker)
+              uv run pytest test/unit_test/rag/svr/test_tbox_crawl_worker.py -v --tb=short
+              ;;
+            task_service)
+              uv run pytest test/unit_test/api/db/services/test_tbox_crawl_task_service.py -v --tb=short
+              ;;
+            crawl_common)
+              uv run pytest \
+                test/unit_test/common/test_tbox_crawl_ssrf_fetch.py \
+                test/unit_test/common/test_tbox_crawl_last_error.py \
+                test/unit_test/common/test_tbox_crawl_origin_throttle.py \
+                test/unit_test/common/test_tbox_crawl_robots.py \
+                test/unit_test/common/test_tbox_crawl_http_probe.py \
+                test/unit_test/common/test_ssrf_guard.py \
+                -v --tb=short
+              ;;
+            *)
+              echo "unknown suite: ${{ matrix.suite }}" >&2
+              exit 1
+              ;;
+          esac
