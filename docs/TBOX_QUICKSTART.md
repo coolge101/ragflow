@@ -96,6 +96,9 @@ uv run pytest test/unit_test/rag/svr/test_tbox_crawl_worker.py -v --tb=short
 # tbox_app 隔离路由（/health、/contract、/me、/logout；mock crawl_svc：crawl 任务 CRUD + POST …/run 含错误分支；与 tbox-app-routes-unit.yml 一致）
 # 目录缩小收集范围；`-m tbox_app_isolated` 与包内 conftest 打标一致，缺标会 0 用例失败。
 uv run pytest test/unit_test/api/apps/tbox_app_isolated -m tbox_app_isolated -v --tb=short
+
+# 仅 crawl 相关用例（子 marker：`tbox_app_crawl`，在 `conftest.py` 按文件名自动附加）
+uv run pytest test/unit_test/api/apps/tbox_app_isolated -m "tbox_app_isolated and tbox_app_crawl" -v --tb=short
 ```
 
 **说明**：重型 **`harness_engineering`**（对抗 + Docker 等）**不**随 PR 触发，见 **`docs/TBOX_KB_DELIVERY_HARNESS.md`** §7.3；发版前仍按该 workflow 或运维流程执行。

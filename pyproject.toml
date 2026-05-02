@@ -229,6 +229,9 @@ markers = [
     "asyncio: mark test as async",
     "adversarial: live HTTP adversarial tests (enable via RAGFLOW_ADVERSARIAL_TESTS)",
     "tbox_app_isolated: isolated Quart tbox_app route tests (stubbed api.apps; no full api.apps import)",
+    "tbox_app_crawl: crawl route tests under tbox_app_isolated (auto-applied by conftest)",
+    "tbox_app_session: /me /logout route tests under tbox_app_isolated (auto-applied by conftest)",
+    "tbox_app_public: health/contract/permissions helpers under tbox_app_isolated (auto-applied by conftest)",
 ]
 
 # Test collection and runtime configuration

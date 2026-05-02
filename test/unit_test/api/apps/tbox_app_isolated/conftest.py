@@ -33,9 +33,20 @@ from ._shared import TBOX_ROUTE_TEST_USER
 _PKG_DIR = Path(__file__).resolve().parent
 
 
+def _secondary_markers_for_test_file(name: str) -> list[pytest.MarkDecorator]:
+    """Optional sub-markers so CI or devs can run e.g. ``-m 'tbox_app_isolated and tbox_app_crawl'``."""
+    if name.startswith("test_crawl_"):
+        return [pytest.mark.tbox_app_crawl]
+    if name == "test_session_routes.py":
+        return [pytest.mark.tbox_app_session]
+    if name == "test_permissions_and_public.py":
+        return [pytest.mark.tbox_app_public]
+    return []
+
+
 def pytest_collection_modifyitems(config, items):
     """Tag every test module under this package so ``-m tbox_app_isolated`` works from repo root."""
-    mark = pytest.mark.tbox_app_isolated
+    root_mark = pytest.mark.tbox_app_isolated
     for item in items:
         path = getattr(item, "path", None)
         if path is None:
@@ -46,7 +57,10 @@ def pytest_collection_modifyitems(config, items):
         except ValueError:
             continue
         if item.get_closest_marker("tbox_app_isolated") is None:
-            item.add_marker(mark)
+            item.add_marker(root_mark)
+        for m in _secondary_markers_for_test_file(path.name):
+            if item.get_closest_marker(m.name) is None:
+                item.add_marker(m)
 
 
 def repo_root() -> Path:
