@@ -33,7 +33,7 @@ from common.tbox_crawl_origin_throttle import OriginFetchThrottler
 
 _MAX_REDIRECTS = 10
 _REDIRECT_STATUSES = frozenset({301, 302, 303, 307, 308})
-_RETRY_STATUSES = frozenset({429, 503})
+_RETRY_STATUSES = frozenset({429, 502, 503})
 _DEFAULT_UA = os.environ.get(
     "TBOX_CRAWL_HTTP_USER_AGENT",
     "TBOX-RAGFlow-Crawl/1.0 (+https://github.com/infiniflow/ragflow)",
@@ -49,6 +49,10 @@ def _retry_max_for_status(status_code: int) -> int:
         v = os.environ.get("TBOX_CRAWL_RETRY_MAX_ATTEMPTS_429", "").strip()
         if v != "":
             return max(0, int(v))
+    if status_code == 502:
+        v = os.environ.get("TBOX_CRAWL_RETRY_MAX_ATTEMPTS_502", "").strip()
+        if v != "":
+            return max(0, int(v))
     if status_code == 503:
         v = os.environ.get("TBOX_CRAWL_RETRY_MAX_ATTEMPTS_503", "").strip()
         if v != "":
@@ -61,6 +65,10 @@ def _retry_backoff_base_for_status(status_code: int) -> float:
         v = os.environ.get("TBOX_CRAWL_RETRY_BACKOFF_BASE_429", "").strip()
         if v != "":
             return max(0.0, float(v))
+    if status_code == 502:
+        v = os.environ.get("TBOX_CRAWL_RETRY_BACKOFF_BASE_502", "").strip()
+        if v != "":
+            return max(0.0, float(v))
     if status_code == 503:
         v = os.environ.get("TBOX_CRAWL_RETRY_BACKOFF_BASE_503", "").strip()
         if v != "":
@@ -71,6 +79,10 @@ def _retry_backoff_base_for_status(status_code: int) -> float:
 def _retry_after_cap_for_status(status_code: int) -> float:
     if status_code == 429:
         v = os.environ.get("TBOX_CRAWL_RETRY_AFTER_CAP_SEC_429", "").strip()
+        if v != "":
+            return max(0.0, float(v))
+    if status_code == 502:
+        v = os.environ.get("TBOX_CRAWL_RETRY_AFTER_CAP_SEC_502", "").strip()
         if v != "":
             return max(0.0, float(v))
     if status_code == 503:

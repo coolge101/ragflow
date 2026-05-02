@@ -53,6 +53,13 @@ class TestTboxCrawlSsrfFetch(unittest.TestCase):
             self.assertAlmostEqual(_retry_delay_seconds(r, 0), 3.0)
             self.assertAlmostEqual(_retry_delay_seconds(r, 1), 6.0)
 
+    def test_retry_backoff_base_502_override(self):
+        r = requests.Response()
+        r.status_code = 502
+        with patch.dict(os.environ, {"TBOX_CRAWL_RETRY_BACKOFF_BASE_502": "2.5"}, clear=False):
+            self.assertAlmostEqual(_retry_delay_seconds(r, 0), 2.5)
+            self.assertAlmostEqual(_retry_delay_seconds(r, 1), 5.0)
+
 
 if __name__ == "__main__":
     unittest.main()
