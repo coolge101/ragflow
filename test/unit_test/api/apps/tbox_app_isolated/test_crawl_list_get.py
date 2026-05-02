@@ -352,6 +352,30 @@ async def test_crawl_tasks_get_server_error_when_user_may_access_task_raises(tbo
 
 @pytest.mark.p2
 @pytest.mark.asyncio
+async def test_crawl_tasks_get_server_error_when_tenant_ids_for_crawl_raises(tbox_quart_app, monkeypatch: pytest.MonkeyPatch):
+    app, mod = tbox_quart_app
+    monkeypatch.setattr(mod, "_active_tenant_memberships", lambda _uid: [])
+
+    def tenant_ids_for_crawl(_u, _s):
+        raise RuntimeError("get scope failed")
+
+    fake = SimpleNamespace(
+        tenant_ids_for_crawl=tenant_ids_for_crawl,
+        get_task=lambda _tid: None,
+        user_may_access_task=lambda t, allowed: True,
+        task_row_to_dict=lambda t: {},
+    )
+    monkeypatch.setattr(mod, "crawl_svc", fake)
+    TBOX_ROUTE_TEST_USER.is_superuser = True
+    async with app.test_client() as client:
+        resp = await client.get(f"/{API_VERSION}/tbox/crawl/tasks/gw")
+    data = await resp.get_json()
+    assert data["code"] == RetCode.EXCEPTION_ERROR
+    assert "get scope failed" in data["message"]
+
+
+@pytest.mark.p2
+@pytest.mark.asyncio
 async def test_crawl_tasks_get_ok(tbox_quart_app, monkeypatch: pytest.MonkeyPatch):
     app, mod = tbox_quart_app
     monkeypatch.setattr(mod, "_active_tenant_memberships", lambda _uid: [])

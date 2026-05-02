@@ -181,6 +181,7 @@
 | 2026-05-02 | **`tbox_app_isolated`**：从 **`test_crawl_create_post`** 移除误并入的 **`PATCH`** 用例（与 **`test_crawl_patch`** 重复）；补 **`tenant_ids_for_crawl`**/**`get_task`** 早抛、**`POST`** 省略 **`tenant_id`** 时默认 **`current_user.id`**、**`run`** 成功后 **`task_row_to_dict`** 抛错、未知 **`role`** → 空权限 |
 | 2026-05-02 | **`tbox_app_isolated`**：补 **`resolve_list_tenant_id`**/**`user_may_access_task`**/**`get_request_json`** 抛错、**`POST`** 创建后 **`task_row_to_dict`** 抛错、**`PATCH`** 更新后二次 **`get_task`** 抛错、**`run`** 的 **`RuntimeError`** 分支里 **`record_worker_tick`** 抛错、租户行缺 **`role`** → 空权限 |
 | 2026-05-02 | **`tbox_app_isolated`**：**`PATCH`/`DELETE`/`POST …/run`** 上 **`tenant_ids_for_crawl`**/**`user_may_access_task`** 抛错；**`POST`** 体 **`get_request_json`** 抛错；**`run`** 成功后二次 **`get_task`** 为 **`None`** → 响应 **`data: null`**；**`invite`+`normal`** 多租户走 **`normal`** 权限包 |
+| 2026-05-02 | **`tbox_app_isolated`**：**`GET /crawl/tasks/<id>`** 上 **`tenant_ids_for_crawl`** 抛错；**`POST`** 超管显式 **`tenant_id`** **`strip`**、**`kb_valid_for_tenant`**/**`validate_schedule_cron`** 抛错；**`PATCH`** **`kb_valid_for_tenant`** 抛错；**`role: ""`** 与 **`/contract`** **`data`** 键集合断言 |
 | 2026-05-01 | `web-tbox`：主布局、全路由与 `RequirePermission`；`/me` 增加 `permissions`（契约 **v3**）；`TBOX_ENV_AND_VERSIONS.md` §2 填基线 commit；§9.0 S3 更新 |
 | 2026-05-01 | `web-tbox`：对话流式、知识库检索、租户用户列表对接官方 API；`TBOX_API_BOUNDARY` / 快速启动 / §9.0 同步 |
 | 2026-05-01 | `web-tbox` 对话：应用列表 + 会话创建/复用 + 引用侧栏（`reference.chunks`）；`chats.ts` / `ReferenceChunks.tsx` |

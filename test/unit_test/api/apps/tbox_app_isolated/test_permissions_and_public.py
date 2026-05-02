@@ -83,6 +83,11 @@ def test_tbox_permissions_missing_role_key_yields_empty(tbox_module):
 
 
 @pytest.mark.p2
+def test_tbox_permissions_empty_role_string_yields_empty(tbox_module):
+    assert tbox_module._tbox_permissions_for_tenants(False, [{"tenant_id": "t1", "role": ""}]) == []
+
+
+@pytest.mark.p2
 def test_tbox_permissions_normal_plus_invite_uses_normal_bundle(tbox_module):
     from api.db import UserTenantRole
 
@@ -140,3 +145,4 @@ async def test_tbox_contract(tbox_quart_app):
     assert body["data"]["tbox_api_contract_version"] == mod.TBOX_API_CONTRACT_VERSION
     assert "TBOX_API_BOUNDARY" in body["data"]["docs"]
     assert "TBOX_KB_DELIVERY_HARNESS" in body["data"]["delivery_harness"]
+    assert set(body["data"]) == {"tbox_api_contract_version", "docs", "delivery_harness"}

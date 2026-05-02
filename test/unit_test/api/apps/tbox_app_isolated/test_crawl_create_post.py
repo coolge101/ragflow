@@ -312,6 +312,137 @@ async def test_crawl_tasks_create_uses_route_user_id_when_tenant_id_omitted(tbox
 
 @pytest.mark.p2
 @pytest.mark.asyncio
+async def test_crawl_tasks_create_strips_explicit_tenant_id_for_superuser(tbox_quart_app, monkeypatch: pytest.MonkeyPatch):
+    app, mod = tbox_quart_app
+    monkeypatch.setattr(mod, "_active_tenant_memberships", lambda _uid: [])
+    captured: dict[str, str] = {}
+
+    async def body():
+        return {
+            "name": "with-tenant",
+            "tenant_id": "  other-tenant  ",
+            "source_type": "static_web",
+            "seed_urls": ["https://example.com/doc"],
+        }
+
+    created = SimpleNamespace(
+        id="tid-2",
+        tenant_id="other-tenant",
+        name="with-tenant",
+        source_type="static_web",
+        seed_urls=["https://example.com/doc"],
+        schedule_cron="",
+        enabled=False,
+        run_state="draft",
+        last_error="",
+        extra_config={},
+        created_by="tbox-route-test-user",
+        create_time=1,
+        update_time=1,
+        status="1",
+        dataset_id=None,
+    )
+
+    def create_task(**kwargs):
+        captured["tenant_id"] = kwargs["tenant_id"]
+        return created
+
+    fake = SimpleNamespace(
+        tenant_ids_for_crawl=lambda uid, is_sup: None,
+        ALLOWED_SOURCE_TYPES=frozenset({"static_web", "rss"}),
+        ALLOWED_RUN_STATES=frozenset({"draft", "ready", "paused"}),
+        validate_seed_urls=lambda urls: (["https://example.com/doc"], None),
+        validate_schedule_cron=lambda s: None,
+        kb_valid_for_tenant=lambda kb, ten: True,
+        create_task=create_task,
+        task_row_to_dict=lambda t: {"id": t.id, "tenant_id": t.tenant_id},
+    )
+    monkeypatch.setattr(mod, "crawl_svc", fake)
+    monkeypatch.setattr(mod, "get_request_json", body)
+    TBOX_ROUTE_TEST_USER.is_superuser = True
+    async with app.test_client() as client:
+        resp = await client.post(f"/{API_VERSION}/tbox/crawl/tasks")
+    data = await resp.get_json()
+    assert data["code"] == 0
+    assert captured["tenant_id"] == "other-tenant"
+
+
+@pytest.mark.p2
+@pytest.mark.asyncio
+async def test_crawl_tasks_create_server_error_when_kb_valid_for_tenant_raises(tbox_quart_app, monkeypatch: pytest.MonkeyPatch):
+    app, mod = tbox_quart_app
+    monkeypatch.setattr(mod, "_active_tenant_memberships", lambda _uid: [])
+
+    async def body():
+        return {
+            "name": "kb-check",
+            "source_type": "static_web",
+            "seed_urls": ["https://example.com/kb"],
+            "dataset_id": "kb-1",
+        }
+
+    def kb_valid_for_tenant(_kb, _ten):
+        raise RuntimeError("kb lookup failed")
+
+    fake = SimpleNamespace(
+        tenant_ids_for_crawl=lambda uid, is_sup: None,
+        ALLOWED_SOURCE_TYPES=frozenset({"static_web", "rss"}),
+        ALLOWED_RUN_STATES=frozenset({"draft", "ready", "paused"}),
+        validate_seed_urls=lambda urls: (["https://example.com/kb"], None),
+        validate_schedule_cron=lambda s: None,
+        kb_valid_for_tenant=kb_valid_for_tenant,
+        create_task=lambda **kwargs: SimpleNamespace(),
+        task_row_to_dict=lambda t: {},
+    )
+    monkeypatch.setattr(mod, "crawl_svc", fake)
+    monkeypatch.setattr(mod, "get_request_json", body)
+    TBOX_ROUTE_TEST_USER.is_superuser = True
+    async with app.test_client() as client:
+        resp = await client.post(f"/{API_VERSION}/tbox/crawl/tasks")
+    data = await resp.get_json()
+    assert data["code"] == RetCode.EXCEPTION_ERROR
+    assert "kb lookup failed" in data["message"]
+
+
+@pytest.mark.p2
+@pytest.mark.asyncio
+async def test_crawl_tasks_create_server_error_when_validate_schedule_cron_raises(tbox_quart_app, monkeypatch: pytest.MonkeyPatch):
+    app, mod = tbox_quart_app
+    monkeypatch.setattr(mod, "_active_tenant_memberships", lambda _uid: [])
+
+    async def body():
+        return {
+            "name": "cron-explode",
+            "source_type": "static_web",
+            "seed_urls": ["https://example.com/c"],
+            "schedule_cron": "* * * * *",
+        }
+
+    def validate_schedule_cron(_s):
+        raise ValueError("cron parser failed")
+
+    fake = SimpleNamespace(
+        tenant_ids_for_crawl=lambda uid, is_sup: None,
+        ALLOWED_SOURCE_TYPES=frozenset({"static_web", "rss"}),
+        ALLOWED_RUN_STATES=frozenset({"draft", "ready", "paused"}),
+        validate_seed_urls=lambda urls: (["https://example.com/c"], None),
+        validate_schedule_cron=validate_schedule_cron,
+        kb_valid_for_tenant=lambda kb, ten: True,
+        create_task=lambda **kwargs: SimpleNamespace(),
+        task_row_to_dict=lambda t: {},
+    )
+    monkeypatch.setattr(mod, "crawl_svc", fake)
+    monkeypatch.setattr(mod, "get_request_json", body)
+    TBOX_ROUTE_TEST_USER.is_superuser = True
+    async with app.test_client() as client:
+        resp = await client.post(f"/{API_VERSION}/tbox/crawl/tasks")
+    data = await resp.get_json()
+    assert data["code"] == RetCode.EXCEPTION_ERROR
+    assert "cron parser failed" in data["message"]
+
+
+@pytest.mark.p2
+@pytest.mark.asyncio
 async def test_crawl_tasks_create_server_error_when_task_row_to_dict_raises(tbox_quart_app, monkeypatch: pytest.MonkeyPatch):
     app, mod = tbox_quart_app
     monkeypatch.setattr(mod, "_active_tenant_memberships", lambda _uid: [])

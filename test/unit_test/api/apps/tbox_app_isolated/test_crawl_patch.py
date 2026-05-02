@@ -493,6 +493,38 @@ async def test_crawl_tasks_patch_dataset_kb_invalid(tbox_quart_app, monkeypatch:
 
 @pytest.mark.p2
 @pytest.mark.asyncio
+async def test_crawl_tasks_patch_server_error_when_kb_valid_for_tenant_raises(tbox_quart_app, monkeypatch: pytest.MonkeyPatch):
+    app, mod = tbox_quart_app
+    monkeypatch.setattr(mod, "_active_tenant_memberships", lambda _uid: [])
+    row = patchable_row("p9b")
+    st, rs = crawl_allowed_sets()
+
+    async def body():
+        return {"dataset_id": "kb-ok"}
+
+    def kb_valid_for_tenant(_kb, _tid):
+        raise OSError("kb check crashed")
+
+    fake = SimpleNamespace(
+        tenant_ids_for_crawl=lambda uid, is_sup: None,
+        get_task=lambda tid: row if tid == "p9b" else None,
+        user_may_access_task=lambda t, allowed: True,
+        ALLOWED_SOURCE_TYPES=st,
+        ALLOWED_RUN_STATES=rs,
+        kb_valid_for_tenant=kb_valid_for_tenant,
+    )
+    monkeypatch.setattr(mod, "crawl_svc", fake)
+    monkeypatch.setattr(mod, "get_request_json", body)
+    TBOX_ROUTE_TEST_USER.is_superuser = True
+    async with app.test_client() as client:
+        resp = await client.patch(f"/{API_VERSION}/tbox/crawl/tasks/p9b")
+    data = await resp.get_json()
+    assert data["code"] == RetCode.EXCEPTION_ERROR
+    assert "kb check crashed" in data["message"]
+
+
+@pytest.mark.p2
+@pytest.mark.asyncio
 async def test_crawl_tasks_patch_seed_urls_validate_error(tbox_quart_app, monkeypatch: pytest.MonkeyPatch):
     app, mod = tbox_quart_app
     monkeypatch.setattr(mod, "_active_tenant_memberships", lambda _uid: [])
