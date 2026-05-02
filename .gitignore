@@ -52,6 +52,16 @@ uv-x86_64*.tar.gz
 .venv
 docker/data
 
+# Nested full-repo checkouts / local platform trees (accidental copies; keep this repo lean)
+docker/ragflow/
+tbox-ragflow-platform/
+
+# Compose / editor backups under docker/
+docker/*.backup
+
+# Local agent chat exports (not shipped product docs)
+docs/ragflow-dev-chat-*.md
+
 # OceanBase data and conf
 docker/oceanbase/conf
 docker/oceanbase/data
