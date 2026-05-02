@@ -6,9 +6,12 @@ on:
   pull_request:
     paths:
       - "common/tbox_crawl_ssrf_fetch.py"
+      - "common/tbox_crawl_last_error.py"
       - "common/ssrf_guard.py"
       - "common/tbox_crawl_origin_throttle.py"
       - "test/unit_test/common/test_tbox_crawl_ssrf_fetch.py"
+      - "test/unit_test/common/test_tbox_crawl_last_error.py"
+      - "test/unit_test/common/test_tbox_crawl_origin_throttle.py"
       - "pyproject.toml"
       - "uv.lock"
       - ".github/workflows/tbox-crawl-ssrf-unit.yml"
@@ -18,9 +21,12 @@ on:
       - "*.*.*"
     paths:
       - "common/tbox_crawl_ssrf_fetch.py"
+      - "common/tbox_crawl_last_error.py"
       - "common/ssrf_guard.py"
       - "common/tbox_crawl_origin_throttle.py"
       - "test/unit_test/common/test_tbox_crawl_ssrf_fetch.py"
+      - "test/unit_test/common/test_tbox_crawl_last_error.py"
+      - "test/unit_test/common/test_tbox_crawl_origin_throttle.py"
       - "pyproject.toml"
       - "uv.lock"
       - ".github/workflows/tbox-crawl-ssrf-unit.yml"
@@ -31,7 +37,7 @@ concurrency:
 
 jobs:
   pytest:
-    name: pytest tbox crawl ssrf fetch
+    name: pytest tbox crawl common units
     runs-on: ubuntu-latest
     steps:
       - name: Check out code
@@ -46,4 +52,9 @@ jobs:
         run: uv sync --python 3.12 --group test --frozen
 
       - name: Run unit tests
-        run: uv run pytest test/unit_test/common/test_tbox_crawl_ssrf_fetch.py -v --tb=short
+        run: |
+          uv run pytest \
+            test/unit_test/common/test_tbox_crawl_ssrf_fetch.py \
+            test/unit_test/common/test_tbox_crawl_last_error.py \
+            test/unit_test/common/test_tbox_crawl_origin_throttle.py \
+            -v --tb=short
