@@ -89,6 +89,9 @@ uv run pytest \
 
 # tbox_crawl_task_service 纯逻辑（与 tbox-task-service-unit.yml 一致）
 uv run pytest test/unit_test/api/db/services/test_tbox_crawl_task_service.py -v --tb=short
+
+# tbox_crawl_worker 冒烟（与 tbox-crawl-worker-unit.yml 一致）
+uv run pytest test/unit_test/rag/svr/test_tbox_crawl_worker.py -v --tb=short
 ```
 
 **说明**：重型 **`harness_engineering`**（对抗 + Docker 等）**不**随 PR 触发，见 **`docs/TBOX_KB_DELIVERY_HARNESS.md`** §7.3；发版前仍按该 workflow 或运维流程执行。
