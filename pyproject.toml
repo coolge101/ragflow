@@ -227,6 +227,7 @@ markers = [
     "smoke: smoke test cases",
     "auth: authentication UI tests",
     "asyncio: mark test as async",
+    "adversarial: live HTTP adversarial tests (enable via RAGFLOW_ADVERSARIAL_TESTS)",
 ]
 
 # Test collection and runtime configuration

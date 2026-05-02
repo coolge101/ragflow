@@ -37,7 +37,16 @@
 | 客户端建议 | 读取 `tbox_api_contract_version`，**≥4** 时识别 **`crawl.manage`** 等扩展权限键 | 权限全集与语义见 **`docs/TBOX_API_BOUNDARY.md`**。 |
 | 采集任务表 | **`tbox_crawl_task`** | 由 `init_database_tables` 创建；HTTP 见 **`docs/TBOX_API_BOUNDARY.md`** §1.2。 |
 
-## 5. 相关文档
+## 5. Pytest 对抗用例（`test/adversarial_tests.py`）
+
+| 变量 | 作用 |
+|------|------|
+| `RAGFLOW_ADVERSARIAL_TESTS` 或 `TBOX_RUN_ADVERSARIAL` | 置为 `1` / `true` / `yes` / `on` 时，**启用**带 `@pytest.mark.adversarial` 的 **live HTTP** 用例（默认 **跳过**，避免 `pytest test/` 误连本机 API）。 |
+| `RAGFLOW_ADVERSARIAL_URL` | 可选；未设置时 live 用例默认对 **`http://127.0.0.1:9380`** 发请求。 |
+
+CI 中的重型对抗流程仍可通过 `python test/adversarial_tests.py --target …` 生成报告（见 `harness_engineering` workflow）。
+
+## 6. 相关文档
 
 - 总纲与分期：`docs/TBOX_KB_DELIVERY_HARNESS.md`
 - API 边界：`docs/TBOX_API_BOUNDARY.md`
