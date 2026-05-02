@@ -93,7 +93,7 @@ uv run pytest test/unit_test/api/db/services/test_tbox_crawl_task_service.py -v 
 # tbox_crawl_worker 冒烟（与 tbox-crawl-worker-unit.yml 一致）
 uv run pytest test/unit_test/rag/svr/test_tbox_crawl_worker.py -v --tb=short
 
-# tbox_app 隔离路由（/health、/contract；mock crawl_svc：crawl 任务 GET/POST/PATCH/DELETE、POST …/run；与 tbox-app-routes-unit.yml 一致）
+# tbox_app 隔离路由（/health、/contract、/me、/logout；mock crawl_svc：crawl 任务 CRUD + POST …/run 含错误分支；与 tbox-app-routes-unit.yml 一致）
 uv run pytest test/unit_test/api/apps/test_tbox_app_health.py -v --tb=short
 ```
 

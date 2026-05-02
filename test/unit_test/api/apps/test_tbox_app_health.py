@@ -33,8 +33,19 @@ from common.constants import RetCode
 class MutableTboxRouteUser:
     """Bound to ``api.apps.current_user`` before ``tbox_app`` loads; mutate fields per test."""
 
-    id: str = "tbox-route-test-user"
-    is_superuser: bool = True
+    def reset(self) -> None:
+        self.id = "tbox-route-test-user"
+        self.is_superuser = True
+        self.email = "route-tester@example.invalid"
+        self.nickname = "RouteTester"
+        self.access_token = "access-token-intact"
+        self.save_calls = 0
+
+    def __init__(self) -> None:
+        self.reset()
+
+    def save(self) -> None:
+        self.save_calls += 1
 
 
 TBOX_ROUTE_TEST_USER = MutableTboxRouteUser()
@@ -108,11 +119,9 @@ def _load_tbox_module(monkeypatch: pytest.MonkeyPatch):
 
 @pytest.fixture(autouse=True)
 def _reset_mutable_tbox_route_user():
-    TBOX_ROUTE_TEST_USER.id = "tbox-route-test-user"
-    TBOX_ROUTE_TEST_USER.is_superuser = True
+    TBOX_ROUTE_TEST_USER.reset()
     yield
-    TBOX_ROUTE_TEST_USER.id = "tbox-route-test-user"
-    TBOX_ROUTE_TEST_USER.is_superuser = True
+    TBOX_ROUTE_TEST_USER.reset()
 
 
 @pytest.fixture
@@ -501,3 +510,110 @@ async def test_crawl_tasks_run_ok(tbox_quart_app, monkeypatch: pytest.MonkeyPatc
     assert data["data"]["id"] == "r1"
     assert data["data"]["ran"] is True
     assert ticks == ["r1"]
+
+
+@pytest.mark.p2
+@pytest.mark.asyncio
+async def test_tbox_me_returns_profile(tbox_quart_app, monkeypatch: pytest.MonkeyPatch):
+    app, mod = tbox_quart_app
+    tenants = [{"tenant_id": "ten-a", "role": "owner"}]
+    monkeypatch.setattr(mod, "_active_tenant_memberships", lambda uid: tenants if uid == TBOX_ROUTE_TEST_USER.id else [])
+    TBOX_ROUTE_TEST_USER.is_superuser = False
+    TBOX_ROUTE_TEST_USER.email = "me@example.invalid"
+    TBOX_ROUTE_TEST_USER.nickname = "MeNick"
+    async with app.test_client() as client:
+        resp = await client.get(f"/{API_VERSION}/tbox/me")
+    assert resp.status_code == 200
+    data = await resp.get_json()
+    assert data["code"] == 0
+    assert data["data"]["user_id"] == "tbox-route-test-user"
+    assert data["data"]["email"] == "me@example.invalid"
+    assert data["data"]["nickname"] == "MeNick"
+    assert data["data"]["is_superuser"] is False
+    assert data["data"]["tenants"] == tenants
+    assert "crawl.manage" in data["data"]["permissions"]
+
+
+@pytest.mark.p2
+@pytest.mark.asyncio
+async def test_tbox_logout_invalidates_token(tbox_quart_app, monkeypatch: pytest.MonkeyPatch):
+    app, mod = tbox_quart_app
+    logout_calls: list[None] = []
+
+    def logout_spy():
+        logout_calls.append(None)
+
+    monkeypatch.setattr(mod, "logout_user", logout_spy)
+    async with app.test_client() as client:
+        resp = await client.post(f"/{API_VERSION}/tbox/logout")
+    assert resp.status_code == 200
+    data = await resp.get_json()
+    assert data["code"] == 0
+    assert data["message"] == "logged out"
+    assert data["data"]["tbox_api_contract_version"] == mod.TBOX_API_CONTRACT_VERSION
+    assert TBOX_ROUTE_TEST_USER.save_calls == 1
+    assert TBOX_ROUTE_TEST_USER.access_token.startswith("INVALID_")
+    assert logout_calls == [None]
+
+
+@pytest.mark.p2
+@pytest.mark.asyncio
+async def test_crawl_tasks_run_valueerror_not_found(tbox_quart_app, monkeypatch: pytest.MonkeyPatch):
+    app, mod = tbox_quart_app
+    monkeypatch.setattr(mod, "_active_tenant_memberships", lambda _uid: [])
+    row = SimpleNamespace(id="r2", tenant_id="tbox-route-test-user")
+
+    def execute_crawl_task_stub_tick(tid):
+        raise ValueError("task vanished")
+
+    def record_worker_tick(*_a, **_k):
+        raise AssertionError("record_worker_tick should not run")
+
+    fake = SimpleNamespace(
+        tenant_ids_for_crawl=lambda uid, is_sup: None,
+        get_task=lambda tid: row if tid == "r2" else None,
+        user_may_access_task=lambda t, allowed: True,
+        execute_crawl_task_stub_tick=execute_crawl_task_stub_tick,
+        record_worker_tick=record_worker_tick,
+    )
+    monkeypatch.setattr(mod, "crawl_svc", fake)
+    TBOX_ROUTE_TEST_USER.is_superuser = True
+    async with app.test_client() as client:
+        resp = await client.post(f"/{API_VERSION}/tbox/crawl/tasks/r2/run")
+    data = await resp.get_json()
+    assert data["code"] == RetCode.NOT_FOUND
+    assert "vanished" in data["message"]
+
+
+@pytest.mark.p2
+@pytest.mark.asyncio
+async def test_crawl_tasks_run_runtimeerror_records_tick(tbox_quart_app, monkeypatch: pytest.MonkeyPatch):
+    app, mod = tbox_quart_app
+    monkeypatch.setattr(mod, "_active_tenant_memberships", lambda _uid: [])
+    row = SimpleNamespace(id="r3", tenant_id="tbox-route-test-user")
+    tick_args: list[tuple] = []
+
+    def execute_crawl_task_stub_tick(tid):
+        raise RuntimeError("stub failure")
+
+    def record_worker_tick(task_id, *, ok, message):
+        tick_args.append((task_id, ok, message))
+
+    fake = SimpleNamespace(
+        tenant_ids_for_crawl=lambda uid, is_sup: None,
+        get_task=lambda tid: row if tid == "r3" else None,
+        user_may_access_task=lambda t, allowed: True,
+        execute_crawl_task_stub_tick=execute_crawl_task_stub_tick,
+        record_worker_tick=record_worker_tick,
+    )
+    monkeypatch.setattr(mod, "crawl_svc", fake)
+    TBOX_ROUTE_TEST_USER.is_superuser = True
+    async with app.test_client() as client:
+        resp = await client.post(f"/{API_VERSION}/tbox/crawl/tasks/r3/run")
+    data = await resp.get_json()
+    assert data["code"] == RetCode.EXCEPTION_ERROR
+    assert "stub failure" in data["message"]
+    assert len(tick_args) == 1
+    assert tick_args[0][0] == "r3"
+    assert tick_args[0][1] is False
+    assert "[tbox:WORKER_STUB]" in tick_args[0][2]

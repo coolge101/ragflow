@@ -131,7 +131,7 @@
 
 - **`harness_engineering.yml`**：`runs-on: **ubuntu-latest**`；**已移除对 `pull_request` 的触发**，仅在 **push（约定分支）、定时、手动** 时运行，避免将对抗与重型 Docker 步骤绑在 PR 合并门禁上。
 - **对抗测试**：在**发布前**或上述工作流触发时执行质量验证；**首版合入 PR 不以对抗测试为必过项**。
-- **PR 轻量门禁（`ubuntu-latest`，路径触发）**：与上条**独立**，在变更相关路径时于 PR 上运行 **`web-tbox.yml`**（前端 typecheck + build）、**`harness-monitor-unit.yml`**（`HarnessMonitor` + `test/adversarial_tests.py` 离线用例）、**`tbox-crawl-common-unit.yml`**（爬取相关 `test/unit_test/common/test_tbox_crawl_*.py` 等）、**`tbox-task-service-unit.yml`**（**`tbox_crawl_task_service`** 纯逻辑单测）、**`tbox-crawl-worker-unit.yml`**（**`tbox_crawl_worker`** 进程冒烟）、**`tbox-app-routes-unit.yml`**（**`tbox_app`** **`/health`**、**`/contract`**；mock **`crawl_svc`** / **`get_request_json`**：**crawl 任务** **`GET`/`POST`/`PATCH`/`DELETE`**、**`POST .../run`** 等隔离冒烟）。索引见 **`docs/TBOX_ENV_AND_VERSIONS.md`** §6。
+- **PR 轻量门禁（`ubuntu-latest`，路径触发）**：与上条**独立**，在变更相关路径时于 PR 上运行 **`web-tbox.yml`**（前端 typecheck + build）、**`harness-monitor-unit.yml`**（`HarnessMonitor` + `test/adversarial_tests.py` 离线用例）、**`tbox-crawl-common-unit.yml`**（爬取相关 `test/unit_test/common/test_tbox_crawl_*.py` 等）、**`tbox-task-service-unit.yml`**（**`tbox_crawl_task_service`** 纯逻辑单测）、**`tbox-crawl-worker-unit.yml`**（**`tbox_crawl_worker`** 进程冒烟）、**`tbox-app-routes-unit.yml`**（**`tbox_app`** **`/health`**、**`/contract`**、**`/me`**、**`/logout`**；mock **`crawl_svc`** / **`get_request_json`**：**crawl 任务** **`GET`/`POST`/`PATCH`/`DELETE`**、**`POST .../run`**（含错误分支））。索引见 **`docs/TBOX_ENV_AND_VERSIONS.md`** §6。
 - 若后续将部分检查重新纳入 PR，须**先改本文档 §7.3 与 workflow**，再改 CI。
 
 ### 7.4 实施提示（非约束，供排期）
@@ -167,6 +167,7 @@
 | 2026-05-02 | **`test_tbox_app_health`**：可变 **`current_user`** + mock **`crawl_svc`** 覆盖 **`GET /crawl/tasks`**（超管空列表）、**`crawl.manage`** 拒绝、**`GET /crawl/tasks/<id>`** 404；文档 §6 表与快速启动注释同步 |
 | 2026-05-02 | **`test_tbox_app_health`**：**`POST /crawl/tasks`**（**`name`** 必填、成功创建）；stub **`get_request_json`** 改为 **async**；文档 §6 / §7.3 同步 |
 | 2026-05-02 | **`test_tbox_app_health`**：**`PATCH`**（无字段、**`name`** 空、**`name`** 成功）、**`DELETE`**、**`POST .../run`**；文档 §6 / §7.3 同步 |
+| 2026-05-02 | **`test_tbox_app_health`**：**`/me`**、**`/logout`**（可变 **`current_user`** + **`save`**）；**`POST .../run`** 的 **`ValueError`** / **`RuntimeError`**；文档 §6 / §7.3 同步 |
 | 2026-05-01 | `web-tbox`：主布局、全路由与 `RequirePermission`；`/me` 增加 `permissions`（契约 **v3**）；`TBOX_ENV_AND_VERSIONS.md` §2 填基线 commit；§9.0 S3 更新 |
 | 2026-05-01 | `web-tbox`：对话流式、知识库检索、租户用户列表对接官方 API；`TBOX_API_BOUNDARY` / 快速启动 / §9.0 同步 |
 | 2026-05-01 | `web-tbox` 对话：应用列表 + 会话创建/复用 + 引用侧栏（`reference.chunks`）；`chats.ts` / `ReferenceChunks.tsx` |
