@@ -93,6 +93,71 @@ async def test_crawl_tasks_list_tenant_filter_error(tbox_quart_app, monkeypatch:
 
 @pytest.mark.p2
 @pytest.mark.asyncio
+async def test_crawl_tasks_list_passes_dataset_id_and_caps_page_size(tbox_quart_app, monkeypatch: pytest.MonkeyPatch):
+    app, mod = tbox_quart_app
+    monkeypatch.setattr(mod, "_active_tenant_memberships", lambda _uid: [])
+    row = SimpleNamespace(id="L1", tenant_id="t1")
+    list_calls: list[tuple] = []
+
+    def list_tasks(tf, allowed, page, ps, ds):
+        list_calls.append((tf, allowed, page, ps, ds))
+        return (1, [row])
+
+    fake = SimpleNamespace(
+        tenant_ids_for_crawl=lambda uid, is_sup: None,
+        resolve_list_tenant_id=lambda tid, allowed: (tid, None),
+        list_tasks=list_tasks,
+        task_row_to_dict=lambda t: {"id": t.id},
+    )
+    monkeypatch.setattr(mod, "crawl_svc", fake)
+    TBOX_ROUTE_TEST_USER.is_superuser = True
+    async with app.test_client() as client:
+        resp = await client.get(
+            f"/{API_VERSION}/tbox/crawl/tasks",
+            query_string={"dataset_id": "ds-99", "page": "2", "page_size": "500"},
+        )
+    data = await resp.get_json()
+    assert data["code"] == 0
+    assert data["data"]["total"] == 1
+    assert data["data"]["page"] == 2
+    assert data["data"]["page_size"] == 100
+    assert len(list_calls) == 1
+    assert list_calls[0][2] == 2
+    assert list_calls[0][3] == 100
+    assert list_calls[0][4] == "ds-99"
+
+
+@pytest.mark.p2
+@pytest.mark.asyncio
+async def test_crawl_tasks_list_invalid_page_args_fallback(tbox_quart_app, monkeypatch: pytest.MonkeyPatch):
+    app, mod = tbox_quart_app
+    monkeypatch.setattr(mod, "_active_tenant_memberships", lambda _uid: [])
+    list_calls: list[tuple] = []
+
+    def list_tasks(tf, allowed, page, ps, ds):
+        list_calls.append((page, ps))
+        return (0, [])
+
+    fake = SimpleNamespace(
+        tenant_ids_for_crawl=lambda uid, is_sup: None,
+        resolve_list_tenant_id=lambda tid, allowed: (tid, None),
+        list_tasks=list_tasks,
+        task_row_to_dict=lambda t: {},
+    )
+    monkeypatch.setattr(mod, "crawl_svc", fake)
+    TBOX_ROUTE_TEST_USER.is_superuser = True
+    async with app.test_client() as client:
+        resp = await client.get(
+            f"/{API_VERSION}/tbox/crawl/tasks",
+            query_string={"page": "x", "page_size": "y"},
+        )
+    data = await resp.get_json()
+    assert data["code"] == 0
+    assert list_calls == [(1, 20)]
+
+
+@pytest.mark.p2
+@pytest.mark.asyncio
 async def test_crawl_tasks_get_not_found(tbox_quart_app, monkeypatch: pytest.MonkeyPatch):
     app, mod = tbox_quart_app
     monkeypatch.setattr(mod, "_active_tenant_memberships", lambda _uid: [])
@@ -1087,3 +1152,101 @@ async def test_crawl_tasks_patch_clear_dataset_id_null(tbox_quart_app, monkeypat
     assert data["code"] == 0
     assert updates == [{"dataset_id": None}]
     assert data["data"]["dataset_id"] is None
+
+
+@pytest.mark.p2
+@pytest.mark.asyncio
+async def test_crawl_tasks_delete_not_found(tbox_quart_app, monkeypatch: pytest.MonkeyPatch):
+    app, mod = tbox_quart_app
+    monkeypatch.setattr(mod, "_active_tenant_memberships", lambda _uid: [])
+    fake = SimpleNamespace(
+        tenant_ids_for_crawl=lambda uid, is_sup: None,
+        get_task=lambda _tid: None,
+    )
+    monkeypatch.setattr(mod, "crawl_svc", fake)
+    TBOX_ROUTE_TEST_USER.is_superuser = True
+    async with app.test_client() as client:
+        resp = await client.delete(f"/{API_VERSION}/tbox/crawl/tasks/missing-del")
+    data = await resp.get_json()
+    assert data["code"] == RetCode.NOT_FOUND
+
+
+@pytest.mark.p2
+@pytest.mark.asyncio
+async def test_crawl_tasks_patch_enabled_true(tbox_quart_app, monkeypatch: pytest.MonkeyPatch):
+    app, mod = tbox_quart_app
+    monkeypatch.setattr(mod, "_active_tenant_memberships", lambda _uid: [])
+    row = _patchable_row("p14")
+    st, rs = crawl_allowed_sets()
+    updates: list[dict] = []
+
+    async def body():
+        return {"enabled": True}
+
+    def update_task_fields(t, fields):
+        updates.append(dict(fields))
+        for k, v in fields.items():
+            setattr(t, k, v)
+
+    def task_row_to_dict(t):
+        return {"id": t.id, "enabled": bool(getattr(t, "enabled", False))}
+
+    fake = SimpleNamespace(
+        tenant_ids_for_crawl=lambda uid, is_sup: None,
+        get_task=lambda tid: row if tid == "p14" else None,
+        user_may_access_task=lambda t, allowed: True,
+        ALLOWED_SOURCE_TYPES=st,
+        ALLOWED_RUN_STATES=rs,
+        update_task_fields=update_task_fields,
+        task_row_to_dict=task_row_to_dict,
+    )
+    monkeypatch.setattr(mod, "crawl_svc", fake)
+    monkeypatch.setattr(mod, "get_request_json", body)
+    TBOX_ROUTE_TEST_USER.is_superuser = True
+    async with app.test_client() as client:
+        resp = await client.patch(f"/{API_VERSION}/tbox/crawl/tasks/p14")
+    data = await resp.get_json()
+    assert data["code"] == 0
+    assert updates == [{"enabled": True}]
+    assert data["data"]["enabled"] is True
+
+
+@pytest.mark.p2
+@pytest.mark.asyncio
+async def test_crawl_tasks_patch_schedule_cron_ok(tbox_quart_app, monkeypatch: pytest.MonkeyPatch):
+    app, mod = tbox_quart_app
+    monkeypatch.setattr(mod, "_active_tenant_memberships", lambda _uid: [])
+    row = _patchable_row("p15")
+    st, rs = crawl_allowed_sets()
+    updates: list[dict] = []
+
+    async def body():
+        return {"schedule_cron": "0 0 * * *"}
+
+    def update_task_fields(t, fields):
+        updates.append(dict(fields))
+        for k, v in fields.items():
+            setattr(t, k, v)
+
+    def task_row_to_dict(t):
+        return {"id": t.id, "schedule_cron": getattr(t, "schedule_cron", "")}
+
+    fake = SimpleNamespace(
+        tenant_ids_for_crawl=lambda uid, is_sup: None,
+        get_task=lambda tid: row if tid == "p15" else None,
+        user_may_access_task=lambda t, allowed: True,
+        ALLOWED_SOURCE_TYPES=st,
+        ALLOWED_RUN_STATES=rs,
+        validate_schedule_cron=lambda s: None,
+        update_task_fields=update_task_fields,
+        task_row_to_dict=task_row_to_dict,
+    )
+    monkeypatch.setattr(mod, "crawl_svc", fake)
+    monkeypatch.setattr(mod, "get_request_json", body)
+    TBOX_ROUTE_TEST_USER.is_superuser = True
+    async with app.test_client() as client:
+        resp = await client.patch(f"/{API_VERSION}/tbox/crawl/tasks/p15")
+    data = await resp.get_json()
+    assert data["code"] == 0
+    assert updates == [{"schedule_cron": "0 0 * * *"}]
+    assert data["data"]["schedule_cron"] == "0 0 * * *"

@@ -47,6 +47,21 @@ async def test_tbox_me_returns_profile(tbox_quart_app, monkeypatch: pytest.Monke
 
 @pytest.mark.p2
 @pytest.mark.asyncio
+async def test_tbox_me_superuser_full_permissions(tbox_quart_app, monkeypatch: pytest.MonkeyPatch):
+    app, mod = tbox_quart_app
+    monkeypatch.setattr(mod, "_active_tenant_memberships", lambda _uid: [])
+    TBOX_ROUTE_TEST_USER.is_superuser = True
+    async with app.test_client() as client:
+        resp = await client.get(f"/{API_VERSION}/tbox/me")
+    data = await resp.get_json()
+    assert data["code"] == 0
+    assert data["data"]["is_superuser"] is True
+    assert data["data"]["tenants"] == []
+    assert data["data"]["permissions"] == list(mod._TBOX_PERMISSIONS_ALL)
+
+
+@pytest.mark.p2
+@pytest.mark.asyncio
 async def test_tbox_logout_invalidates_token(tbox_quart_app, monkeypatch: pytest.MonkeyPatch):
     app, mod = tbox_quart_app
     logout_calls: list[None] = []
