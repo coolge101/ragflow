@@ -289,6 +289,60 @@ async def test_crawl_tasks_create_uses_route_user_id_when_tenant_id_omitted(tbox
 
 @pytest.mark.p2
 @pytest.mark.asyncio
+async def test_crawl_tasks_create_server_error_when_task_row_to_dict_raises(tbox_quart_app, monkeypatch: pytest.MonkeyPatch):
+    app, mod = tbox_quart_app
+    monkeypatch.setattr(mod, "_active_tenant_memberships", lambda _uid: [])
+
+    async def body():
+        return {
+            "name": "serialize-break",
+            "source_type": "static_web",
+            "seed_urls": ["https://example.com/z"],
+        }
+
+    created = SimpleNamespace(
+        id="new-2",
+        tenant_id="tbox-route-test-user",
+        name="serialize-break",
+        source_type="static_web",
+        seed_urls=["https://example.com/z"],
+        schedule_cron="",
+        enabled=False,
+        run_state="draft",
+        last_error="",
+        extra_config={},
+        created_by="tbox-route-test-user",
+        create_time=1,
+        update_time=1,
+        status="1",
+        dataset_id=None,
+    )
+
+    def task_row_to_dict(_t):
+        raise TypeError("cannot serialize row")
+
+    fake = SimpleNamespace(
+        tenant_ids_for_crawl=lambda uid, is_sup: None,
+        ALLOWED_SOURCE_TYPES=frozenset({"static_web", "rss"}),
+        ALLOWED_RUN_STATES=frozenset({"draft", "ready", "paused"}),
+        validate_seed_urls=lambda urls: (["https://example.com/z"], None),
+        validate_schedule_cron=lambda s: None,
+        kb_valid_for_tenant=lambda kb, ten: True,
+        create_task=lambda **kwargs: created,
+        task_row_to_dict=task_row_to_dict,
+    )
+    monkeypatch.setattr(mod, "crawl_svc", fake)
+    monkeypatch.setattr(mod, "get_request_json", body)
+    TBOX_ROUTE_TEST_USER.is_superuser = True
+    async with app.test_client() as client:
+        resp = await client.post(f"/{API_VERSION}/tbox/crawl/tasks")
+    data = await resp.get_json()
+    assert data["code"] == RetCode.EXCEPTION_ERROR
+    assert "cannot serialize row" in data["message"]
+
+
+@pytest.mark.p2
+@pytest.mark.asyncio
 async def test_crawl_tasks_create_invalid_run_state(tbox_quart_app, monkeypatch: pytest.MonkeyPatch):
     app, mod = tbox_quart_app
     monkeypatch.setattr(mod, "_active_tenant_memberships", lambda _uid: [])

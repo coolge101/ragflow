@@ -78,6 +78,11 @@ def test_tbox_permissions_unknown_role_yields_empty(tbox_module):
 
 
 @pytest.mark.p2
+def test_tbox_permissions_missing_role_key_yields_empty(tbox_module):
+    assert tbox_module._tbox_permissions_for_tenants(False, [{"tenant_id": "t1"}]) == []
+
+
+@pytest.mark.p2
 def test_tbox_permissions_normal_lacks_ops_perms(tbox_module):
     from api.db import UserTenantRole
 

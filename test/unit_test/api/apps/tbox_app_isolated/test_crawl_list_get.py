@@ -232,6 +232,30 @@ async def test_crawl_tasks_list_server_error_when_tenant_ids_for_crawl_raises(tb
 
 @pytest.mark.p2
 @pytest.mark.asyncio
+async def test_crawl_tasks_list_server_error_when_resolve_list_tenant_id_raises(tbox_quart_app, monkeypatch: pytest.MonkeyPatch):
+    app, mod = tbox_quart_app
+    monkeypatch.setattr(mod, "_active_tenant_memberships", lambda _uid: [])
+
+    def resolve_list_tenant_id(_tid, _allowed):
+        raise ValueError("resolve crashed")
+
+    fake = SimpleNamespace(
+        tenant_ids_for_crawl=lambda uid, is_sup: None,
+        resolve_list_tenant_id=resolve_list_tenant_id,
+        list_tasks=lambda *_a, **_k: (0, []),
+        task_row_to_dict=lambda t: {},
+    )
+    monkeypatch.setattr(mod, "crawl_svc", fake)
+    TBOX_ROUTE_TEST_USER.is_superuser = True
+    async with app.test_client() as client:
+        resp = await client.get(f"/{API_VERSION}/tbox/crawl/tasks")
+    data = await resp.get_json()
+    assert data["code"] == RetCode.EXCEPTION_ERROR
+    assert "resolve crashed" in data["message"]
+
+
+@pytest.mark.p2
+@pytest.mark.asyncio
 async def test_crawl_tasks_list_invalid_page_args_fallback(tbox_quart_app, monkeypatch: pytest.MonkeyPatch):
     app, mod = tbox_quart_app
     monkeypatch.setattr(mod, "_active_tenant_memberships", lambda _uid: [])
@@ -299,6 +323,31 @@ async def test_crawl_tasks_get_server_error_when_get_task_raises(tbox_quart_app,
     data = await resp.get_json()
     assert data["code"] == RetCode.EXCEPTION_ERROR
     assert "db read failed" in data["message"]
+
+
+@pytest.mark.p2
+@pytest.mark.asyncio
+async def test_crawl_tasks_get_server_error_when_user_may_access_task_raises(tbox_quart_app, monkeypatch: pytest.MonkeyPatch):
+    app, mod = tbox_quart_app
+    monkeypatch.setattr(mod, "_active_tenant_memberships", lambda _uid: [])
+    row = SimpleNamespace(id="g8", tenant_id="tbox-route-test-user")
+
+    def user_may_access_task(_t, _allowed):
+        raise RuntimeError("acl layer failed")
+
+    fake = SimpleNamespace(
+        tenant_ids_for_crawl=lambda uid, is_sup: None,
+        get_task=lambda tid: row if tid == "g8" else None,
+        user_may_access_task=user_may_access_task,
+        task_row_to_dict=lambda t: {"id": t.id},
+    )
+    monkeypatch.setattr(mod, "crawl_svc", fake)
+    TBOX_ROUTE_TEST_USER.is_superuser = True
+    async with app.test_client() as client:
+        resp = await client.get(f"/{API_VERSION}/tbox/crawl/tasks/g8")
+    data = await resp.get_json()
+    assert data["code"] == RetCode.EXCEPTION_ERROR
+    assert "acl layer failed" in data["message"]
 
 
 @pytest.mark.p2

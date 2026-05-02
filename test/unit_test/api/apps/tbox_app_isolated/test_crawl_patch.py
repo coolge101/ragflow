@@ -87,6 +87,34 @@ async def test_crawl_tasks_patch_server_error_when_get_task_raises(tbox_quart_ap
 
 @pytest.mark.p2
 @pytest.mark.asyncio
+async def test_crawl_tasks_patch_server_error_when_get_request_json_raises(tbox_quart_app, monkeypatch: pytest.MonkeyPatch):
+    app, mod = tbox_quart_app
+    monkeypatch.setattr(mod, "_active_tenant_memberships", lambda _uid: [])
+    row = patchable_row("p0j")
+    st, rs = crawl_allowed_sets()
+
+    async def bad_body():
+        raise RuntimeError("json read failed")
+
+    fake = SimpleNamespace(
+        tenant_ids_for_crawl=lambda uid, is_sup: None,
+        get_task=lambda tid: row if tid == "p0j" else None,
+        user_may_access_task=lambda t, allowed: True,
+        ALLOWED_SOURCE_TYPES=st,
+        ALLOWED_RUN_STATES=rs,
+    )
+    monkeypatch.setattr(mod, "crawl_svc", fake)
+    monkeypatch.setattr(mod, "get_request_json", bad_body)
+    TBOX_ROUTE_TEST_USER.is_superuser = True
+    async with app.test_client() as client:
+        resp = await client.patch(f"/{API_VERSION}/tbox/crawl/tasks/p0j")
+    data = await resp.get_json()
+    assert data["code"] == RetCode.EXCEPTION_ERROR
+    assert "json read failed" in data["message"]
+
+
+@pytest.mark.p2
+@pytest.mark.asyncio
 async def test_crawl_tasks_patch_name_empty(tbox_quart_app, monkeypatch: pytest.MonkeyPatch):
     app, mod = tbox_quart_app
     monkeypatch.setattr(mod, "_active_tenant_memberships", lambda _uid: [])
@@ -184,6 +212,50 @@ async def test_crawl_tasks_patch_server_error_when_update_task_fields_raises(tbo
     data = await resp.get_json()
     assert data["code"] == RetCode.EXCEPTION_ERROR
     assert "db write failed" in data["message"]
+
+
+@pytest.mark.p2
+@pytest.mark.asyncio
+async def test_crawl_tasks_patch_server_error_when_second_get_task_raises(tbox_quart_app, monkeypatch: pytest.MonkeyPatch):
+    app, mod = tbox_quart_app
+    monkeypatch.setattr(mod, "_active_tenant_memberships", lambda _uid: [])
+    row = SimpleNamespace(id="p3c", tenant_id="tbox-route-test-user", name="old")
+    st, rs = crawl_allowed_sets()
+    gt_calls = [0]
+
+    async def body():
+        return {"name": "  after  "}
+
+    def get_task(tid):
+        if tid != "p3c":
+            return None
+        gt_calls[0] += 1
+        if gt_calls[0] == 1:
+            return row
+        raise OSError("re-read after update failed")
+
+    def update_task_fields(t, fields):
+        for k, v in fields.items():
+            setattr(t, k, v)
+
+    fake = SimpleNamespace(
+        tenant_ids_for_crawl=lambda uid, is_sup: None,
+        get_task=get_task,
+        user_may_access_task=lambda t, allowed: True,
+        ALLOWED_SOURCE_TYPES=st,
+        ALLOWED_RUN_STATES=rs,
+        update_task_fields=update_task_fields,
+        task_row_to_dict=lambda t: {"id": t.id, "name": t.name},
+    )
+    monkeypatch.setattr(mod, "crawl_svc", fake)
+    monkeypatch.setattr(mod, "get_request_json", body)
+    TBOX_ROUTE_TEST_USER.is_superuser = True
+    async with app.test_client() as client:
+        resp = await client.patch(f"/{API_VERSION}/tbox/crawl/tasks/p3c")
+    data = await resp.get_json()
+    assert data["code"] == RetCode.EXCEPTION_ERROR
+    assert "re-read after update failed" in data["message"]
+    assert gt_calls[0] == 2
 
 
 @pytest.mark.p2

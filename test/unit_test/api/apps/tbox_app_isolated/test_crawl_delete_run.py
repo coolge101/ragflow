@@ -258,6 +258,35 @@ async def test_crawl_tasks_run_runtimeerror_records_tick(tbox_quart_app, monkeyp
 
 @pytest.mark.p2
 @pytest.mark.asyncio
+async def test_crawl_tasks_run_server_error_when_record_worker_tick_raises(tbox_quart_app, monkeypatch: pytest.MonkeyPatch):
+    app, mod = tbox_quart_app
+    monkeypatch.setattr(mod, "_active_tenant_memberships", lambda _uid: [])
+    row = SimpleNamespace(id="r3b", tenant_id="tbox-route-test-user")
+
+    def execute_crawl_task_stub_tick(_tid):
+        raise RuntimeError("stub failure")
+
+    def record_worker_tick(*_a, **_k):
+        raise OSError("tick persistence failed")
+
+    fake = SimpleNamespace(
+        tenant_ids_for_crawl=lambda uid, is_sup: None,
+        get_task=lambda tid: row if tid == "r3b" else None,
+        user_may_access_task=lambda t, allowed: True,
+        execute_crawl_task_stub_tick=execute_crawl_task_stub_tick,
+        record_worker_tick=record_worker_tick,
+    )
+    monkeypatch.setattr(mod, "crawl_svc", fake)
+    TBOX_ROUTE_TEST_USER.is_superuser = True
+    async with app.test_client() as client:
+        resp = await client.post(f"/{API_VERSION}/tbox/crawl/tasks/r3b/run")
+    data = await resp.get_json()
+    assert data["code"] == RetCode.EXCEPTION_ERROR
+    assert "tick persistence failed" in data["message"]
+
+
+@pytest.mark.p2
+@pytest.mark.asyncio
 async def test_crawl_tasks_run_server_error_when_refetch_get_task_raises(tbox_quart_app, monkeypatch: pytest.MonkeyPatch):
     app, mod = tbox_quart_app
     monkeypatch.setattr(mod, "_active_tenant_memberships", lambda _uid: [])

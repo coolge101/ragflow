@@ -179,6 +179,7 @@
 | 2026-05-02 | **`pytest` marker** **`tbox_app_isolated`**（**`pyproject.toml`** 注册 + 包 **`conftest.py`** **`pytest_collection_modifyitems`** 自动打标）；**`tbox-app-routes-unit.yml`** / **`TBOX_QUICKSTART`** / **`TBOX_ENV_AND_VERSIONS`** §6 命令与 **`pytest -m tbox_app_isolated`** 对齐 |
 | 2026-05-02 | **`tbox_app_isolated`**：crawl **`GET`/`POST`/`PATCH`/`DELETE`/`POST …/run`** 在 **`list_tasks`** / **`task_row_to_dict`** / **`create_task`** / **`update_task_fields`** / **`soft_delete_task`** / 二次 **`get_task`** 抛错时走 **`server_error_response`**；**`_tbox_permissions_for_tenants`** 跨租户 **`invite`+`owner`** 合并为全量权限 |
 | 2026-05-02 | **`tbox_app_isolated`**：从 **`test_crawl_create_post`** 移除误并入的 **`PATCH`** 用例（与 **`test_crawl_patch`** 重复）；补 **`tenant_ids_for_crawl`**/**`get_task`** 早抛、**`POST`** 省略 **`tenant_id`** 时默认 **`current_user.id`**、**`run`** 成功后 **`task_row_to_dict`** 抛错、未知 **`role`** → 空权限 |
+| 2026-05-02 | **`tbox_app_isolated`**：补 **`resolve_list_tenant_id`**/**`user_may_access_task`**/**`get_request_json`** 抛错、**`POST`** 创建后 **`task_row_to_dict`** 抛错、**`PATCH`** 更新后二次 **`get_task`** 抛错、**`run`** 的 **`RuntimeError`** 分支里 **`record_worker_tick`** 抛错、租户行缺 **`role`** → 空权限 |
 | 2026-05-01 | `web-tbox`：主布局、全路由与 `RequirePermission`；`/me` 增加 `permissions`（契约 **v3**）；`TBOX_ENV_AND_VERSIONS.md` §2 填基线 commit；§9.0 S3 更新 |
 | 2026-05-01 | `web-tbox`：对话流式、知识库检索、租户用户列表对接官方 API；`TBOX_API_BOUNDARY` / 快速启动 / §9.0 同步 |
 | 2026-05-01 | `web-tbox` 对话：应用列表 + 会话创建/复用 + 引用侧栏（`reference.chunks`）；`chats.ts` / `ReferenceChunks.tsx` |
