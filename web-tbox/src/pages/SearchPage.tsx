@@ -1,5 +1,5 @@
-import { type CSSProperties, FormEvent, useCallback, useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { FormEvent, useCallback, useEffect, useState } from "react";
+import { ApiErrorBanner } from "../components/ApiErrorBanner";
 import { listDatasets, type DatasetRow } from "../api/datasets";
 import { searchDataset, type ChunkRow } from "../api/datasetSearch";
 
@@ -13,18 +13,6 @@ function chunkSnippet(c: ChunkRow): string {
   const sim = c.similarity != null ? `相似度 ${Number(c.similarity).toFixed(3)}` : "";
   return [doc && `【${doc}】`, sim, content.slice(0, 500)].filter(Boolean).join("\n");
 }
-
-const errBanner: CSSProperties = {
-  marginTop: "0.75rem",
-  padding: "0.65rem 0.9rem",
-  borderRadius: 8,
-  border: "1px solid #fecaca",
-  background: "#fef2f2",
-  display: "flex",
-  flexWrap: "wrap",
-  alignItems: "center",
-  gap: "0.65rem",
-};
 
 export function SearchPage() {
   const [datasets, setDatasets] = useState<DatasetRow[]>([]);
@@ -114,29 +102,26 @@ export function SearchPage() {
 
       {loadingList ? <p className="muted">加载知识库列表…</p> : null}
       {listError ? (
-        <div style={errBanner}>
-          <span style={{ color: "#991b1b", flex: "1 1 12rem" }}>
-            {listError} <Link to="/login">去登录</Link>
-          </span>
-          <button type="button" disabled={loadingList} onClick={() => void loadDatasets()} style={{ cursor: loadingList ? "wait" : "pointer" }}>
-            {loadingList ? "重试中…" : "重试加载知识库"}
-          </button>
-        </div>
+        <ApiErrorBanner
+          style={{ marginTop: "0.75rem" }}
+          onRetry={() => void loadDatasets()}
+          retryLabel="重试加载知识库"
+          retryDisabled={loadingList}
+          retryBusy={loadingList}
+        >
+          {listError}
+        </ApiErrorBanner>
       ) : null}
       {searchError ? (
-        <div style={errBanner}>
-          <span style={{ color: "#991b1b", flex: "1 1 12rem" }}>
-            {searchError} <Link to="/login">去登录</Link>
-          </span>
-          <button
-            type="button"
-            disabled={loadingSearch || !datasetId || !question.trim()}
-            onClick={() => void runSearch()}
-            style={{ cursor: loadingSearch ? "wait" : "pointer" }}
-          >
-            {loadingSearch ? "重试中…" : "重试检索"}
-          </button>
-        </div>
+        <ApiErrorBanner
+          style={{ marginTop: "0.75rem" }}
+          onRetry={() => void runSearch()}
+          retryLabel="重试检索"
+          retryDisabled={loadingSearch || !datasetId || !question.trim()}
+          retryBusy={loadingSearch}
+        >
+          {searchError}
+        </ApiErrorBanner>
       ) : null}
 
       <form onSubmit={(ev) => void onSearch(ev)} style={{ marginTop: "1rem", display: "flex", flexDirection: "column", gap: 12 }}>

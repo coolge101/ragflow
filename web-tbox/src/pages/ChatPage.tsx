@@ -1,5 +1,4 @@
-import { type CSSProperties, FormEvent, useCallback, useEffect, useRef, useState } from "react";
-import { Link } from "react-router-dom";
+import { FormEvent, useCallback, useEffect, useRef, useState } from "react";
 import { streamChatCompletions } from "../api/chatCompletion";
 import {
   createChatSession,
@@ -10,6 +9,7 @@ import {
   type SessionMessage,
   type SessionSummary,
 } from "../api/chats";
+import { ApiErrorBanner } from "../components/ApiErrorBanner";
 import { ReferenceChunks } from "../components/ReferenceChunks";
 
 type ChatMessage = { role: "user" | "assistant"; content: string };
@@ -33,18 +33,6 @@ function toApiMessages(msgs: ChatMessage[]): Array<{ role: string; content: stri
     ...(i === msgs.length - 1 ? { id: `m-${Date.now()}` } : {}),
   }));
 }
-
-const chatErrBanner: CSSProperties = {
-  marginBottom: "0.75rem",
-  padding: "0.65rem 0.9rem",
-  borderRadius: 8,
-  border: "1px solid #fecaca",
-  background: "#fef2f2",
-  display: "flex",
-  flexWrap: "wrap",
-  alignItems: "center",
-  gap: "0.65rem",
-};
 
 export function ChatPage() {
   const [chats, setChats] = useState<ChatRow[]>([]);
@@ -382,36 +370,29 @@ export function ChatPage() {
         </div>
 
         {chatsError ? (
-          <div style={chatErrBanner} role="alert">
-            <span style={{ color: "#991b1b", flex: "1 1 12rem" }}>
-              应用列表：{chatsError} <Link to="/login">去登录</Link>
-            </span>
-            <button type="button" disabled={chatsLoading} onClick={() => void loadChats()} style={{ cursor: chatsLoading ? "wait" : "pointer" }}>
-              {chatsLoading ? "重试中…" : "重试加载应用"}
-            </button>
-          </div>
+          <ApiErrorBanner
+            onRetry={() => void loadChats()}
+            retryLabel="重试加载应用"
+            retryDisabled={chatsLoading}
+            retryBusy={chatsLoading}
+          >
+            应用列表：{chatsError}
+          </ApiErrorBanner>
         ) : null}
         {selectedChatId && sessionsError ? (
-          <div style={chatErrBanner} role="alert">
-            <span style={{ color: "#991b1b", flex: "1 1 12rem" }}>
-              会话列表：{sessionsError} <Link to="/login">去登录</Link>
-            </span>
-            <button
-              type="button"
-              disabled={sessionsLoading}
-              onClick={() => void reloadSessions()}
-              style={{ cursor: sessionsLoading ? "wait" : "pointer" }}
-            >
-              {sessionsLoading ? "重试中…" : "重试加载会话"}
-            </button>
-          </div>
+          <ApiErrorBanner
+            onRetry={() => void reloadSessions()}
+            retryLabel="重试加载会话"
+            retryDisabled={sessionsLoading}
+            retryBusy={sessionsLoading}
+          >
+            会话列表：{sessionsError}
+          </ApiErrorBanner>
         ) : null}
         {error ? (
-          <div style={{ ...chatErrBanner, marginBottom: "1rem" }} role="alert">
-            <span style={{ color: "#991b1b", flex: "1 1 12rem" }}>
-              {error} <Link to="/login">去登录</Link>
-            </span>
-          </div>
+          <ApiErrorBanner style={{ marginBottom: "1rem" }}>
+            {error}
+          </ApiErrorBanner>
         ) : null}
 
         <div

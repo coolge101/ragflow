@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { ApiErrorBanner } from "../components/ApiErrorBanner";
 import {
   createCrawlTask,
   deleteCrawlTask,
@@ -570,28 +570,15 @@ export function CrawlPage() {
       </ul>
 
       {error ? (
-        <div
-          style={{
-            marginBottom: "1rem",
-            padding: "0.75rem 1rem",
-            borderRadius: 8,
-            border: "1px solid #fecaca",
-            background: "#fef2f2",
-            display: "flex",
-            flexWrap: "wrap",
-            alignItems: "center",
-            gap: "0.75rem",
-          }}
+        <ApiErrorBanner
+          style={{ marginBottom: "1rem", padding: "0.75rem 1rem", gap: "0.75rem" }}
+          onRetry={canFetchList ? () => void loadTasks() : undefined}
+          retryLabel="重试加载列表"
+          retryDisabled={loading}
+          retryBusy={loading}
         >
-          <p style={{ color: "#991b1b", margin: 0, flex: "1 1 12rem" }}>
-            {error} <Link to="/login">去登录</Link>
-          </p>
-          {canFetchList ? (
-            <button type="button" disabled={loading} onClick={() => void loadTasks()} style={{ cursor: loading ? "wait" : "pointer" }}>
-              {loading ? "重试中…" : "重试加载列表"}
-            </button>
-          ) : null}
-        </div>
+          {error}
+        </ApiErrorBanner>
       ) : null}
       {actionMsg ? <p style={{ color: "#15803d" }}>{actionMsg}</p> : null}
 

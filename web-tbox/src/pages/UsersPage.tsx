@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { ApiErrorBanner } from "../components/ApiErrorBanner";
 import { listTenantUsers, type TenantUserRow } from "../api/tenantUsers";
 import { useAuth } from "../context/AuthContext";
 
@@ -50,26 +50,14 @@ export function UsersPage() {
       </p>
 
       {error ? (
-        <div
-          style={{
-            marginBottom: "0.75rem",
-            padding: "0.65rem 0.9rem",
-            borderRadius: 8,
-            border: "1px solid #fecaca",
-            background: "#fef2f2",
-            display: "flex",
-            flexWrap: "wrap",
-            alignItems: "center",
-            gap: "0.65rem",
-          }}
+        <ApiErrorBanner
+          onRetry={() => void load()}
+          retryLabel="重试加载"
+          retryDisabled={loading || !tenantId}
+          retryBusy={loading}
         >
-          <span style={{ color: "#991b1b", flex: "1 1 12rem" }}>
-            {error} <Link to="/login">去登录</Link>
-          </span>
-          <button type="button" disabled={loading || !tenantId} onClick={() => void load()} style={{ cursor: loading ? "wait" : "pointer" }}>
-            {loading ? "重试中…" : "重试加载"}
-          </button>
-        </div>
+          {error}
+        </ApiErrorBanner>
       ) : null}
 
       <p>

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Link } from "react-router-dom";
+import { ApiErrorBanner } from "../components/ApiErrorBanner";
 import { deleteDatasets, listDatasets, type DatasetRow } from "../api/datasets";
 import { deleteDocuments, listDocuments, uploadDocuments, type DocRow } from "../api/datasetDocuments";
 import { hasPermission } from "../constants/permissions";
@@ -229,27 +229,15 @@ export function DocumentsPage() {
       </p>
 
       {error ? (
-        <div
-          style={{
-            marginTop: "1rem",
-            marginBottom: "0.5rem",
-            padding: "0.75rem 1rem",
-            borderRadius: 8,
-            border: "1px solid #fecaca",
-            background: "#fef2f2",
-            display: "flex",
-            flexWrap: "wrap",
-            alignItems: "center",
-            gap: "0.75rem",
-          }}
+        <ApiErrorBanner
+          style={{ marginTop: "1rem", marginBottom: "0.5rem", padding: "0.75rem 1rem", gap: "0.75rem" }}
+          onRetry={() => void load()}
+          retryLabel="重试加载知识库"
+          retryDisabled={loading}
+          retryBusy={loading}
         >
-          <p style={{ color: "#991b1b", margin: 0, flex: "1 1 12rem" }}>
-            {error} <Link to="/login">去登录</Link>
-          </p>
-          <button type="button" disabled={loading} onClick={() => void load()} style={{ cursor: loading ? "wait" : "pointer" }}>
-            {loading ? "重试中…" : "重试加载知识库"}
-          </button>
-        </div>
+          {error}
+        </ApiErrorBanner>
       ) : null}
 
       {loading ? (
@@ -341,29 +329,15 @@ export function DocumentsPage() {
                 文档：{activeKbName || activeKb}
               </h2>
               {docsError ? (
-                <div
-                  style={{
-                    marginBottom: "0.75rem",
-                    padding: "0.5rem 0.75rem",
-                    borderRadius: 6,
-                    border: "1px solid #fecaca",
-                    background: "#fef2f2",
-                    display: "flex",
-                    flexWrap: "wrap",
-                    alignItems: "center",
-                    gap: "0.65rem",
-                  }}
+                <ApiErrorBanner
+                  style={{ marginBottom: "0.75rem", padding: "0.5rem 0.75rem", borderRadius: 6, gap: "0.65rem" }}
+                  onRetry={() => void loadDocs(activeKb)}
+                  retryLabel="重试加载文档"
+                  retryDisabled={docsLoading}
+                  retryBusy={docsLoading}
                 >
-                  <span style={{ color: "#991b1b", flex: "1 1 10rem" }}>{docsError}</span>
-                  <button
-                    type="button"
-                    disabled={docsLoading}
-                    onClick={() => void loadDocs(activeKb)}
-                    style={{ cursor: docsLoading ? "wait" : "pointer" }}
-                  >
-                    {docsLoading ? "重试中…" : "重试加载文档"}
-                  </button>
-                </div>
+                  {docsError}
+                </ApiErrorBanner>
               ) : null}
               <div style={{ display: "flex", flexWrap: "wrap", gap: "0.75rem", alignItems: "center", marginBottom: "0.75rem" }}>
                 {canUpload ? (

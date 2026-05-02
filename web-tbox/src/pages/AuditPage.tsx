@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { ApiErrorBanner } from "../components/ApiErrorBanner";
 import { listDatasets, type DatasetRow } from "../api/datasets";
 import { listIngestionLogs, type IngestionLogRow } from "../api/ingestionLogs";
 
@@ -106,53 +106,24 @@ export function AuditPage() {
       </p>
 
       {kbError ? (
-        <div
-          style={{
-            marginBottom: "0.75rem",
-            padding: "0.65rem 0.9rem",
-            borderRadius: 8,
-            border: "1px solid #fecaca",
-            background: "#fef2f2",
-            display: "flex",
-            flexWrap: "wrap",
-            alignItems: "center",
-            gap: "0.65rem",
-          }}
+        <ApiErrorBanner
+          onRetry={() => void reloadKbs()}
+          retryLabel="重试加载知识库"
+          retryDisabled={kbLoading}
+          retryBusy={kbLoading}
         >
-          <span style={{ color: "#991b1b", flex: "1 1 12rem" }}>
-            知识库列表：{kbError} <Link to="/login">去登录</Link>
-          </span>
-          <button type="button" disabled={kbLoading} onClick={() => void reloadKbs()} style={{ cursor: kbLoading ? "wait" : "pointer" }}>
-            {kbLoading ? "重试中…" : "重试加载知识库"}
-          </button>
-        </div>
+          知识库列表：{kbError}
+        </ApiErrorBanner>
       ) : null}
       {logsError ? (
-        <div
-          style={{
-            marginBottom: "0.75rem",
-            padding: "0.65rem 0.9rem",
-            borderRadius: 8,
-            border: "1px solid #fecaca",
-            background: "#fef2f2",
-            display: "flex",
-            flexWrap: "wrap",
-            alignItems: "center",
-            gap: "0.65rem",
-          }}
+        <ApiErrorBanner
+          onRetry={() => void loadLogs()}
+          retryLabel="重试加载日志"
+          retryDisabled={logsLoading || !datasetId}
+          retryBusy={logsLoading}
         >
-          <span style={{ color: "#991b1b", flex: "1 1 12rem" }}>
-            入库日志：{logsError} <Link to="/login">去登录</Link>
-          </span>
-          <button
-            type="button"
-            disabled={logsLoading || !datasetId}
-            onClick={() => void loadLogs()}
-            style={{ cursor: logsLoading ? "wait" : "pointer" }}
-          >
-            {logsLoading ? "重试中…" : "重试加载日志"}
-          </button>
-        </div>
+          入库日志：{logsError}
+        </ApiErrorBanner>
       ) : null}
 
       <div style={{ display: "flex", flexWrap: "wrap", gap: "1rem", alignItems: "center", marginBottom: "1rem" }}>
