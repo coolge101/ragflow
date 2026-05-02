@@ -49,8 +49,8 @@ jobs:
       - name: Install security dependencies
         run: |
           source .venv/bin/activate
-          # 安装安全测试相关依赖
-          uv pip install requests pytest pytest-cov bandit safety semgrep
+          # bandit / safety / semgrep 不在 dependency-groups.test；requests、pytest、pytest-cov 已由 uv sync --group test 提供
+          uv pip install bandit safety semgrep
           echo "Security dependencies installed"
 
       - name: Run static security analysis
