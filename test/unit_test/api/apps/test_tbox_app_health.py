@@ -83,7 +83,11 @@ def _install_import_stubs(monkeypatch: pytest.MonkeyPatch) -> None:
         return {"code": int(code), "message": message, "data": data}
 
     api_utils.get_json_result = get_json_result
-    api_utils.get_request_json = lambda: {}
+
+    async def get_request_json():
+        return {}
+
+    api_utils.get_request_json = get_request_json
     api_utils.server_error_response = lambda e: {"code": 100, "message": str(e)}
     monkeypatch.setitem(sys.modules, "api.utils.api_utils", api_utils)
 
@@ -242,3 +246,94 @@ async def test_crawl_tasks_get_not_found(tbox_quart_app, monkeypatch: pytest.Mon
     assert resp.status_code == 200
     body = await resp.get_json()
     assert body["code"] == RetCode.NOT_FOUND
+
+
+@pytest.mark.p2
+@pytest.mark.asyncio
+async def test_crawl_tasks_create_name_required(tbox_quart_app, monkeypatch: pytest.MonkeyPatch):
+    app, mod = tbox_quart_app
+    monkeypatch.setattr(mod, "_active_tenant_memberships", lambda _uid: [])
+    monkeypatch.setattr(
+        mod,
+        "crawl_svc",
+        SimpleNamespace(tenant_ids_for_crawl=lambda uid, is_sup: None),
+    )
+
+    async def body():
+        return {"seed_urls": ["https://example.com/x"]}
+
+    monkeypatch.setattr(mod, "get_request_json", body)
+    TBOX_ROUTE_TEST_USER.is_superuser = True
+    async with app.test_client() as client:
+        resp = await client.post(f"/{API_VERSION}/tbox/crawl/tasks")
+    assert resp.status_code == 200
+    data = await resp.get_json()
+    assert data["code"] == RetCode.ARGUMENT_ERROR
+    assert "name" in data["message"].lower()
+
+
+@pytest.mark.p2
+@pytest.mark.asyncio
+async def test_crawl_tasks_create_ok(tbox_quart_app, monkeypatch: pytest.MonkeyPatch):
+    app, mod = tbox_quart_app
+    monkeypatch.setattr(mod, "_active_tenant_memberships", lambda _uid: [])
+
+    payload = {
+        "name": "  nightly ",
+        "source_type": "static_web",
+        "run_state": "draft",
+        "seed_urls": ["https://example.com/doc"],
+        "schedule_cron": "",
+        "enabled": False,
+        "extra_config": {},
+    }
+
+    async def body():
+        return payload
+
+    created = SimpleNamespace(
+        id="new-task-id",
+        tenant_id="tbox-route-test-user",
+        dataset_id=None,
+        name="nightly",
+        source_type="static_web",
+        seed_urls=["https://example.com/doc"],
+        schedule_cron="",
+        enabled=False,
+        run_state="draft",
+        last_error="",
+        extra_config={},
+        created_by="tbox-route-test-user",
+        create_time=1,
+        update_time=1,
+        status="1",
+    )
+
+    def task_row_to_dict(t):
+        return {"id": t.id, "name": t.name, "tenant_id": t.tenant_id}
+
+    def create_task(**kwargs):
+        assert kwargs["name"] == "nightly"
+        assert kwargs["seed_urls"] == ["https://example.com/doc"]
+        return created
+
+    fake = SimpleNamespace(
+        tenant_ids_for_crawl=lambda uid, is_sup: None,
+        ALLOWED_SOURCE_TYPES=frozenset({"static_web", "rss"}),
+        ALLOWED_RUN_STATES=frozenset({"draft", "ready", "paused"}),
+        validate_seed_urls=lambda urls: (["https://example.com/doc"], None),
+        validate_schedule_cron=lambda s: None,
+        kb_valid_for_tenant=lambda kb, ten: True,
+        create_task=create_task,
+        task_row_to_dict=task_row_to_dict,
+    )
+    monkeypatch.setattr(mod, "crawl_svc", fake)
+    monkeypatch.setattr(mod, "get_request_json", body)
+    TBOX_ROUTE_TEST_USER.is_superuser = True
+    async with app.test_client() as client:
+        resp = await client.post(f"/{API_VERSION}/tbox/crawl/tasks")
+    assert resp.status_code == 200
+    data = await resp.get_json()
+    assert data["code"] == 0
+    assert data["data"]["id"] == "new-task-id"
+    assert data["data"]["name"] == "nightly"
