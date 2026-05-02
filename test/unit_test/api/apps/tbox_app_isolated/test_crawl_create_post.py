@@ -210,6 +210,85 @@ async def test_crawl_tasks_create_server_error_when_create_task_raises(tbox_quar
 
 @pytest.mark.p2
 @pytest.mark.asyncio
+async def test_crawl_tasks_create_server_error_when_tenant_ids_for_crawl_raises(tbox_quart_app, monkeypatch: pytest.MonkeyPatch):
+    app, mod = tbox_quart_app
+    monkeypatch.setattr(mod, "_active_tenant_memberships", lambda _uid: [])
+
+    async def body():
+        return {"name": "job", "seed_urls": ["https://example.com/"]}
+
+    def tenant_ids_for_crawl(_uid, _is_sup):
+        raise RuntimeError("membership crawl scope failed")
+
+    fake = SimpleNamespace(tenant_ids_for_crawl=tenant_ids_for_crawl)
+    monkeypatch.setattr(mod, "crawl_svc", fake)
+    monkeypatch.setattr(mod, "get_request_json", body)
+    TBOX_ROUTE_TEST_USER.is_superuser = True
+    async with app.test_client() as client:
+        resp = await client.post(f"/{API_VERSION}/tbox/crawl/tasks")
+    data = await resp.get_json()
+    assert data["code"] == RetCode.EXCEPTION_ERROR
+    assert "membership crawl scope failed" in data["message"]
+
+
+@pytest.mark.p2
+@pytest.mark.asyncio
+async def test_crawl_tasks_create_uses_route_user_id_when_tenant_id_omitted(tbox_quart_app, monkeypatch: pytest.MonkeyPatch):
+    app, mod = tbox_quart_app
+    monkeypatch.setattr(mod, "_active_tenant_memberships", lambda _uid: [])
+    captured: dict[str, str] = {}
+
+    async def body():
+        return {
+            "name": "only-default-tenant",
+            "source_type": "static_web",
+            "seed_urls": ["https://example.com/doc"],
+        }
+
+    created = SimpleNamespace(
+        id="tid-1",
+        tenant_id="tbox-route-test-user",
+        name="only-default-tenant",
+        source_type="static_web",
+        seed_urls=["https://example.com/doc"],
+        schedule_cron="",
+        enabled=False,
+        run_state="draft",
+        last_error="",
+        extra_config={},
+        created_by="tbox-route-test-user",
+        create_time=1,
+        update_time=1,
+        status="1",
+        dataset_id=None,
+    )
+
+    def create_task(**kwargs):
+        captured["tenant_id"] = kwargs["tenant_id"]
+        return created
+
+    fake = SimpleNamespace(
+        tenant_ids_for_crawl=lambda uid, is_sup: None,
+        ALLOWED_SOURCE_TYPES=frozenset({"static_web", "rss"}),
+        ALLOWED_RUN_STATES=frozenset({"draft", "ready", "paused"}),
+        validate_seed_urls=lambda urls: (["https://example.com/doc"], None),
+        validate_schedule_cron=lambda s: None,
+        kb_valid_for_tenant=lambda kb, ten: True,
+        create_task=create_task,
+        task_row_to_dict=lambda t: {"id": t.id, "tenant_id": t.tenant_id},
+    )
+    monkeypatch.setattr(mod, "crawl_svc", fake)
+    monkeypatch.setattr(mod, "get_request_json", body)
+    TBOX_ROUTE_TEST_USER.is_superuser = True
+    async with app.test_client() as client:
+        resp = await client.post(f"/{API_VERSION}/tbox/crawl/tasks")
+    data = await resp.get_json()
+    assert data["code"] == 0
+    assert captured["tenant_id"] == "tbox-route-test-user"
+
+
+@pytest.mark.p2
+@pytest.mark.asyncio
 async def test_crawl_tasks_create_invalid_run_state(tbox_quart_app, monkeypatch: pytest.MonkeyPatch):
     app, mod = tbox_quart_app
     monkeypatch.setattr(mod, "_active_tenant_memberships", lambda _uid: [])
@@ -303,152 +382,6 @@ async def test_crawl_tasks_create_dataset_kb_invalid(tbox_quart_app, monkeypatch
     data = await resp.get_json()
     assert data["code"] == RetCode.ARGUMENT_ERROR
     assert "dataset_id" in data["message"].lower()
-
-
-def _patchable_row(task_id: str = "p6"):
-    return SimpleNamespace(id=task_id, tenant_id="tbox-route-test-user", name="n")
-
-
-@pytest.mark.p2
-@pytest.mark.asyncio
-async def test_crawl_tasks_patch_invalid_source_type(tbox_quart_app, monkeypatch: pytest.MonkeyPatch):
-    app, mod = tbox_quart_app
-    monkeypatch.setattr(mod, "_active_tenant_memberships", lambda _uid: [])
-    row = _patchable_row("p6")
-    st, rs = crawl_allowed_sets()
-
-    async def body():
-        return {"source_type": "bad-st"}
-
-    fake = SimpleNamespace(
-        tenant_ids_for_crawl=lambda uid, is_sup: None,
-        get_task=lambda tid: row if tid == "p6" else None,
-        user_may_access_task=lambda t, allowed: True,
-        ALLOWED_SOURCE_TYPES=st,
-        ALLOWED_RUN_STATES=rs,
-    )
-    monkeypatch.setattr(mod, "crawl_svc", fake)
-    monkeypatch.setattr(mod, "get_request_json", body)
-    TBOX_ROUTE_TEST_USER.is_superuser = True
-    async with app.test_client() as client:
-        resp = await client.patch(f"/{API_VERSION}/tbox/crawl/tasks/p6")
-    data = await resp.get_json()
-    assert data["code"] == RetCode.ARGUMENT_ERROR
-    assert "source_type" in data["message"].lower()
-
-
-@pytest.mark.p2
-@pytest.mark.asyncio
-async def test_crawl_tasks_patch_invalid_run_state(tbox_quart_app, monkeypatch: pytest.MonkeyPatch):
-    app, mod = tbox_quart_app
-    monkeypatch.setattr(mod, "_active_tenant_memberships", lambda _uid: [])
-    row = _patchable_row("p7")
-    st, rs = crawl_allowed_sets()
-
-    async def body():
-        return {"run_state": "bogus"}
-
-    fake = SimpleNamespace(
-        tenant_ids_for_crawl=lambda uid, is_sup: None,
-        get_task=lambda tid: row if tid == "p7" else None,
-        user_may_access_task=lambda t, allowed: True,
-        ALLOWED_SOURCE_TYPES=st,
-        ALLOWED_RUN_STATES=rs,
-    )
-    monkeypatch.setattr(mod, "crawl_svc", fake)
-    monkeypatch.setattr(mod, "get_request_json", body)
-    TBOX_ROUTE_TEST_USER.is_superuser = True
-    async with app.test_client() as client:
-        resp = await client.patch(f"/{API_VERSION}/tbox/crawl/tasks/p7")
-    data = await resp.get_json()
-    assert data["code"] == RetCode.ARGUMENT_ERROR
-    assert "run_state" in data["message"].lower()
-
-
-@pytest.mark.p2
-@pytest.mark.asyncio
-async def test_crawl_tasks_patch_dataset_id_not_string(tbox_quart_app, monkeypatch: pytest.MonkeyPatch):
-    app, mod = tbox_quart_app
-    monkeypatch.setattr(mod, "_active_tenant_memberships", lambda _uid: [])
-    row = _patchable_row("p8")
-    st, rs = crawl_allowed_sets()
-
-    async def body():
-        return {"dataset_id": 999}
-
-    fake = SimpleNamespace(
-        tenant_ids_for_crawl=lambda uid, is_sup: None,
-        get_task=lambda tid: row if tid == "p8" else None,
-        user_may_access_task=lambda t, allowed: True,
-        ALLOWED_SOURCE_TYPES=st,
-        ALLOWED_RUN_STATES=rs,
-    )
-    monkeypatch.setattr(mod, "crawl_svc", fake)
-    monkeypatch.setattr(mod, "get_request_json", body)
-    TBOX_ROUTE_TEST_USER.is_superuser = True
-    async with app.test_client() as client:
-        resp = await client.patch(f"/{API_VERSION}/tbox/crawl/tasks/p8")
-    data = await resp.get_json()
-    assert data["code"] == RetCode.ARGUMENT_ERROR
-    assert "dataset_id" in data["message"].lower()
-
-
-@pytest.mark.p2
-@pytest.mark.asyncio
-async def test_crawl_tasks_patch_dataset_kb_invalid(tbox_quart_app, monkeypatch: pytest.MonkeyPatch):
-    app, mod = tbox_quart_app
-    monkeypatch.setattr(mod, "_active_tenant_memberships", lambda _uid: [])
-    row = _patchable_row("p9")
-    st, rs = crawl_allowed_sets()
-
-    async def body():
-        return {"dataset_id": "kb-not-in-tenant"}
-
-    fake = SimpleNamespace(
-        tenant_ids_for_crawl=lambda uid, is_sup: None,
-        get_task=lambda tid: row if tid == "p9" else None,
-        user_may_access_task=lambda t, allowed: True,
-        ALLOWED_SOURCE_TYPES=st,
-        ALLOWED_RUN_STATES=rs,
-        kb_valid_for_tenant=lambda kb, tid: False,
-    )
-    monkeypatch.setattr(mod, "crawl_svc", fake)
-    monkeypatch.setattr(mod, "get_request_json", body)
-    TBOX_ROUTE_TEST_USER.is_superuser = True
-    async with app.test_client() as client:
-        resp = await client.patch(f"/{API_VERSION}/tbox/crawl/tasks/p9")
-    data = await resp.get_json()
-    assert data["code"] == RetCode.ARGUMENT_ERROR
-    assert "tenant" in data["message"].lower()
-
-
-@pytest.mark.p2
-@pytest.mark.asyncio
-async def test_crawl_tasks_patch_seed_urls_validate_error(tbox_quart_app, monkeypatch: pytest.MonkeyPatch):
-    app, mod = tbox_quart_app
-    monkeypatch.setattr(mod, "_active_tenant_memberships", lambda _uid: [])
-    row = _patchable_row("p10")
-    st, rs = crawl_allowed_sets()
-
-    async def body():
-        return {"seed_urls": "not-a-list"}
-
-    fake = SimpleNamespace(
-        tenant_ids_for_crawl=lambda uid, is_sup: None,
-        get_task=lambda tid: row if tid == "p10" else None,
-        user_may_access_task=lambda t, allowed: True,
-        ALLOWED_SOURCE_TYPES=st,
-        ALLOWED_RUN_STATES=rs,
-        validate_seed_urls=lambda urls: (None, "must be a list"),
-    )
-    monkeypatch.setattr(mod, "crawl_svc", fake)
-    monkeypatch.setattr(mod, "get_request_json", body)
-    TBOX_ROUTE_TEST_USER.is_superuser = True
-    async with app.test_client() as client:
-        resp = await client.patch(f"/{API_VERSION}/tbox/crawl/tasks/p10")
-    data = await resp.get_json()
-    assert data["code"] == RetCode.ARGUMENT_ERROR
-    assert "must be a list" in data["message"]
 
 
 @pytest.mark.p2

@@ -208,6 +208,30 @@ async def test_crawl_tasks_list_server_error_when_task_row_to_dict_raises(tbox_q
 
 @pytest.mark.p2
 @pytest.mark.asyncio
+async def test_crawl_tasks_list_server_error_when_tenant_ids_for_crawl_raises(tbox_quart_app, monkeypatch: pytest.MonkeyPatch):
+    app, mod = tbox_quart_app
+    monkeypatch.setattr(mod, "_active_tenant_memberships", lambda _uid: [])
+
+    def tenant_ids_for_crawl(_uid, _is_sup):
+        raise RuntimeError("crawl scope query failed")
+
+    fake = SimpleNamespace(
+        tenant_ids_for_crawl=tenant_ids_for_crawl,
+        resolve_list_tenant_id=lambda tid, allowed: ("tf", None),
+        list_tasks=lambda *_a, **_k: (0, []),
+        task_row_to_dict=lambda t: {},
+    )
+    monkeypatch.setattr(mod, "crawl_svc", fake)
+    TBOX_ROUTE_TEST_USER.is_superuser = True
+    async with app.test_client() as client:
+        resp = await client.get(f"/{API_VERSION}/tbox/crawl/tasks")
+    data = await resp.get_json()
+    assert data["code"] == RetCode.EXCEPTION_ERROR
+    assert "crawl scope query failed" in data["message"]
+
+
+@pytest.mark.p2
+@pytest.mark.asyncio
 async def test_crawl_tasks_list_invalid_page_args_fallback(tbox_quart_app, monkeypatch: pytest.MonkeyPatch):
     app, mod = tbox_quart_app
     monkeypatch.setattr(mod, "_active_tenant_memberships", lambda _uid: [])
@@ -251,6 +275,30 @@ async def test_crawl_tasks_get_not_found(tbox_quart_app, monkeypatch: pytest.Mon
     assert resp.status_code == 200
     body = await resp.get_json()
     assert body["code"] == RetCode.NOT_FOUND
+
+
+@pytest.mark.p2
+@pytest.mark.asyncio
+async def test_crawl_tasks_get_server_error_when_get_task_raises(tbox_quart_app, monkeypatch: pytest.MonkeyPatch):
+    app, mod = tbox_quart_app
+    monkeypatch.setattr(mod, "_active_tenant_memberships", lambda _uid: [])
+
+    def get_task(_tid):
+        raise OSError("db read failed")
+
+    fake = SimpleNamespace(
+        tenant_ids_for_crawl=lambda uid, is_sup: None,
+        get_task=get_task,
+        user_may_access_task=lambda t, allowed: True,
+        task_row_to_dict=lambda t: {},
+    )
+    monkeypatch.setattr(mod, "crawl_svc", fake)
+    TBOX_ROUTE_TEST_USER.is_superuser = True
+    async with app.test_client() as client:
+        resp = await client.get(f"/{API_VERSION}/tbox/crawl/tasks/gx")
+    data = await resp.get_json()
+    assert data["code"] == RetCode.EXCEPTION_ERROR
+    assert "db read failed" in data["message"]
 
 
 @pytest.mark.p2

@@ -69,6 +69,15 @@ def test_tbox_permissions_owner_on_any_tenant_beats_invite_elsewhere(tbox_module
 
 
 @pytest.mark.p2
+def test_tbox_permissions_unknown_role_yields_empty(tbox_module):
+    perms = tbox_module._tbox_permissions_for_tenants(
+        False,
+        [{"tenant_id": "t1", "role": "not-a-known-role"}],
+    )
+    assert perms == []
+
+
+@pytest.mark.p2
 def test_tbox_permissions_normal_lacks_ops_perms(tbox_module):
     from api.db import UserTenantRole
 

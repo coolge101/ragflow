@@ -80,6 +80,30 @@ async def test_crawl_tasks_delete_server_error_when_soft_delete_raises(tbox_quar
 
 @pytest.mark.p2
 @pytest.mark.asyncio
+async def test_crawl_tasks_delete_server_error_when_get_task_raises(tbox_quart_app, monkeypatch: pytest.MonkeyPatch):
+    app, mod = tbox_quart_app
+    monkeypatch.setattr(mod, "_active_tenant_memberships", lambda _uid: [])
+
+    def get_task(_tid):
+        raise RuntimeError("select failed")
+
+    fake = SimpleNamespace(
+        tenant_ids_for_crawl=lambda uid, is_sup: None,
+        get_task=get_task,
+        user_may_access_task=lambda t, allowed: True,
+        soft_delete_task=lambda _t: None,
+    )
+    monkeypatch.setattr(mod, "crawl_svc", fake)
+    TBOX_ROUTE_TEST_USER.is_superuser = True
+    async with app.test_client() as client:
+        resp = await client.delete(f"/{API_VERSION}/tbox/crawl/tasks/dy")
+    data = await resp.get_json()
+    assert data["code"] == RetCode.EXCEPTION_ERROR
+    assert "select failed" in data["message"]
+
+
+@pytest.mark.p2
+@pytest.mark.asyncio
 async def test_crawl_tasks_delete_forbidden_wrong_tenant(tbox_quart_app, monkeypatch: pytest.MonkeyPatch):
     app, mod = tbox_quart_app
     monkeypatch.setattr(
@@ -267,3 +291,61 @@ async def test_crawl_tasks_run_server_error_when_refetch_get_task_raises(tbox_qu
     assert data["code"] == RetCode.EXCEPTION_ERROR
     assert "refetch failed" in data["message"]
     assert gt_calls[0] == 2
+
+
+@pytest.mark.p2
+@pytest.mark.asyncio
+async def test_crawl_tasks_run_server_error_when_first_get_task_raises(tbox_quart_app, monkeypatch: pytest.MonkeyPatch):
+    app, mod = tbox_quart_app
+    monkeypatch.setattr(mod, "_active_tenant_memberships", lambda _uid: [])
+
+    def get_task(_tid):
+        raise OSError("first load failed")
+
+    fake = SimpleNamespace(
+        tenant_ids_for_crawl=lambda uid, is_sup: None,
+        get_task=get_task,
+        user_may_access_task=lambda t, allowed: True,
+        execute_crawl_task_stub_tick=lambda _tid: None,
+        record_worker_tick=lambda *a, **k: None,
+        task_row_to_dict=lambda t: {},
+    )
+    monkeypatch.setattr(mod, "crawl_svc", fake)
+    TBOX_ROUTE_TEST_USER.is_superuser = True
+    async with app.test_client() as client:
+        resp = await client.post(f"/{API_VERSION}/tbox/crawl/tasks/r5/run")
+    data = await resp.get_json()
+    assert data["code"] == RetCode.EXCEPTION_ERROR
+    assert "first load failed" in data["message"]
+
+
+@pytest.mark.p2
+@pytest.mark.asyncio
+async def test_crawl_tasks_run_server_error_when_task_row_to_dict_raises_after_tick(tbox_quart_app, monkeypatch: pytest.MonkeyPatch):
+    app, mod = tbox_quart_app
+    monkeypatch.setattr(mod, "_active_tenant_memberships", lambda _uid: [])
+    row = SimpleNamespace(id="r6", tenant_id="tbox-route-test-user")
+
+    def execute_crawl_task_stub_tick(_tid):
+        row.after_tick = True
+
+    def task_row_to_dict(t):
+        if getattr(t, "after_tick", False):
+            raise ValueError("serialize after tick failed")
+        return {"id": t.id}
+
+    fake = SimpleNamespace(
+        tenant_ids_for_crawl=lambda uid, is_sup: None,
+        get_task=lambda tid: row if tid == "r6" else None,
+        user_may_access_task=lambda t, allowed: True,
+        execute_crawl_task_stub_tick=execute_crawl_task_stub_tick,
+        record_worker_tick=lambda *a, **k: None,
+        task_row_to_dict=task_row_to_dict,
+    )
+    monkeypatch.setattr(mod, "crawl_svc", fake)
+    TBOX_ROUTE_TEST_USER.is_superuser = True
+    async with app.test_client() as client:
+        resp = await client.post(f"/{API_VERSION}/tbox/crawl/tasks/r6/run")
+    data = await resp.get_json()
+    assert data["code"] == RetCode.EXCEPTION_ERROR
+    assert "serialize after tick failed" in data["message"]
