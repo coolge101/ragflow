@@ -64,53 +64,61 @@ export async function streamChatCompletions(
   onEvent: (ev: ChatStreamEvent) => void,
   signal?: AbortSignal,
 ): Promise<void> {
-  const res = await fetch("/api/v1/chat/completions", {
-    method: "POST",
-    headers: authJsonHeaders(),
-    body: JSON.stringify({ stream: true, ...payload }),
-    signal,
-  });
-
-  if (!res.ok) {
-    const t = await res.text().catch(() => "");
-    onEvent({ type: "error", message: t || `HTTP ${res.status}` });
-    return;
-  }
-
-  if (!res.body) {
-    onEvent({ type: "error", message: "无响应体" });
-    return;
-  }
-
-  const reader = res.body.getReader();
-  const decoder = new TextDecoder();
-  let buffer = "";
-
-  try {
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) {
-        break;
-      }
-      buffer += decoder.decode(value, { stream: true });
-      const blocks = buffer.split("\n\n");
-      buffer = blocks.pop() ?? "";
-
-      for (const block of blocks) {
-        parseSseBlock(block, onEvent);
-      }
-    }
-
-    if (buffer.trim()) {
-      for (const block of buffer.split("\n\n")) {
-        parseSseBlock(block, onEvent);
-      }
-    }
-  } catch (e) {
+  const streamFailed = (e: unknown) => {
     if (signal?.aborted) {
       onEvent({ type: "error", message: "已取消" });
       return;
     }
     onEvent({ type: "error", message: e instanceof Error ? e.message : String(e) });
+  };
+
+  try {
+    const res = await fetch("/api/v1/chat/completions", {
+      method: "POST",
+      headers: authJsonHeaders(),
+      body: JSON.stringify({ stream: true, ...payload }),
+      signal,
+    });
+
+    if (!res.ok) {
+      const t = await res.text().catch(() => "");
+      onEvent({ type: "error", message: t || `HTTP ${res.status}` });
+      return;
+    }
+
+    if (!res.body) {
+      onEvent({ type: "error", message: "无响应体" });
+      return;
+    }
+
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = "";
+
+    try {
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) {
+          break;
+        }
+        buffer += decoder.decode(value, { stream: true });
+        const blocks = buffer.split("\n\n");
+        buffer = blocks.pop() ?? "";
+
+        for (const block of blocks) {
+          parseSseBlock(block, onEvent);
+        }
+      }
+
+      if (buffer.trim()) {
+        for (const block of buffer.split("\n\n")) {
+          parseSseBlock(block, onEvent);
+        }
+      }
+    } catch (e) {
+      streamFailed(e);
+    }
+  } catch (e) {
+    streamFailed(e);
   }
 }
