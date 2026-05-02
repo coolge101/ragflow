@@ -22,10 +22,23 @@ from unittest.mock import patch
 
 import requests
 
-from common.tbox_crawl_ssrf_fetch import _RETRY_STATUSES, _retry_delay_seconds, _retry_max_for_status
+from common.tbox_crawl_ssrf_fetch import (
+    DEFAULT_RETRY_STATUS_CODES,
+    effective_retry_statuses,
+    _retry_delay_seconds,
+    _retry_max_for_status,
+)
 
 
 class TestTboxCrawlSsrfFetch(unittest.TestCase):
+    def _default_retry_set(self):
+        with patch.dict(
+            os.environ,
+            {"TBOX_CRAWL_RETRY_STATUSES": "", "TBOX_CRAWL_RETRY_EXTRA_STATUSES": ""},
+            clear=False,
+        ):
+            return effective_retry_statuses(None)
+
     def _resp(self, retry_after: str | None = None) -> requests.Response:
         r = requests.Response()
         r.status_code = 429
@@ -75,11 +88,47 @@ class TestTboxCrawlSsrfFetch(unittest.TestCase):
             self.assertAlmostEqual(_retry_delay_seconds(r, 1), 2.5)
 
     def test_retry_statuses_includes_cloudflare_edge(self):
+        s = self._default_retry_set()
         for code in (520, 521, 522, 523, 524, 525, 526, 528, 529, 530):
-            self.assertIn(code, _RETRY_STATUSES)
+            self.assertIn(code, s)
 
     def test_retry_statuses_excludes_generic_500(self):
-        self.assertNotIn(500, _RETRY_STATUSES)
+        s = self._default_retry_set()
+        self.assertNotIn(500, s)
+
+    def test_default_retry_matches_shipped_constants(self):
+        self.assertEqual(self._default_retry_set(), DEFAULT_RETRY_STATUS_CODES)
+
+    def test_effective_retry_extra_statuses_from_env(self):
+        with patch.dict(
+            os.environ,
+            {
+                "TBOX_CRAWL_RETRY_STATUSES": "",
+                "TBOX_CRAWL_RETRY_EXTRA_STATUSES": "599, 418",
+            },
+            clear=False,
+        ):
+            s = effective_retry_statuses(None)
+        self.assertIn(599, s)
+        self.assertIn(418, s)
+        self.assertIn(429, s)
+
+    def test_effective_retry_full_replace_from_env(self):
+        with patch.dict(
+            os.environ,
+            {"TBOX_CRAWL_RETRY_STATUSES": "503, 404", "TBOX_CRAWL_RETRY_EXTRA_STATUSES": "599"},
+            clear=False,
+        ):
+            s = effective_retry_statuses(None)
+        self.assertEqual(s, frozenset({503, 404}))
+        self.assertNotIn(599, s)
+
+    def test_effective_retry_extra_from_extra_config(self):
+        with patch.dict(os.environ, {"TBOX_CRAWL_RETRY_STATUSES": "", "TBOX_CRAWL_RETRY_EXTRA_STATUSES": ""}, clear=False):
+            s = effective_retry_statuses({"tbox_crawl_retry_extra_statuses": [418, "599"]})
+        self.assertIn(418, s)
+        self.assertIn(599, s)
+        self.assertIn(429, s)
 
     def test_retry_backoff_base_522_override(self):
         r = requests.Response()

@@ -20,6 +20,7 @@ from __future__ import annotations
 
 import logging
 import os
+from typing import Any
 
 from common.tbox_crawl_origin_throttle import OriginFetchThrottler
 from common.tbox_crawl_robots import RobotsOriginCache
@@ -36,6 +37,7 @@ def probe_seed_urls(
     max_urls: int | None = None,
     timeout_sec: float | None = None,
     skip_robots: bool = False,
+    extra_config: dict[str, Any] | None = None,
 ) -> tuple[bool, str]:
     """
     Stream GET for up to ``max_urls`` seeds (bounded read; no KB ingest).
@@ -64,6 +66,7 @@ def probe_seed_urls(
             max_read_bytes=_READ_CHUNK,
             robots_preflight=robots_cache,
             origin_throttle=throttle,
+            extra_config=extra_config,
         )
         if err:
             return False, f"{url}: {err}"

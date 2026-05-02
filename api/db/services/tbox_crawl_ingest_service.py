@@ -63,11 +63,15 @@ def ingest_static_web_seeds_into_kb(
     max_bytes: int | None = None,
     timeout_sec: float | None = None,
     skip_robots: bool = False,
+    extra_config: dict[str, Any] | None = None,
 ) -> tuple[bool, str]:
     """
     Fetch each seed (SSRF-safe, capped), upload as a new file under *kb*, queue parse tasks.
 
     Returns ``(ok, message)``; *message* lists failures if ``ok`` is False.
+
+    *extra_config* is forwarded to :func:`common.tbox_crawl_ssrf_fetch.fetch_url_body_capped` for
+    ``effective_retry_statuses`` (``tbox_crawl_retry_extra_statuses``).
     """
     if kb is None or not getattr(kb, "id", None):
         return False, "invalid knowledge base"
@@ -90,6 +94,7 @@ def ingest_static_web_seeds_into_kb(
                 timeout=timeout,
                 robots_preflight=robots_cache,
                 origin_throttle=throttle,
+                extra_config=extra_config,
             )
             raw_name = suggested_filename_from_url(url, ctype)
             filename = duplicate_name(DocumentService.query, name=raw_name, kb_id=kb.id)
@@ -118,6 +123,7 @@ def ingest_rss_seeds_into_kb(
     max_feeds: int | None = None,
     max_entries: int | None = None,
     skip_robots: bool = False,
+    extra_config: dict[str, Any] | None = None,
 ) -> tuple[bool, str]:
     """
     Treat each seed URL as an RSS/Atom feed: fetch entries via :class:`RSSConnector`,
@@ -125,6 +131,9 @@ def ingest_rss_seeds_into_kb(
 
     Caps: ``TBOX_CRAWL_RSS_MAX_FEEDS`` (default **3**), ``TBOX_CRAWL_RSS_MAX_ENTRIES`` (default **30**) per tick.
     Feed HTTP timeout: ``TBOX_CRAWL_INGEST_TIMEOUT`` (fallback ``TBOX_CRAWL_FETCH_TIMEOUT``), same as ``static_web`` ingest.
+
+    *extra_config* is passed to :class:`common.data_source.rss_connector.RSSConnector` for the same
+    ``effective_retry_statuses`` whitelist as page fetch.
     """
     if kb is None or not getattr(kb, "id", None):
         return False, "invalid knowledge base"
@@ -159,6 +168,7 @@ def ingest_rss_seeds_into_kb(
                 origin_throttle=throttle,
                 robots_preflight=robots_cache,
                 request_timeout_sec=feed_timeout,
+                extra_config=extra_config,
             )
             conn.load_credentials({})
             for batch in conn.load_from_state():

@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import hashlib
 import os
 import time
@@ -21,7 +23,7 @@ from common.data_source.models import (
     SlimDocument,
 )
 from common.ssrf_guard import assert_url_is_safe, pin_dns as _pin_dns
-from common.tbox_crawl_ssrf_fetch import _RETRY_STATUSES, _retry_delay_seconds, _retry_max_for_status
+from common.tbox_crawl_ssrf_fetch import effective_retry_statuses, _retry_delay_seconds, _retry_max_for_status
 
 _MAX_REDIRECTS = 10
 _REDIRECT_STATUSES = frozenset({301, 302, 303, 307, 308})
@@ -42,6 +44,8 @@ class RSSConnector(LoadConnector, PollConnector, SlimConnectorWithPermSync):
         origin_throttle: Any | None = None,
         robots_preflight: Any | None = None,
         request_timeout_sec: float | None = None,
+        extra_config: dict[str, Any] | None = None,
+        retry_statuses: frozenset[int] | None = None,
     ) -> None:
         self.feed_url = feed_url.strip()
         self.batch_size = batch_size
@@ -49,6 +53,7 @@ class RSSConnector(LoadConnector, PollConnector, SlimConnectorWithPermSync):
         self._cached_feed: Any | None = None
         self._origin_throttle = origin_throttle
         self._robots_preflight = robots_preflight
+        self._retry_statuses = retry_statuses if retry_statuses is not None else effective_retry_statuses(extra_config)
         self._http_timeout = float(
             request_timeout_sec if request_timeout_sec is not None else REQUEST_TIMEOUT_SECONDS,
         )
@@ -140,7 +145,7 @@ class RSSConnector(LoadConnector, PollConnector, SlimConnectorWithPermSync):
         # that existed when allow_redirects=True was used with post-hoc checks.
         #
         # When *origin_throttle* / *robots_preflight* are set (TBOX crawl ingest), align with
-        # common.tbox_crawl_ssrf_fetch: per-hop robots, Crawl-delay spacing, same transient HTTP backoff as _RETRY_STATUSES.
+        # common.tbox_crawl_ssrf_fetch: per-hop robots, Crawl-delay spacing, transient HTTP backoff (self._retry_statuses).
         response: requests.Response | None = None
         try:
             for _ in range(_MAX_REDIRECTS + 1):
@@ -159,7 +164,7 @@ class RSSConnector(LoadConnector, PollConnector, SlimConnectorWithPermSync):
                             allow_redirects=False,
                             headers=_RSS_HTTP_HEADERS,
                         )
-                    if response.status_code in _RETRY_STATUSES and attempt < _retry_max_for_status(response.status_code):
+                    if response.status_code in self._retry_statuses and attempt < _retry_max_for_status(response.status_code):
                         wait_sec = _retry_delay_seconds(response, attempt)
                         if self._origin_throttle is not None:
                             try:

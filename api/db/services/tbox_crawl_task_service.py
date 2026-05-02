@@ -343,6 +343,8 @@ def execute_crawl_task_stub_tick(task_id: str) -> None:
     Ingest runs when ``dataset_id`` is set (unless ``extra_config.tbox_skip_ingest``):
     ``static_web`` uses SSRF-safe GET + upload; ``rss`` uses ``RSSConnector`` + per-entry ``.txt`` upload.
     ``robots.txt`` is consulted via ``common/tbox_crawl_robots.py`` unless ``extra_config.tbox_skip_robots_check``.
+    Transient HTTP retry whitelist: ``extra_config.tbox_crawl_retry_extra_statuses`` is passed to
+    ``common.tbox_crawl_ssrf_fetch.effective_retry_statuses`` for probe + ingest (with process env overrides).
 
     Used by the background worker and by POST /v1/tbox/crawl/tasks/<id>/run.
     Raises ValueError if task missing; RuntimeError if extra_config.worker_stub_fail is set.
@@ -358,7 +360,7 @@ def execute_crawl_task_stub_tick(task_id: str) -> None:
     skip_robots = bool(extra.get("tbox_skip_robots_check"))
 
     if not extra.get("tbox_skip_http_probe"):
-        ok, msg = probe_seed_urls(seeds, skip_robots=skip_robots)
+        ok, msg = probe_seed_urls(seeds, skip_robots=skip_robots, extra_config=extra)
         if not ok:
             record_worker_tick(task_id, ok=False, message=format_crawl_worker_error("HTTP_PROBE", msg))
             return
@@ -387,9 +389,9 @@ def execute_crawl_task_stub_tick(task_id: str) -> None:
 
     st = str(row.source_type or "static_web")
     if st == "static_web":
-        ok_i, msg_i = ingest_static_web_seeds_into_kb(kb, row.tenant_id, seeds, skip_robots=skip_robots)
+        ok_i, msg_i = ingest_static_web_seeds_into_kb(kb, row.tenant_id, seeds, skip_robots=skip_robots, extra_config=extra)
     elif st == "rss":
-        ok_i, msg_i = ingest_rss_seeds_into_kb(kb, row.tenant_id, seeds, skip_robots=skip_robots)
+        ok_i, msg_i = ingest_rss_seeds_into_kb(kb, row.tenant_id, seeds, skip_robots=skip_robots, extra_config=extra)
     else:
         _LOG.info("tbox_crawl_tick: unknown source_type=%s task_id=%s", row.source_type, task_id)
         ok_i, msg_i = True, ""
