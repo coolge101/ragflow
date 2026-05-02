@@ -394,22 +394,31 @@ export function CrawlPage() {
       setActionMsg(`extra_config JSON 无效：${parsed.error}`);
       return;
     }
-    const { res, body } = await createCrawlTask({
-      tenant_id: owner,
-      name: createName.trim(),
-      seed_urls: seeds,
-      source_type: createSource,
-      run_state: createRunState,
-      schedule_cron: createCron.trim(),
-      enabled: createEnabled,
-      dataset_id: createDatasetId.trim() || undefined,
-      extra_config: mergeCrawlExtraConfig(parsed.value, {
-        skipHttpProbe: createSkipHttpProbe,
-        skipIngest: createSkipIngest,
-        skipRobots: createSkipRobots,
-        workerStubFail: createWorkerStubFail,
-      }),
-    });
+    let res: Response;
+    let body: Awaited<ReturnType<typeof createCrawlTask>>["body"];
+    try {
+      const out = await createCrawlTask({
+        tenant_id: owner,
+        name: createName.trim(),
+        seed_urls: seeds,
+        source_type: createSource,
+        run_state: createRunState,
+        schedule_cron: createCron.trim(),
+        enabled: createEnabled,
+        dataset_id: createDatasetId.trim() || undefined,
+        extra_config: mergeCrawlExtraConfig(parsed.value, {
+          skipHttpProbe: createSkipHttpProbe,
+          skipIngest: createSkipIngest,
+          skipRobots: createSkipRobots,
+          workerStubFail: createWorkerStubFail,
+        }),
+      });
+      res = out.res;
+      body = out.body;
+    } catch (e) {
+      setActionMsg(e instanceof Error ? e.message : String(e));
+      return;
+    }
     if (res.status === 401 || body.code === 401) {
       setActionMsg("未授权");
       return;
@@ -468,7 +477,16 @@ export function CrawlPage() {
     };
     payload.dataset_id = editDatasetId.trim() || null;
 
-    const { res, body } = await patchCrawlTask(editing.id, payload);
+    let res: Response;
+    let body: Awaited<ReturnType<typeof patchCrawlTask>>["body"];
+    try {
+      const out = await patchCrawlTask(editing.id, payload);
+      res = out.res;
+      body = out.body;
+    } catch (e) {
+      setActionMsg(e instanceof Error ? e.message : String(e));
+      return;
+    }
     if (res.status === 401 || body.code === 401) {
       setActionMsg("未授权");
       return;
@@ -498,6 +516,8 @@ export function CrawlPage() {
       }
       setActionMsg("已触发一次执行（探测；若已绑定知识库则按类型入库并入解析队列）");
       void loadTasks();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
     } finally {
       setRunningId(null);
     }
@@ -508,7 +528,16 @@ export function CrawlPage() {
       return;
     }
     setActionMsg(null);
-    const { res, body } = await deleteCrawlTask(id);
+    let res: Response;
+    let body: Awaited<ReturnType<typeof deleteCrawlTask>>["body"];
+    try {
+      const out = await deleteCrawlTask(id);
+      res = out.res;
+      body = out.body;
+    } catch (e) {
+      setActionMsg(e instanceof Error ? e.message : String(e));
+      return;
+    }
     if (res.status === 401 || body.code === 401) {
       setActionMsg("未授权");
       return;
@@ -541,10 +570,28 @@ export function CrawlPage() {
       </ul>
 
       {error ? (
-        <p style={{ color: "#b91c1c" }}>
-          {error}{" "}
-          <Link to="/login">去登录</Link>
-        </p>
+        <div
+          style={{
+            marginBottom: "1rem",
+            padding: "0.75rem 1rem",
+            borderRadius: 8,
+            border: "1px solid #fecaca",
+            background: "#fef2f2",
+            display: "flex",
+            flexWrap: "wrap",
+            alignItems: "center",
+            gap: "0.75rem",
+          }}
+        >
+          <p style={{ color: "#991b1b", margin: 0, flex: "1 1 12rem" }}>
+            {error} <Link to="/login">去登录</Link>
+          </p>
+          {canFetchList ? (
+            <button type="button" disabled={loading} onClick={() => void loadTasks()} style={{ cursor: loading ? "wait" : "pointer" }}>
+              {loading ? "重试中…" : "重试加载列表"}
+            </button>
+          ) : null}
+        </div>
       ) : null}
       {actionMsg ? <p style={{ color: "#15803d" }}>{actionMsg}</p> : null}
 
@@ -659,7 +706,14 @@ export function CrawlPage() {
                 ))}
               </tbody>
             </table>
-            {tasks.length === 0 && !loading ? <p className="muted">暂无任务</p> : null}
+            {tasks.length === 0 && !loading && !error ? (
+              <div className="muted" style={{ padding: "1rem 0", lineHeight: 1.6 }}>
+                <p style={{ margin: "0 0 0.35rem" }}>暂无采集任务。</p>
+                <p style={{ margin: 0 }}>
+                  可在本页下方「<strong>新建任务</strong>」填写名称与种子 URL 创建；启用调度前请确认 Cron 与 worker 环境已就绪。
+                </p>
+              </div>
+            ) : null}
           </div>
           <div className="muted" style={{ marginBottom: "1.5rem", display: "flex", gap: "1rem", alignItems: "center" }}>
             <span>
