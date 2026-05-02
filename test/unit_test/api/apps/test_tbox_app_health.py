@@ -337,3 +337,167 @@ async def test_crawl_tasks_create_ok(tbox_quart_app, monkeypatch: pytest.MonkeyP
     assert data["code"] == 0
     assert data["data"]["id"] == "new-task-id"
     assert data["data"]["name"] == "nightly"
+
+
+def _crawl_sets():
+    return (
+        frozenset({"static_web", "rss"}),
+        frozenset({"draft", "ready", "paused"}),
+    )
+
+
+@pytest.mark.p2
+@pytest.mark.asyncio
+async def test_crawl_tasks_patch_no_fields_to_update(tbox_quart_app, monkeypatch: pytest.MonkeyPatch):
+    app, mod = tbox_quart_app
+    monkeypatch.setattr(mod, "_active_tenant_memberships", lambda _uid: [])
+    row = SimpleNamespace(id="p1", tenant_id="tbox-route-test-user", name="x")
+    st, rs = _crawl_sets()
+
+    async def empty_body():
+        return {}
+
+    fake = SimpleNamespace(
+        tenant_ids_for_crawl=lambda uid, is_sup: None,
+        get_task=lambda tid: row if tid == "p1" else None,
+        user_may_access_task=lambda t, allowed: True,
+        ALLOWED_SOURCE_TYPES=st,
+        ALLOWED_RUN_STATES=rs,
+    )
+    monkeypatch.setattr(mod, "crawl_svc", fake)
+    monkeypatch.setattr(mod, "get_request_json", empty_body)
+    TBOX_ROUTE_TEST_USER.is_superuser = True
+    async with app.test_client() as client:
+        resp = await client.patch(f"/{API_VERSION}/tbox/crawl/tasks/p1")
+    data = await resp.get_json()
+    assert data["code"] == RetCode.ARGUMENT_ERROR
+    assert "no fields" in data["message"].lower()
+
+
+@pytest.mark.p2
+@pytest.mark.asyncio
+async def test_crawl_tasks_patch_name_empty(tbox_quart_app, monkeypatch: pytest.MonkeyPatch):
+    app, mod = tbox_quart_app
+    monkeypatch.setattr(mod, "_active_tenant_memberships", lambda _uid: [])
+    row = SimpleNamespace(id="p2", tenant_id="tbox-route-test-user", name="old")
+    st, rs = _crawl_sets()
+
+    async def body():
+        return {"name": "   "}
+
+    fake = SimpleNamespace(
+        tenant_ids_for_crawl=lambda uid, is_sup: None,
+        get_task=lambda tid: row if tid == "p2" else None,
+        user_may_access_task=lambda t, allowed: True,
+        ALLOWED_SOURCE_TYPES=st,
+        ALLOWED_RUN_STATES=rs,
+    )
+    monkeypatch.setattr(mod, "crawl_svc", fake)
+    monkeypatch.setattr(mod, "get_request_json", body)
+    TBOX_ROUTE_TEST_USER.is_superuser = True
+    async with app.test_client() as client:
+        resp = await client.patch(f"/{API_VERSION}/tbox/crawl/tasks/p2")
+    data = await resp.get_json()
+    assert data["code"] == RetCode.ARGUMENT_ERROR
+    assert "non-empty" in data["message"].lower()
+
+
+@pytest.mark.p2
+@pytest.mark.asyncio
+async def test_crawl_tasks_patch_name_ok(tbox_quart_app, monkeypatch: pytest.MonkeyPatch):
+    app, mod = tbox_quart_app
+    monkeypatch.setattr(mod, "_active_tenant_memberships", lambda _uid: [])
+    row = SimpleNamespace(id="p3", tenant_id="tbox-route-test-user", name="old")
+    st, rs = _crawl_sets()
+    update_calls: list[dict] = []
+
+    async def body():
+        return {"name": "  renamed  "}
+
+    def update_task_fields(t, fields):
+        update_calls.append(dict(fields))
+        for k, v in fields.items():
+            setattr(t, k, v)
+
+    def task_row_to_dict(t):
+        return {"id": t.id, "name": t.name}
+
+    fake = SimpleNamespace(
+        tenant_ids_for_crawl=lambda uid, is_sup: None,
+        get_task=lambda tid: row if tid == "p3" else None,
+        user_may_access_task=lambda t, allowed: True,
+        ALLOWED_SOURCE_TYPES=st,
+        ALLOWED_RUN_STATES=rs,
+        update_task_fields=update_task_fields,
+        task_row_to_dict=task_row_to_dict,
+    )
+    monkeypatch.setattr(mod, "crawl_svc", fake)
+    monkeypatch.setattr(mod, "get_request_json", body)
+    TBOX_ROUTE_TEST_USER.is_superuser = True
+    async with app.test_client() as client:
+        resp = await client.patch(f"/{API_VERSION}/tbox/crawl/tasks/p3")
+    data = await resp.get_json()
+    assert data["code"] == 0
+    assert data["data"]["name"] == "renamed"
+    assert update_calls == [{"name": "renamed"}]
+
+
+@pytest.mark.p2
+@pytest.mark.asyncio
+async def test_crawl_tasks_delete_ok(tbox_quart_app, monkeypatch: pytest.MonkeyPatch):
+    app, mod = tbox_quart_app
+    monkeypatch.setattr(mod, "_active_tenant_memberships", lambda _uid: [])
+    row = SimpleNamespace(id="d1", tenant_id="tbox-route-test-user")
+    deleted: list[str] = []
+
+    def soft_delete_task(t):
+        deleted.append(t.id)
+
+    fake = SimpleNamespace(
+        tenant_ids_for_crawl=lambda uid, is_sup: None,
+        get_task=lambda tid: row if tid == "d1" else None,
+        user_may_access_task=lambda t, allowed: True,
+        soft_delete_task=soft_delete_task,
+    )
+    monkeypatch.setattr(mod, "crawl_svc", fake)
+    TBOX_ROUTE_TEST_USER.is_superuser = True
+    async with app.test_client() as client:
+        resp = await client.delete(f"/{API_VERSION}/tbox/crawl/tasks/d1")
+    data = await resp.get_json()
+    assert data["code"] == 0
+    assert data["message"] == "deleted"
+    assert deleted == ["d1"]
+
+
+@pytest.mark.p2
+@pytest.mark.asyncio
+async def test_crawl_tasks_run_ok(tbox_quart_app, monkeypatch: pytest.MonkeyPatch):
+    app, mod = tbox_quart_app
+    monkeypatch.setattr(mod, "_active_tenant_memberships", lambda _uid: [])
+    row = SimpleNamespace(id="r1", tenant_id="tbox-route-test-user", ran=False)
+    ticks: list[str] = []
+
+    def execute_crawl_task_stub_tick(tid):
+        ticks.append(tid)
+        row.ran = True
+
+    def task_row_to_dict(t):
+        return {"id": t.id, "ran": bool(getattr(t, "ran", False))}
+
+    fake = SimpleNamespace(
+        tenant_ids_for_crawl=lambda uid, is_sup: None,
+        get_task=lambda tid: row if tid == "r1" else None,
+        user_may_access_task=lambda t, allowed: True,
+        execute_crawl_task_stub_tick=execute_crawl_task_stub_tick,
+        record_worker_tick=lambda *a, **k: None,
+        task_row_to_dict=task_row_to_dict,
+    )
+    monkeypatch.setattr(mod, "crawl_svc", fake)
+    TBOX_ROUTE_TEST_USER.is_superuser = True
+    async with app.test_client() as client:
+        resp = await client.post(f"/{API_VERSION}/tbox/crawl/tasks/r1/run")
+    data = await resp.get_json()
+    assert data["code"] == 0
+    assert data["data"]["id"] == "r1"
+    assert data["data"]["ran"] is True
+    assert ticks == ["r1"]
