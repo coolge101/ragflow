@@ -9,7 +9,7 @@ export function ReferenceChunks({ reference }: { reference: unknown }) {
   }
 
   return (
-    <ul style={{ margin: 0, paddingLeft: "1rem", display: "flex", flexDirection: "column", gap: "0.65rem" }}>
+    <ul aria-label="引用片段" style={{ margin: 0, paddingLeft: "1rem", display: "flex", flexDirection: "column", gap: "0.65rem" }}>
       {chunks.map((c, i) => {
         const row = c as Record<string, unknown>;
         const doc =

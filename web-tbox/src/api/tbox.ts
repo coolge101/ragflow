@@ -21,6 +21,19 @@ export type TboxHealthResponse = {
   };
 };
 
+/** Parse TBOX JSON bodies even when the server returns HTML or empty (proxy misconfig). */
+async function readTboxJson<T extends { code?: number; message?: string }>(res: Response): Promise<T> {
+  const text = await res.text();
+  if (!text.trim()) {
+    return { code: -1, message: "空响应体" } as T;
+  }
+  try {
+    return JSON.parse(text) as T;
+  } catch {
+    return { code: -1, message: "响应不是有效 JSON" } as T;
+  }
+}
+
 export type TboxMeResponse = {
   code: number;
   message?: string;
@@ -40,21 +53,21 @@ export async function fetchTboxMe(): Promise<{ res: Response; body: TboxMeRespon
   const res = await fetch("/v1/tbox/me", {
     headers: auth ? { Authorization: auth } : {},
   });
-  const body = (await res.json()) as TboxMeResponse;
+  const body = await readTboxJson<TboxMeResponse>(res);
   return { res, body };
 }
 
 /** Public route — no auth (same as `tbox_app.contract`). */
 export async function fetchTboxContract(): Promise<{ res: Response; body: TboxContractResponse }> {
   const res = await fetch("/v1/tbox/contract");
-  const body = (await res.json()) as TboxContractResponse;
+  const body = await readTboxJson<TboxContractResponse>(res);
   return { res, body };
 }
 
 /** Public route — no auth (same as `tbox_app.health`). */
 export async function fetchTboxHealth(): Promise<{ res: Response; body: TboxHealthResponse }> {
   const res = await fetch("/v1/tbox/health");
-  const body = (await res.json()) as TboxHealthResponse;
+  const body = await readTboxJson<TboxHealthResponse>(res);
   return { res, body };
 }
 
