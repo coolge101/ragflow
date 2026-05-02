@@ -1,4 +1,5 @@
-import { FormEvent, useCallback, useEffect, useRef, useState } from "react";
+import { type CSSProperties, FormEvent, useCallback, useEffect, useRef, useState } from "react";
+import { Link } from "react-router-dom";
 import { streamChatCompletions } from "../api/chatCompletion";
 import {
   createChatSession,
@@ -33,6 +34,18 @@ function toApiMessages(msgs: ChatMessage[]): Array<{ role: string; content: stri
   }));
 }
 
+const chatErrBanner: CSSProperties = {
+  marginBottom: "0.75rem",
+  padding: "0.65rem 0.9rem",
+  borderRadius: 8,
+  border: "1px solid #fecaca",
+  background: "#fef2f2",
+  display: "flex",
+  flexWrap: "wrap",
+  alignItems: "center",
+  gap: "0.65rem",
+};
+
 export function ChatPage() {
   const [chats, setChats] = useState<ChatRow[]>([]);
   const [chatsLoading, setChatsLoading] = useState(true);
@@ -46,8 +59,39 @@ export function ChatPage() {
   const [streaming, setStreaming] = useState<string | null>(null);
   const [liveReference, setLiveReference] = useState<unknown>(null);
   const [error, setError] = useState<string | null>(null);
+  const [chatsError, setChatsError] = useState<string | null>(null);
+  const [sessionsError, setSessionsError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
+
+  const loadChats = useCallback(async () => {
+    setChatsLoading(true);
+    setChatsError(null);
+    try {
+      const { res, body } = await listChats({ page: 1, page_size: 80 });
+      if (res.status === 401 || body.code === 401) {
+        setChatsError("未授权");
+        setChats([]);
+        return;
+      }
+      if (body.code !== 0) {
+        setChatsError(body.message || `错误码 ${body.code}`);
+        setChats([]);
+        return;
+      }
+      const list = body.data?.chats ?? [];
+      setChats(Array.isArray(list) ? list : []);
+    } catch (e) {
+      setChatsError(e instanceof Error ? e.message : String(e));
+      setChats([]);
+    } finally {
+      setChatsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void loadChats();
+  }, [loadChats]);
 
   const reloadSessions = useCallback(async () => {
     if (!selectedChatId) {
@@ -55,51 +99,27 @@ export function ChatPage() {
       return;
     }
     setSessionsLoading(true);
+    setSessionsError(null);
     try {
       const { res, body } = await listSessions(selectedChatId, { page: 1, page_size: 50 });
       if (res.status === 401 || body.code === 401) {
+        setSessionsError("未授权");
         setSessions([]);
         return;
       }
       if (body.code !== 0) {
+        setSessionsError(body.message || `错误码 ${body.code}`);
         setSessions([]);
         return;
       }
       setSessions(Array.isArray(body.data) ? body.data : []);
+    } catch (e) {
+      setSessionsError(e instanceof Error ? e.message : String(e));
+      setSessions([]);
     } finally {
       setSessionsLoading(false);
     }
   }, [selectedChatId]);
-
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      setChatsLoading(true);
-      try {
-        const { res, body } = await listChats({ page: 1, page_size: 80 });
-        if (cancelled) {
-          return;
-        }
-        if (res.status === 401 || body.code === 401) {
-          setChats([]);
-          return;
-        }
-        if (body.code !== 0) {
-          setChats([]);
-          return;
-        }
-        const list = body.data?.chats ?? [];
-        setChats(Array.isArray(list) ? list : []);
-      } finally {
-        if (!cancelled) {
-          setChatsLoading(false);
-        }
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
 
   useEffect(() => {
     void reloadSessions();
@@ -112,6 +132,8 @@ export function ChatPage() {
     setSessions([]);
     setLiveReference(null);
     setError(null);
+    setChatsError(null);
+    setSessionsError(null);
   }
 
   async function onSessionChange(nextSessionId: string) {
@@ -138,6 +160,8 @@ export function ChatPage() {
       setSessionId(nextSessionId);
       setMessages(mapSessionMessages(body.data?.messages));
       setLiveReference(null);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
     } finally {
       setLoading(false);
     }
@@ -168,6 +192,8 @@ export function ChatPage() {
       setMessages(mapSessionMessages(body.data?.messages));
       setLiveReference(null);
       await reloadSessions();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
     } finally {
       setLoading(false);
     }
@@ -213,6 +239,8 @@ export function ChatPage() {
             setSessionId(newSid);
             setMessages(baseMessages);
             await reloadSessions();
+          } catch (err) {
+            setError(err instanceof Error ? err.message : String(err));
           } finally {
             setLoading(false);
           }
@@ -271,6 +299,9 @@ export function ChatPage() {
           },
           signal,
         );
+      } catch (err) {
+        setError(err instanceof Error ? err.message : String(err));
+        setStreaming(null);
       } finally {
         setLoading(false);
         abortRef.current = null;
@@ -343,14 +374,44 @@ export function ChatPage() {
               </button>
             </>
           ) : null}
+          <button type="button" disabled={chatsLoading} onClick={() => void loadChats()}>
+            {chatsLoading ? "…" : "刷新应用"}
+          </button>
           {chatsLoading ? <span className="muted">加载应用列表…</span> : null}
           {selectedChatId && sessionsLoading ? <span className="muted">加载会话…</span> : null}
         </div>
 
+        {chatsError ? (
+          <div style={chatErrBanner} role="alert">
+            <span style={{ color: "#991b1b", flex: "1 1 12rem" }}>
+              应用列表：{chatsError} <Link to="/login">去登录</Link>
+            </span>
+            <button type="button" disabled={chatsLoading} onClick={() => void loadChats()} style={{ cursor: chatsLoading ? "wait" : "pointer" }}>
+              {chatsLoading ? "重试中…" : "重试加载应用"}
+            </button>
+          </div>
+        ) : null}
+        {selectedChatId && sessionsError ? (
+          <div style={chatErrBanner} role="alert">
+            <span style={{ color: "#991b1b", flex: "1 1 12rem" }}>
+              会话列表：{sessionsError} <Link to="/login">去登录</Link>
+            </span>
+            <button
+              type="button"
+              disabled={sessionsLoading}
+              onClick={() => void reloadSessions()}
+              style={{ cursor: sessionsLoading ? "wait" : "pointer" }}
+            >
+              {sessionsLoading ? "重试中…" : "重试加载会话"}
+            </button>
+          </div>
+        ) : null}
         {error ? (
-          <p style={{ color: "#b91c1c", marginBottom: "1rem" }} role="alert">
-            {error}
-          </p>
+          <div style={{ ...chatErrBanner, marginBottom: "1rem" }} role="alert">
+            <span style={{ color: "#991b1b", flex: "1 1 12rem" }}>
+              {error} <Link to="/login">去登录</Link>
+            </span>
+          </div>
         ) : null}
 
         <div
