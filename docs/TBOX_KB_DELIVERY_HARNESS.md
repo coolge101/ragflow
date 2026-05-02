@@ -169,6 +169,7 @@
 | 2026-05-02 | **`test_tbox_app_health`**：**`PATCH`**（无字段、**`name`** 空、**`name`** 成功）、**`DELETE`**、**`POST .../run`**；文档 §6 / §7.3 同步 |
 | 2026-05-02 | **`test_tbox_app_health`**：**`/me`**、**`/logout`**（可变 **`current_user`** + **`save`**）；**`POST .../run`** 的 **`ValueError`** / **`RuntimeError`**；文档 §6 / §7.3 同步 |
 | 2026-05-02 | 单文件 **`test_tbox_app_health.py`** 重构为包 **`tbox_app_isolated/`**（**`conftest.py`**、**`_shared.py`**、**`test_permissions_and_public`** / **`test_crawl_tasks_routes`** / **`test_session_routes`**）；**`tbox-app-routes-unit.yml`** 路径与 **pytest** 目标改为目录 |
+| 2026-05-02 | **`tbox_app_isolated`**：**`GET /crawl/tasks/<id>`** 成功；跨租户 **403**；**`POST /crawl/tasks`** **`tenant_id`** 不在允许列表 → **`ARGUMENT_ERROR`** |
 | 2026-05-01 | `web-tbox`：主布局、全路由与 `RequirePermission`；`/me` 增加 `permissions`（契约 **v3**）；`TBOX_ENV_AND_VERSIONS.md` §2 填基线 commit；§9.0 S3 更新 |
 | 2026-05-01 | `web-tbox`：对话流式、知识库检索、租户用户列表对接官方 API；`TBOX_API_BOUNDARY` / 快速启动 / §9.0 同步 |
 | 2026-05-01 | `web-tbox` 对话：应用列表 + 会话创建/复用 + 引用侧栏（`reference.chunks`）；`chats.ts` / `ReferenceChunks.tsx` |
