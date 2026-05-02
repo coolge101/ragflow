@@ -1,4 +1,4 @@
-name: tbox-crawl-ssrf-unit
+name: tbox-crawl-common-unit
 permissions:
   contents: read
 
@@ -14,7 +14,7 @@ on:
       - "test/unit_test/common/test_tbox_crawl_origin_throttle.py"
       - "pyproject.toml"
       - "uv.lock"
-      - ".github/workflows/tbox-crawl-ssrf-unit.yml"
+      - ".github/workflows/tbox-crawl-common-unit.yml"
   push:
     branches:
       - main
@@ -29,7 +29,7 @@ on:
       - "test/unit_test/common/test_tbox_crawl_origin_throttle.py"
       - "pyproject.toml"
       - "uv.lock"
-      - ".github/workflows/tbox-crawl-ssrf-unit.yml"
+      - ".github/workflows/tbox-crawl-common-unit.yml"
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
