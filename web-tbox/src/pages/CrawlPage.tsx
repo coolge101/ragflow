@@ -10,6 +10,7 @@ import {
 } from "../api/crawlTasks";
 import { listDatasets, type DatasetRow } from "../api/datasets";
 import { useAuth } from "../context/AuthContext";
+import { formatCrawlLastErrorDisplay } from "../utils/crawlLastError";
 
 const CRAWL_ROLES = new Set(["owner", "admin", "normal"]);
 
@@ -136,14 +137,6 @@ function parseSeedUrls(text: string): string[] {
     .split(/\r?\n/)
     .map((s) => s.trim())
     .filter(Boolean);
-}
-
-function truncErr(v: unknown, max: number): string {
-  if (v == null || v === "") {
-    return "—";
-  }
-  const s = String(v);
-  return s.length <= max ? s : `${s.slice(0, max)}…`;
 }
 
 function fmtTime(v: unknown): string {
@@ -636,7 +629,7 @@ export function CrawlPage() {
                     <td style={{ padding: "8px 6px", wordBreak: "break-all" }}>{t.dataset_id || "—"}</td>
                     <td style={{ padding: "8px 6px" }}>{fmtTime(t.last_run_at)}</td>
                     <td style={{ padding: "8px 6px", maxWidth: 220, wordBreak: "break-word" }} title={t.last_error || ""}>
-                      {truncErr(t.last_error, 80)}
+                      {formatCrawlLastErrorDisplay(t.last_error, 80)}
                     </td>
                     <td style={{ padding: "8px 6px", maxWidth: 140, fontSize: "0.82rem" }} className="muted">
                       {formatCrawlExtraSummary(
