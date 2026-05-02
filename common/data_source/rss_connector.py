@@ -41,6 +41,7 @@ class RSSConnector(LoadConnector, PollConnector, SlimConnectorWithPermSync):
         *,
         origin_throttle: Any | None = None,
         robots_preflight: Any | None = None,
+        request_timeout_sec: float | None = None,
     ) -> None:
         self.feed_url = feed_url.strip()
         self.batch_size = batch_size
@@ -48,6 +49,9 @@ class RSSConnector(LoadConnector, PollConnector, SlimConnectorWithPermSync):
         self._cached_feed: Any | None = None
         self._origin_throttle = origin_throttle
         self._robots_preflight = robots_preflight
+        self._http_timeout = float(
+            request_timeout_sec if request_timeout_sec is not None else REQUEST_TIMEOUT_SECONDS,
+        )
 
     def load_credentials(self, credentials: dict[str, Any]) -> dict[str, Any] | None:
         self.credentials = credentials or {}
@@ -151,7 +155,7 @@ class RSSConnector(LoadConnector, PollConnector, SlimConnectorWithPermSync):
                     with _pin_dns(current_hostname, current_ip):
                         response = requests.get(
                             current_url,
-                            timeout=REQUEST_TIMEOUT_SECONDS,
+                            timeout=self._http_timeout,
                             allow_redirects=False,
                             headers=_RSS_HTTP_HEADERS,
                         )

@@ -124,6 +124,7 @@ def ingest_rss_seeds_into_kb(
     upload each entry as ``.txt`` under *kb*, then queue parse tasks.
 
     Caps: ``TBOX_CRAWL_RSS_MAX_FEEDS`` (default **3**), ``TBOX_CRAWL_RSS_MAX_ENTRIES`` (default **30**) per tick.
+    Feed HTTP timeout: ``TBOX_CRAWL_INGEST_TIMEOUT`` (fallback ``TBOX_CRAWL_FETCH_TIMEOUT``), same as ``static_web`` ingest.
     """
     if kb is None or not getattr(kb, "id", None):
         return False, "invalid knowledge base"
@@ -132,6 +133,7 @@ def ingest_rss_seeds_into_kb(
     me_raw = max_entries if max_entries is not None else os.environ.get("TBOX_CRAWL_RSS_MAX_ENTRIES", "30")
     max_f = max(1, min(int(mf_raw), len(feed_urls)))
     cap = max(1, int(me_raw))
+    feed_timeout = float(os.environ.get("TBOX_CRAWL_INGEST_TIMEOUT", os.environ.get("TBOX_CRAWL_FETCH_TIMEOUT", "60")))
 
     errs: list[str] = []
     kb_table_num_map: dict = {}
@@ -156,6 +158,7 @@ def ingest_rss_seeds_into_kb(
                 batch_size=max(1, inner_batch),
                 origin_throttle=throttle,
                 robots_preflight=robots_cache,
+                request_timeout_sec=feed_timeout,
             )
             conn.load_credentials({})
             for batch in conn.load_from_state():
