@@ -232,6 +232,7 @@ markers = [
 
 # Test collection and runtime configuration
 filterwarnings = [
+    "ignore:pkg_resources is deprecated as an API.*:UserWarning",  # xgboost / setuptools; must precede blanket error
     "error",  # Treat warnings as errors
     "ignore::DeprecationWarning",  # Ignore specific warnings
 ]

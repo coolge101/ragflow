@@ -1,0 +1,45 @@
+name: tbox-task-service-unit
+permissions:
+  contents: read
+
+on:
+  pull_request:
+    paths:
+      - "api/db/services/tbox_crawl_task_service.py"
+      - "test/unit_test/api/db/services/test_tbox_crawl_task_service.py"
+      - "pyproject.toml"
+      - "uv.lock"
+      - ".github/workflows/tbox-task-service-unit.yml"
+  push:
+    branches:
+      - main
+      - "*.*.*"
+    paths:
+      - "api/db/services/tbox_crawl_task_service.py"
+      - "test/unit_test/api/db/services/test_tbox_crawl_task_service.py"
+      - "pyproject.toml"
+      - "uv.lock"
+      - ".github/workflows/tbox-task-service-unit.yml"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  pytest:
+    name: pytest tbox crawl task service (pure logic)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v6
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: Sync test dependencies
+        run: uv sync --python 3.12 --group test --frozen
+
+      - name: Run unit tests
+        run: uv run pytest test/unit_test/api/db/services/test_tbox_crawl_task_service.py -v --tb=short

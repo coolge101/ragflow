@@ -53,6 +53,7 @@ CI 中的重型对抗流程仍可通过 `python test/adversarial_tests.py --targ
 | **`web-tbox.yml`** | `web-tbox/**` | `npm ci` + **`npm run typecheck`** + **`npm run build`** |
 | **`harness-monitor-unit.yml`** | `common/harness_monitor.py`、`test/test_harness_monitor.py`、`test/adversarial_tests.py`、`pyproject.toml`、`uv.lock` 等 | **`uv sync --group test --frozen`** + **`pytest`** `test/test_harness_monitor.py` 与 **`test/adversarial_tests.py`**（后者 **live** 用例默认 **skip**，见 §5） |
 | **`tbox-crawl-common-unit.yml`** | `common/tbox_crawl_*`（含 **`tbox_crawl_robots`**、**`tbox_crawl_http_probe`**）、`common/ssrf_guard.py`、`test/unit_test/common/test_tbox_crawl_*.py`、**`test_ssrf_guard.py`** 等 | **`uv sync --group test --frozen`** + **`pytest`**：`test_tbox_crawl_*.py` 与 **`test_ssrf_guard.py`** |
+| **`tbox-task-service-unit.yml`** | **`api/db/services/tbox_crawl_task_service.py`**、`test/unit_test/api/db/services/test_tbox_crawl_task_service.py`、`pyproject.toml`、`uv.lock` | **`uv sync --group test --frozen`** + **`pytest`** 该服务纯逻辑单测（导入链较重，仅路径触发） |
 
 ## 7. 相关文档
 
