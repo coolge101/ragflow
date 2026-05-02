@@ -31,6 +31,8 @@ npm run dev
 
 浏览器打开终端提示的地址（默认 **http://127.0.0.1:5174**）。开发模式下 Vite 将 **`/v1` 与 `/api`** 代理到 `VITE_RAGFLOW_API_ORIGIN`，避免 CORS。
 
+提交或发版前建议在 `web-tbox/` 下执行 **`npm run typecheck`** 与 **`npm run build`**（与 GitHub Actions **`.github/workflows/web-tbox.yml`** 一致）；路由与权限说明见同目录 **`README.md`**。
+
 ### 3.1 登录与鉴权接口
 
 1. 浏览器访问 **`/login`**，使用与 RAGFlow 相同的**邮箱 + 密码**。前端会调用 **`POST /api/v1/auth/login`**，密码使用与官方 `web/` 相同的 **RSA 公钥**加密后再提交。

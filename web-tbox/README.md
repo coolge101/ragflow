@@ -2,6 +2,8 @@
 
 与仓库根 `web/`（RAGFlow 官方 UI）**并行存在**：本目录为 **TBOX 知识库产品** 的 UI 基座，通过 HTTP 调用 RAGFlow 及 **`/v1/tbox/*`** 扩展 API。
 
+分步联调（后端健康检查、`.env`、登录与权限）见仓库根 **[`docs/TBOX_QUICKSTART.md`](../docs/TBOX_QUICKSTART.md)**。
+
 ## 开发
 
 ```bash
@@ -27,10 +29,11 @@ npm run dev
 ## 构建
 
 ```bash
+npm run typecheck
 npm run build
 ```
 
-产物在 `dist/`，可由 Nginx 或静态资源服务托管；与 Docker 编排的衔接见 `docs/TBOX_QUICKSTART.md` 与总纲 §9。
+产物在 `dist/`，可由 Nginx 或静态资源服务托管；与 Docker 编排的衔接见 [`docs/TBOX_QUICKSTART.md`](../docs/TBOX_QUICKSTART.md) 与总纲 §9。CI：`.github/workflows/web-tbox.yml`（`npm ci` + `typecheck` + `build`）。
 
 ## 文档
 
