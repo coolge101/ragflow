@@ -1,6 +1,7 @@
 import { FormEvent, useEffect, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { loginWithEmailPassword } from "../api/auth";
+import { ApiErrorBanner } from "../components/ApiErrorBanner";
 import { fetchTboxHealth } from "../api/tbox";
 import { useAuth } from "../context/AuthContext";
 import { TBOX_API_CONTRACT_VERSION_EXPECTED } from "../constants/tboxContract";
@@ -175,7 +176,11 @@ export function LoginPage() {
               style={{ width: "100%", padding: "0.5rem" }}
             />
           </label>
-          {error ? <p style={{ color: "#b91c1c", marginTop: 0 }}>{error}</p> : null}
+          {error ? (
+            <ApiErrorBanner showLoginLink={false} style={{ marginBottom: "0.75rem" }}>
+              {error}
+            </ApiErrorBanner>
+          ) : null}
           <button
             type="submit"
             disabled={loading}
