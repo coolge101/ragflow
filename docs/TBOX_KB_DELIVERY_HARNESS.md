@@ -163,11 +163,12 @@
 | 2026-05-02 | **`TBOX_QUICKSTART.md`** 新增 **§6**：PR 前本地命令与 **`TBOX_ENV_AND_VERSIONS.md`** §6 轻量 CI 对齐说明 |
 | 2026-05-02 | **`web-tbox/README.md`**：链至 **`TBOX_QUICKSTART`** §6 / **`TBOX_ENV_AND_VERSIONS`** §6（PR 自检与 CI 索引） |
 | 2026-05-02 | 新增 **`tbox-crawl-worker-unit.yml`** + **`test/unit_test/rag/svr/test_tbox_crawl_worker.py`**；**`TBOX_QUICKSTART`** / **`TBOX_ENV_AND_VERSIONS`** §6 与本文 §7.3 同步 |
-| 2026-05-02 | 新增 **`tbox-app-routes-unit.yml`** + **`test/unit_test/api/apps/test_tbox_app_health.py`**（隔离 Quart，不导入全量 **`api.apps`**）；**`TBOX_QUICKSTART`** / **`TBOX_ENV_AND_VERSIONS`** §6 与本文 §7.3 同步 |
+| 2026-05-02 | 新增 **`tbox-app-routes-unit.yml`** + **`test/unit_test/api/apps/tbox_app_isolated/`**（隔离 Quart，不导入全量 **`api.apps`**；由 **`conftest.py`**、**`_shared.py`**、按域 **`test_*.py`** 组成）；**`TBOX_QUICKSTART`** / **`TBOX_ENV_AND_VERSIONS`** §6 与本文 §7.3 同步 |
 | 2026-05-02 | **`test_tbox_app_health`**：可变 **`current_user`** + mock **`crawl_svc`** 覆盖 **`GET /crawl/tasks`**（超管空列表）、**`crawl.manage`** 拒绝、**`GET /crawl/tasks/<id>`** 404；文档 §6 表与快速启动注释同步 |
 | 2026-05-02 | **`test_tbox_app_health`**：**`POST /crawl/tasks`**（**`name`** 必填、成功创建）；stub **`get_request_json`** 改为 **async**；文档 §6 / §7.3 同步 |
 | 2026-05-02 | **`test_tbox_app_health`**：**`PATCH`**（无字段、**`name`** 空、**`name`** 成功）、**`DELETE`**、**`POST .../run`**；文档 §6 / §7.3 同步 |
 | 2026-05-02 | **`test_tbox_app_health`**：**`/me`**、**`/logout`**（可变 **`current_user`** + **`save`**）；**`POST .../run`** 的 **`ValueError`** / **`RuntimeError`**；文档 §6 / §7.3 同步 |
+| 2026-05-02 | 单文件 **`test_tbox_app_health.py`** 重构为包 **`tbox_app_isolated/`**（**`conftest.py`**、**`_shared.py`**、**`test_permissions_and_public`** / **`test_crawl_tasks_routes`** / **`test_session_routes`**）；**`tbox-app-routes-unit.yml`** 路径与 **pytest** 目标改为目录 |
 | 2026-05-01 | `web-tbox`：主布局、全路由与 `RequirePermission`；`/me` 增加 `permissions`（契约 **v3**）；`TBOX_ENV_AND_VERSIONS.md` §2 填基线 commit；§9.0 S3 更新 |
 | 2026-05-01 | `web-tbox`：对话流式、知识库检索、租户用户列表对接官方 API；`TBOX_API_BOUNDARY` / 快速启动 / §9.0 同步 |
 | 2026-05-01 | `web-tbox` 对话：应用列表 + 会话创建/复用 + 引用侧栏（`reference.chunks`）；`chats.ts` / `ReferenceChunks.tsx` |

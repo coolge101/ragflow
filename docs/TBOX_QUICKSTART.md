@@ -94,7 +94,7 @@ uv run pytest test/unit_test/api/db/services/test_tbox_crawl_task_service.py -v 
 uv run pytest test/unit_test/rag/svr/test_tbox_crawl_worker.py -v --tb=short
 
 # tbox_app 隔离路由（/health、/contract、/me、/logout；mock crawl_svc：crawl 任务 CRUD + POST …/run 含错误分支；与 tbox-app-routes-unit.yml 一致）
-uv run pytest test/unit_test/api/apps/test_tbox_app_health.py -v --tb=short
+uv run pytest test/unit_test/api/apps/tbox_app_isolated -v --tb=short
 ```
 
 **说明**：重型 **`harness_engineering`**（对抗 + Docker 等）**不**随 PR 触发，见 **`docs/TBOX_KB_DELIVERY_HARNESS.md`** §7.3；发版前仍按该 workflow 或运维流程执行。

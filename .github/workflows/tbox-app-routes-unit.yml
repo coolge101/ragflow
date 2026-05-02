@@ -6,7 +6,7 @@ on:
   pull_request:
     paths:
       - "api/apps/tbox_app.py"
-      - "test/unit_test/api/apps/test_tbox_app_health.py"
+      - "test/unit_test/api/apps/tbox_app_isolated/**"
       - "api/constants.py"
       - "pyproject.toml"
       - "uv.lock"
@@ -17,7 +17,7 @@ on:
       - "*.*.*"
     paths:
       - "api/apps/tbox_app.py"
-      - "test/unit_test/api/apps/test_tbox_app_health.py"
+      - "test/unit_test/api/apps/tbox_app_isolated/**"
       - "api/constants.py"
       - "pyproject.toml"
       - "uv.lock"
@@ -44,4 +44,4 @@ jobs:
         run: uv sync --python 3.12 --group test --frozen
 
       - name: Run unit tests
-        run: uv run pytest test/unit_test/api/apps/test_tbox_app_health.py -v --tb=short
+        run: uv run pytest test/unit_test/api/apps/tbox_app_isolated -v --tb=short
