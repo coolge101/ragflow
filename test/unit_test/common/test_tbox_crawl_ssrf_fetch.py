@@ -22,7 +22,7 @@ from unittest.mock import patch
 
 import requests
 
-from common.tbox_crawl_ssrf_fetch import _retry_delay_seconds
+from common.tbox_crawl_ssrf_fetch import _RETRY_STATUSES, _retry_delay_seconds
 
 
 class TestTboxCrawlSsrfFetch(unittest.TestCase):
@@ -73,6 +73,17 @@ class TestTboxCrawlSsrfFetch(unittest.TestCase):
         with patch.dict(os.environ, {"TBOX_CRAWL_RETRY_BACKOFF_BASE_408": "1.25"}, clear=False):
             self.assertAlmostEqual(_retry_delay_seconds(r, 0), 1.25)
             self.assertAlmostEqual(_retry_delay_seconds(r, 1), 2.5)
+
+    def test_retry_statuses_includes_cloudflare_edge(self):
+        for code in (520, 521, 522, 523, 524):
+            self.assertIn(code, _RETRY_STATUSES)
+
+    def test_retry_backoff_base_522_override(self):
+        r = requests.Response()
+        r.status_code = 522
+        with patch.dict(os.environ, {"TBOX_CRAWL_RETRY_BACKOFF_BASE_522": "3"}, clear=False):
+            self.assertAlmostEqual(_retry_delay_seconds(r, 0), 3.0)
+            self.assertAlmostEqual(_retry_delay_seconds(r, 1), 6.0)
 
 
 if __name__ == "__main__":

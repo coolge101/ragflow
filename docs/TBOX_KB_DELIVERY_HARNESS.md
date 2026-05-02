@@ -183,6 +183,7 @@
 | 2026-05-02 | **§9.4.2**：**502** 纳入 **`tbox_crawl_ssrf_fetch`** 与 **RSS Feed** 同源瞬时退避；**`TBOX_API_BOUNDARY` §1.3** 补 **`TBOX_CRAWL_RETRY_*_502`** |
 | 2026-05-02 | **§9.4.2**：**504** 纳入同源瞬时退避；**`TBOX_API_BOUNDARY` §1.3** 补 **`TBOX_CRAWL_RETRY_*_504`** |
 | 2026-05-02 | **§9.4.2**：**408** 纳入同源瞬时退避；**`TBOX_API_BOUNDARY` §1.3** 补 **`TBOX_CRAWL_RETRY_*_408`** |
+| 2026-05-02 | **§9.4.2**：**520–524**（边缘/CDN 常见）纳入 **`tbox_crawl_ssrf_fetch._RETRY_STATUSES`**；**`TBOX_API_BOUNDARY` §1.3** 补 **`TBOX_CRAWL_RETRY_*_<CODE>`** 说明 |
 
 ---
 
@@ -249,9 +250,9 @@
 
 | 项 | 现状 | 说明 / 待办 |
 |----|------|-------------|
-| **`Crawl-delay` + 最小间隔** | **已实现（首版）**：`common/tbox_crawl_origin_throttle.py` 的 **`OriginFetchThrottler`** 在 **`fetch_url_body_capped` / `probe_url_streaming_cap`** 的 **每 hop GET 前** 与 **`/robots.txt` 拉取时间戳**对齐后 **`sleep`**；**`RobotsOriginCache.crawl_delay_seconds`** 读 **`RobotFileParser.crawl_delay`**；环境变量 **`TBOX_CRAWL_MIN_ORIGIN_INTERVAL`**、**`TBOX_CRAWL_MAX_CRAWL_DELAY_SEC`**、**`TBOX_CRAWL_SKIP_CRAWL_DELAY`**。探测、**`static_web`** 入库、**TBOX RSS 入库** 均共享 throttler。 | **`RSSConnector._read_feed`**（仅 **Feed URL** 拉取与重定向）在 **`ingest_rss_seeds_into_kb`** 中已传入 **throttle + per-hop robots + 408/429/502/503/504 退避**；**条目正文**仍来自 **feedparser** 解析字段，**不**对 entry **外链**再发 GET。 |
+| **`Crawl-delay` + 最小间隔** | **已实现（首版）**：`common/tbox_crawl_origin_throttle.py` 的 **`OriginFetchThrottler`** 在 **`fetch_url_body_capped` / `probe_url_streaming_cap`** 的 **每 hop GET 前** 与 **`/robots.txt` 拉取时间戳**对齐后 **`sleep`**；**`RobotsOriginCache.crawl_delay_seconds`** 读 **`RobotFileParser.crawl_delay`**；环境变量 **`TBOX_CRAWL_MIN_ORIGIN_INTERVAL`**、**`TBOX_CRAWL_MAX_CRAWL_DELAY_SEC`**、**`TBOX_CRAWL_SKIP_CRAWL_DELAY`**。探测、**`static_web`** 入库、**TBOX RSS 入库** 均共享 throttler。 | **`RSSConnector._read_feed`**（仅 **Feed URL** 拉取与重定向）在 **`ingest_rss_seeds_into_kb`** 中已传入 **throttle + per-hop robots + 与 `fetch_url_body_capped` 同源的瞬时 HTTP 退避**（**`_RETRY_STATUSES`**，含 **408/429/502/503/504** 与 **520–524**）；**条目正文**仍来自 **feedparser** 解析字段，**不**对 entry **外链**再发 GET。 |
 | **非标准 Request-rate** | **未**解析 Google 扩展等非 **`urllib.robotparser`** 字段。 | 若合规要求覆盖，须自定义解析或第三方 robots 库。 |
-| **408 / 429 / 502 / 503 / 504 与退避** | **已实现（首版）**：`common/tbox_crawl_ssrf_fetch.py` 在 **408/429/502/503/504** 按 **`Retry-After`**（delta/http-date，带上限）或指数退避重试；全局参数 **`TBOX_CRAWL_RETRY_*`**，并支持 **按状态覆盖**（**`_408` / `_429` / `_502` / `_503` / `_504`** 后缀，见 **`docs/TBOX_API_BOUNDARY.md` §1.3**）。 | **`last_error`** 短码前缀见下行。 |
+| **瞬时 HTTP 与退避** | **已实现（首版）**：`common/tbox_crawl_ssrf_fetch.py` 对 **`_RETRY_STATUSES`** 中的状态码（**408/429/502/503/504** 与 **Cloudflare 等 520–524**）按 **`Retry-After`**（delta/http-date，带上限）或指数退避重试；全局 **`TBOX_CRAWL_RETRY_*`**，并按状态 **`TBOX_CRAWL_RETRY_*_<CODE>`** 覆盖（**`CODE`** 见 **`docs/TBOX_API_BOUNDARY.md` §1.3**）。 | **`last_error`** 短码前缀见下行。 |
 | **last_error 短码** | tick 失败写入 **`[tbox:CODE] …`**（**`common/tbox_crawl_last_error.py`**），如 **`HTTP_PROBE`**、**`INGEST_STATIC`**、**`INGEST_RSS`**、**`DATASET_TENANT`**、**`KB_NOT_FOUND`**、**`WORKER_EXCEPTION`**、**`WORKER_STUB`**。 | 后续可映射到 UI 固定文案或 i18n key。 |
 
 #### 9.4.3 待办：robots 全量语义与产品合规
