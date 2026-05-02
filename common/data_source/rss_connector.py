@@ -140,7 +140,7 @@ class RSSConnector(LoadConnector, PollConnector, SlimConnectorWithPermSync):
         # that existed when allow_redirects=True was used with post-hoc checks.
         #
         # When *origin_throttle* / *robots_preflight* are set (TBOX crawl ingest), align with
-        # ``common.tbox_crawl_ssrf_fetch`` (per-hop robots, Crawl-delay spacing, 429/502/503 backoff).
+        # ``common.tbox_crawl_ssrf_fetch`` (per-hop robots, Crawl-delay spacing, 429/502/503/504 backoff).
         response: requests.Response | None = None
         try:
             for _ in range(_MAX_REDIRECTS + 1):
