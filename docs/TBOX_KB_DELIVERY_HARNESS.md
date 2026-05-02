@@ -168,12 +168,13 @@
 | 2026-05-02 | **`test_tbox_app_health`**：**`POST /crawl/tasks`**（**`name`** 必填、成功创建）；stub **`get_request_json`** 改为 **async**；文档 §6 / §7.3 同步 |
 | 2026-05-02 | **`test_tbox_app_health`**：**`PATCH`**（无字段、**`name`** 空、**`name`** 成功）、**`DELETE`**、**`POST .../run`**；文档 §6 / §7.3 同步 |
 | 2026-05-02 | **`test_tbox_app_health`**：**`/me`**、**`/logout`**（可变 **`current_user`** + **`save`**）；**`POST .../run`** 的 **`ValueError`** / **`RuntimeError`**；文档 §6 / §7.3 同步 |
-| 2026-05-02 | 单文件 **`test_tbox_app_health.py`** 重构为包 **`tbox_app_isolated/`**（**`conftest.py`**、**`_shared.py`**、**`test_permissions_and_public`** / **`test_crawl_tasks_routes`** / **`test_session_routes`**）；**`tbox-app-routes-unit.yml`** 路径与 **pytest** 目标改为目录 |
+| 2026-05-02 | 单文件 **`test_tbox_app_health.py`** 重构为包 **`tbox_app_isolated/`**（**`conftest.py`**、**`_shared.py`**、**`test_permissions_and_public`**、**`test_session_routes`**、**`crawl_helpers.py`** 与 **`test_crawl_*.py`**）；**`tbox-app-routes-unit.yml`** 路径与 **pytest** 目标改为目录 |
 | 2026-05-02 | **`tbox_app_isolated`**：**`GET /crawl/tasks/<id>`** 成功；跨租户 **403**；**`POST /crawl/tasks`** **`tenant_id`** 不在允许列表 → **`ARGUMENT_ERROR`** |
 | 2026-05-02 | **`tbox_app_isolated`**：**`GET /crawl/tasks`** 多租户 **`resolve_list_tenant_id`** 错误；**`POST`** 非法 **`source_type`**；**`PATCH`** 跨租户 **403** / **`extra_config`** 非对象；**`DELETE`**/**`POST …/run`** 跨租户 **403** |
 | 2026-05-02 | **`tbox_app_isolated`**：**`POST`** **`run_state`** / **`seed_urls`** / **`extra_config`** / **`dataset_id`**+**`kb_valid`**；**`PATCH`** **`source_type`**/**`run_state`**/**`dataset_id`**/**`seed_urls`** 校验与 **`kb_valid`**；**`_super_create_fake`** 辅助 |
 | 2026-05-02 | **`tbox_app_isolated`**：**`POST`** 空 **`seed_urls`**、**`schedule_cron`** 校验失败、**`dataset_id`** 全空白；**`PATCH`** **404**、**`schedule_cron`**/**`seed_urls`** 空列表错误；**`PATCH`** **`dataset_id: null`** 清空 |
 | 2026-05-02 | **`tbox_app_isolated`**：**`GET /crawl/tasks`** **`dataset_id`** 查询串、**`page_size`** 上限 **100**、非法分页回退 **(1,20)**；**`DELETE`** **404**；**`PATCH`** **`enabled`** / **`schedule_cron`** 成功；**`/me`** 超管全权限 |
+| 2026-05-02 | **`tbox_app_isolated`**：原 **`test_crawl_tasks_routes.py`** 拆为 **`test_crawl_list_get.py`** / **`test_crawl_create_post.py`** / **`test_crawl_mutate.py`**，共享工厂迁至 **`crawl_helpers.py`**（**`super_create_fake`**、**`patchable_row`**、**`crawl_allowed_sets`** 再导出） |
 | 2026-05-01 | `web-tbox`：主布局、全路由与 `RequirePermission`；`/me` 增加 `permissions`（契约 **v3**）；`TBOX_ENV_AND_VERSIONS.md` §2 填基线 commit；§9.0 S3 更新 |
 | 2026-05-01 | `web-tbox`：对话流式、知识库检索、租户用户列表对接官方 API；`TBOX_API_BOUNDARY` / 快速启动 / §9.0 同步 |
 | 2026-05-01 | `web-tbox` 对话：应用列表 + 会话创建/复用 + 引用侧栏（`reference.chunks`）；`chats.ts` / `ReferenceChunks.tsx` |
