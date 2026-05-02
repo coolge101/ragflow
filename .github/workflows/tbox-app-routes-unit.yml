@@ -44,4 +44,4 @@ jobs:
         run: uv sync --python 3.12 --group test --frozen
 
       - name: Run unit tests
-        run: uv run pytest test/unit_test/api/apps/tbox_app_isolated -v --tb=short
+        run: uv run pytest test/unit_test/api/apps/tbox_app_isolated -m tbox_app_isolated -v --tb=short

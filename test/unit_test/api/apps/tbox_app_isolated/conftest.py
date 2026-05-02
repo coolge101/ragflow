@@ -30,6 +30,24 @@ from api.constants import API_VERSION
 
 from ._shared import TBOX_ROUTE_TEST_USER
 
+_PKG_DIR = Path(__file__).resolve().parent
+
+
+def pytest_collection_modifyitems(config, items):
+    """Tag every test module under this package so ``-m tbox_app_isolated`` works from repo root."""
+    mark = pytest.mark.tbox_app_isolated
+    for item in items:
+        path = getattr(item, "path", None)
+        if path is None:
+            path = Path(item.fspath)
+        path = path.resolve()
+        try:
+            path.relative_to(_PKG_DIR)
+        except ValueError:
+            continue
+        if item.get_closest_marker("tbox_app_isolated") is None:
+            item.add_marker(mark)
+
 
 def repo_root() -> Path:
     here = Path(__file__).resolve()

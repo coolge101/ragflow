@@ -228,6 +228,7 @@ markers = [
     "auth: authentication UI tests",
     "asyncio: mark test as async",
     "adversarial: live HTTP adversarial tests (enable via RAGFLOW_ADVERSARIAL_TESTS)",
+    "tbox_app_isolated: isolated Quart tbox_app route tests (stubbed api.apps; no full api.apps import)",
 ]
 
 # Test collection and runtime configuration

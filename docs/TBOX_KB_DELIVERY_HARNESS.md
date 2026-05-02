@@ -175,6 +175,7 @@
 | 2026-05-02 | **`tbox_app_isolated`**：**`POST`** 空 **`seed_urls`**、**`schedule_cron`** 校验失败、**`dataset_id`** 全空白；**`PATCH`** **404**、**`schedule_cron`**/**`seed_urls`** 空列表错误；**`PATCH`** **`dataset_id: null`** 清空 |
 | 2026-05-02 | **`tbox_app_isolated`**：**`GET /crawl/tasks`** **`dataset_id`** 查询串、**`page_size`** 上限 **100**、非法分页回退 **(1,20)**；**`DELETE`** **404**；**`PATCH`** **`enabled`** / **`schedule_cron`** 成功；**`/me`** 超管全权限 |
 | 2026-05-02 | **`tbox_app_isolated`**：原 **`test_crawl_tasks_routes.py`** 拆为 **`test_crawl_list_get.py`** / **`test_crawl_create_post.py`** / **`test_crawl_mutate.py`**，共享工厂迁至 **`crawl_helpers.py`**（**`super_create_fake`**、**`patchable_row`**、**`crawl_allowed_sets`** 再导出） |
+| 2026-05-02 | **`pytest` marker** **`tbox_app_isolated`**（**`pyproject.toml`** 注册 + 包 **`conftest.py`** **`pytest_collection_modifyitems`** 自动打标）；**`tbox-app-routes-unit.yml`** / **`TBOX_QUICKSTART`** / **`TBOX_ENV_AND_VERSIONS`** §6 命令与 **`pytest -m tbox_app_isolated`** 对齐 |
 | 2026-05-01 | `web-tbox`：主布局、全路由与 `RequirePermission`；`/me` 增加 `permissions`（契约 **v3**）；`TBOX_ENV_AND_VERSIONS.md` §2 填基线 commit；§9.0 S3 更新 |
 | 2026-05-01 | `web-tbox`：对话流式、知识库检索、租户用户列表对接官方 API；`TBOX_API_BOUNDARY` / 快速启动 / §9.0 同步 |
 | 2026-05-01 | `web-tbox` 对话：应用列表 + 会话创建/复用 + 引用侧栏（`reference.chunks`）；`chats.ts` / `ReferenceChunks.tsx` |
