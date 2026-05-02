@@ -229,10 +229,27 @@ export function DocumentsPage() {
       </p>
 
       {error ? (
-        <p style={{ color: "#b91c1c", marginTop: "1rem" }}>
-          {error}{" "}
-          <Link to="/login">去登录</Link>
-        </p>
+        <div
+          style={{
+            marginTop: "1rem",
+            marginBottom: "0.5rem",
+            padding: "0.75rem 1rem",
+            borderRadius: 8,
+            border: "1px solid #fecaca",
+            background: "#fef2f2",
+            display: "flex",
+            flexWrap: "wrap",
+            alignItems: "center",
+            gap: "0.75rem",
+          }}
+        >
+          <p style={{ color: "#991b1b", margin: 0, flex: "1 1 12rem" }}>
+            {error} <Link to="/login">去登录</Link>
+          </p>
+          <button type="button" disabled={loading} onClick={() => void load()} style={{ cursor: loading ? "wait" : "pointer" }}>
+            {loading ? "重试中…" : "重试加载知识库"}
+          </button>
+        </div>
       ) : null}
 
       {loading ? (
@@ -323,7 +340,31 @@ export function DocumentsPage() {
               <h2 style={{ marginTop: 0, fontSize: "1.1rem" }}>
                 文档：{activeKbName || activeKb}
               </h2>
-              {docsError ? <p style={{ color: "#b91c1c" }}>{docsError}</p> : null}
+              {docsError ? (
+                <div
+                  style={{
+                    marginBottom: "0.75rem",
+                    padding: "0.5rem 0.75rem",
+                    borderRadius: 6,
+                    border: "1px solid #fecaca",
+                    background: "#fef2f2",
+                    display: "flex",
+                    flexWrap: "wrap",
+                    alignItems: "center",
+                    gap: "0.65rem",
+                  }}
+                >
+                  <span style={{ color: "#991b1b", flex: "1 1 10rem" }}>{docsError}</span>
+                  <button
+                    type="button"
+                    disabled={docsLoading}
+                    onClick={() => void loadDocs(activeKb)}
+                    style={{ cursor: docsLoading ? "wait" : "pointer" }}
+                  >
+                    {docsLoading ? "重试中…" : "重试加载文档"}
+                  </button>
+                </div>
+              ) : null}
               <div style={{ display: "flex", flexWrap: "wrap", gap: "0.75rem", alignItems: "center", marginBottom: "0.75rem" }}>
                 {canUpload ? (
                   <>

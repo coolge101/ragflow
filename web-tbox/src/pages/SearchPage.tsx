@@ -1,4 +1,5 @@
-import { FormEvent, useCallback, useEffect, useState } from "react";
+import { type CSSProperties, FormEvent, useCallback, useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import { listDatasets, type DatasetRow } from "../api/datasets";
 import { searchDataset, type ChunkRow } from "../api/datasetSearch";
 
@@ -13,6 +14,18 @@ function chunkSnippet(c: ChunkRow): string {
   return [doc && `【${doc}】`, sim, content.slice(0, 500)].filter(Boolean).join("\n");
 }
 
+const errBanner: CSSProperties = {
+  marginTop: "0.75rem",
+  padding: "0.65rem 0.9rem",
+  borderRadius: 8,
+  border: "1px solid #fecaca",
+  background: "#fef2f2",
+  display: "flex",
+  flexWrap: "wrap",
+  alignItems: "center",
+  gap: "0.65rem",
+};
+
 export function SearchPage() {
   const [datasets, setDatasets] = useState<DatasetRow[]>([]);
   const [datasetId, setDatasetId] = useState("");
@@ -21,77 +34,75 @@ export function SearchPage() {
   const [total, setTotal] = useState(0);
   const [loadingList, setLoadingList] = useState(true);
   const [loadingSearch, setLoadingSearch] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [listError, setListError] = useState<string | null>(null);
+  const [searchError, setSearchError] = useState<string | null>(null);
+
+  const loadDatasets = useCallback(async () => {
+    setLoadingList(true);
+    setListError(null);
+    try {
+      const { res, body } = await listDatasets({ page: 1, page_size: 100 });
+      if (res.status === 401 || body.code === 401) {
+        setListError("未授权");
+        setDatasets([]);
+        return;
+      }
+      if (body.code !== 0) {
+        setListError(body.message || `错误码 ${body.code}`);
+        setDatasets([]);
+        return;
+      }
+      const rows = Array.isArray(body.data) ? body.data : [];
+      setDatasets(rows);
+      if (rows[0]?.id) {
+        setDatasetId(String(rows[0].id));
+      }
+    } catch (e) {
+      setListError(e instanceof Error ? e.message : String(e));
+      setDatasets([]);
+    } finally {
+      setLoadingList(false);
+    }
+  }, []);
 
   useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      setLoadingList(true);
-      try {
-        const { res, body } = await listDatasets({ page: 1, page_size: 100 });
-        if (cancelled) {
-          return;
-        }
-        if (res.status === 401 || body.code === 401) {
-          setError("未授权");
-          setDatasets([]);
-          return;
-        }
-        if (body.code !== 0) {
-          setError(body.message || `错误码 ${body.code}`);
-          setDatasets([]);
-          return;
-        }
-        const rows = Array.isArray(body.data) ? body.data : [];
-        setDatasets(rows);
-        if (rows[0]?.id) {
-          setDatasetId(String(rows[0].id));
-        }
-      } catch (e) {
-        if (!cancelled) {
-          setError(e instanceof Error ? e.message : String(e));
-        }
-      } finally {
-        if (!cancelled) {
-          setLoadingList(false);
-        }
+    void loadDatasets();
+  }, [loadDatasets]);
+
+  const runSearch = useCallback(async () => {
+    const q = question.trim();
+    if (!datasetId || !q) {
+      return;
+    }
+    setLoadingSearch(true);
+    setSearchError(null);
+    setChunks([]);
+    try {
+      const { res, body } = await searchDataset(datasetId, { question: q, top_k: 10 });
+      if (res.status === 401 || body.code === 401) {
+        setSearchError("未授权");
+        return;
       }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+      if (body.code !== 0) {
+        setSearchError(body.message || `错误码 ${body.code}`);
+        return;
+      }
+      const data = body.data;
+      setChunks(Array.isArray(data?.chunks) ? data.chunks : []);
+      setTotal(typeof data?.total === "number" ? data.total : data?.chunks?.length ?? 0);
+    } catch (err) {
+      setSearchError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setLoadingSearch(false);
+    }
+  }, [datasetId, question]);
 
   const onSearch = useCallback(
     async (e: FormEvent) => {
       e.preventDefault();
-      const q = question.trim();
-      if (!datasetId || !q) {
-        return;
-      }
-      setLoadingSearch(true);
-      setError(null);
-      setChunks([]);
-      try {
-        const { res, body } = await searchDataset(datasetId, { question: q, top_k: 10 });
-        if (res.status === 401 || body.code === 401) {
-          setError("未授权");
-          return;
-        }
-        if (body.code !== 0) {
-          setError(body.message || `错误码 ${body.code}`);
-          return;
-        }
-        const data = body.data;
-        setChunks(Array.isArray(data?.chunks) ? data.chunks : []);
-        setTotal(typeof data?.total === "number" ? data.total : data?.chunks?.length ?? 0);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : String(err));
-      } finally {
-        setLoadingSearch(false);
-      }
+      await runSearch();
     },
-    [datasetId, question],
+    [runSearch],
   );
 
   return (
@@ -102,7 +113,31 @@ export function SearchPage() {
       </p>
 
       {loadingList ? <p className="muted">加载知识库列表…</p> : null}
-      {error ? <p style={{ color: "#b91c1c" }}>{error}</p> : null}
+      {listError ? (
+        <div style={errBanner}>
+          <span style={{ color: "#991b1b", flex: "1 1 12rem" }}>
+            {listError} <Link to="/login">去登录</Link>
+          </span>
+          <button type="button" disabled={loadingList} onClick={() => void loadDatasets()} style={{ cursor: loadingList ? "wait" : "pointer" }}>
+            {loadingList ? "重试中…" : "重试加载知识库"}
+          </button>
+        </div>
+      ) : null}
+      {searchError ? (
+        <div style={errBanner}>
+          <span style={{ color: "#991b1b", flex: "1 1 12rem" }}>
+            {searchError} <Link to="/login">去登录</Link>
+          </span>
+          <button
+            type="button"
+            disabled={loadingSearch || !datasetId || !question.trim()}
+            onClick={() => void runSearch()}
+            style={{ cursor: loadingSearch ? "wait" : "pointer" }}
+          >
+            {loadingSearch ? "重试中…" : "重试检索"}
+          </button>
+        </div>
+      ) : null}
 
       <form onSubmit={(ev) => void onSearch(ev)} style={{ marginTop: "1rem", display: "flex", flexDirection: "column", gap: 12 }}>
         <label>
