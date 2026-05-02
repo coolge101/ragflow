@@ -7,11 +7,15 @@ on:
     paths:
       - "common/tbox_crawl_ssrf_fetch.py"
       - "common/tbox_crawl_last_error.py"
+      - "common/tbox_crawl_robots.py"
+      - "common/tbox_crawl_http_probe.py"
       - "common/ssrf_guard.py"
       - "common/tbox_crawl_origin_throttle.py"
       - "test/unit_test/common/test_tbox_crawl_ssrf_fetch.py"
       - "test/unit_test/common/test_tbox_crawl_last_error.py"
       - "test/unit_test/common/test_tbox_crawl_origin_throttle.py"
+      - "test/unit_test/common/test_tbox_crawl_robots.py"
+      - "test/unit_test/common/test_tbox_crawl_http_probe.py"
       - "pyproject.toml"
       - "uv.lock"
       - ".github/workflows/tbox-crawl-common-unit.yml"
@@ -22,11 +26,15 @@ on:
     paths:
       - "common/tbox_crawl_ssrf_fetch.py"
       - "common/tbox_crawl_last_error.py"
+      - "common/tbox_crawl_robots.py"
+      - "common/tbox_crawl_http_probe.py"
       - "common/ssrf_guard.py"
       - "common/tbox_crawl_origin_throttle.py"
       - "test/unit_test/common/test_tbox_crawl_ssrf_fetch.py"
       - "test/unit_test/common/test_tbox_crawl_last_error.py"
       - "test/unit_test/common/test_tbox_crawl_origin_throttle.py"
+      - "test/unit_test/common/test_tbox_crawl_robots.py"
+      - "test/unit_test/common/test_tbox_crawl_http_probe.py"
       - "pyproject.toml"
       - "uv.lock"
       - ".github/workflows/tbox-crawl-common-unit.yml"
@@ -57,4 +65,6 @@ jobs:
             test/unit_test/common/test_tbox_crawl_ssrf_fetch.py \
             test/unit_test/common/test_tbox_crawl_last_error.py \
             test/unit_test/common/test_tbox_crawl_origin_throttle.py \
+            test/unit_test/common/test_tbox_crawl_robots.py \
+            test/unit_test/common/test_tbox_crawl_http_probe.py \
             -v --tb=short
