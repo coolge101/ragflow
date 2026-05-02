@@ -160,6 +160,7 @@
 | 2026-05-01 | 新增 **§2.1** UI 设计文档索引；`TBOX_UI_DESIGN_OVERVIEW.md` / `TBOX_UI_DESIGN_DETAIL.md`；§9.0 S2 与参考原型路径对齐 |
 | 2026-05-02 | §7.3：PR 轻量 CI（`web-tbox` / `harness-monitor-unit` / **`tbox-crawl-common-unit.yml`**，原 `tbox-crawl-ssrf-unit.yml`）与 **`docs/TBOX_ENV_AND_VERSIONS.md`** §6 索引 |
 | 2026-05-02 | 新增 **`tbox-task-service-unit.yml`**（`tbox_crawl_task_service` 单测）；**pkg_resources** 弃用告警仅在**该测试模块**内 **`warnings.filterwarnings`** 处理（不放宽 **`pyproject.toml`** 全局 **`filterwarnings`**） |
+| 2026-05-02 | **`TBOX_QUICKSTART.md`** 新增 **§6**：PR 前本地命令与 **`TBOX_ENV_AND_VERSIONS.md`** §6 轻量 CI 对齐说明 |
 | 2026-05-01 | `web-tbox`：主布局、全路由与 `RequirePermission`；`/me` 增加 `permissions`（契约 **v3**）；`TBOX_ENV_AND_VERSIONS.md` §2 填基线 commit；§9.0 S3 更新 |
 | 2026-05-01 | `web-tbox`：对话流式、知识库检索、租户用户列表对接官方 API；`TBOX_API_BOUNDARY` / 快速启动 / §9.0 同步 |
 | 2026-05-01 | `web-tbox` 对话：应用列表 + 会话创建/复用 + 引用侧栏（`reference.chunks`）；`chats.ts` / `ReferenceChunks.tsx` |

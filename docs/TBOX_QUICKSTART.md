@@ -65,3 +65,30 @@ Docker：在 **`docker/.env`** 中设置 **`ENABLE_TBOX_CRAWL_WORKER=1`**，或�
 - API 边界：`docs/TBOX_API_BOUNDARY.md`
 - 总纲：`docs/TBOX_KB_DELIVERY_HARNESS.md`
 - UI 概要/详细设计：`docs/TBOX_UI_DESIGN_OVERVIEW.md`、`docs/TBOX_UI_DESIGN_DETAIL.md`（参考原型：`tbox-ragflow-platform/others/apps/web/`，见总纲 §2.1）
+
+## 6. PR 前自检（与 `ubuntu-latest` 轻量 CI 对齐）
+
+Workflow 名称、路径触发与职责见 **`docs/TBOX_ENV_AND_VERSIONS.md` §6**。在仓库根且已安装依赖时，可按下述命令本地对号（与对应 GitHub Actions job 等价；**`uv`** 请先执行 **`uv sync --python 3.12 --group test --frozen`**）：
+
+```bash
+# 独立前端（与 .github/workflows/web-tbox.yml 一致）
+(cd web-tbox && npm ci && npm run typecheck && npm run build)
+
+# Harness + 对抗离线用例（与 harness-monitor-unit.yml 一致）
+uv run pytest test/test_harness_monitor.py test/adversarial_tests.py -v --tb=short
+
+# TBOX 爬取 common 单测（与 tbox-crawl-common-unit.yml 一致）
+uv run pytest \
+  test/unit_test/common/test_tbox_crawl_ssrf_fetch.py \
+  test/unit_test/common/test_tbox_crawl_last_error.py \
+  test/unit_test/common/test_tbox_crawl_origin_throttle.py \
+  test/unit_test/common/test_tbox_crawl_robots.py \
+  test/unit_test/common/test_tbox_crawl_http_probe.py \
+  test/unit_test/common/test_ssrf_guard.py \
+  -v --tb=short
+
+# tbox_crawl_task_service 纯逻辑（与 tbox-task-service-unit.yml 一致）
+uv run pytest test/unit_test/api/db/services/test_tbox_crawl_task_service.py -v --tb=short
+```
+
+**说明**：重型 **`harness_engineering`**（对抗 + Docker 等）**不**随 PR 触发，见 **`docs/TBOX_KB_DELIVERY_HARNESS.md`** §7.3；发版前仍按该 workflow 或运维流程执行。
