@@ -2,7 +2,7 @@
 
 与仓库根 `web/`（RAGFlow 官方 UI）**并行存在**：本目录为 **TBOX 知识库产品** 的 UI 基座，通过 HTTP 调用 RAGFlow 及 **`/v1/tbox/*`** 扩展 API。
 
-分步联调（后端健康检查、`.env`、登录与权限）见仓库根 **[`docs/TBOX_QUICKSTART.md`](../docs/TBOX_QUICKSTART.md)**。
+分步联调（后端健康检查、`.env`、登录与权限）见仓库根 **[`docs/TBOX_QUICKSTART.md`](../docs/TBOX_QUICKSTART.md)**；PR 前与 **`ubuntu-latest` 轻量 CI** 对号的本地命令见同文档 **§6**（含本目录 **`npm ci` / `typecheck` / `build`** 与后端相关 **`pytest`**）。
 
 ## 开发
 
@@ -40,4 +40,5 @@ npm run build
 - `docs/TBOX_KB_DELIVERY_HARNESS.md`
 - `docs/TBOX_UI_DESIGN_OVERVIEW.md` / `docs/TBOX_UI_DESIGN_DETAIL.md`
 - `docs/TBOX_API_BOUNDARY.md`
-- `docs/TBOX_ENV_AND_VERSIONS.md`
+- `docs/TBOX_ENV_AND_VERSIONS.md`（§6：**PR 轻量 CI** 与触发路径）
+- `docs/TBOX_QUICKSTART.md` **§6**：PR 前自检命令（与本目录及全仓 CI 对齐）
