@@ -1240,6 +1240,29 @@ class SyncLogs(DataBaseModel):
         db_table = "sync_logs"
 
 
+class TboxCrawlTask(DataBaseModel):
+    """TBOX web crawl job configuration (fetch/schedule workers may consume this table later)."""
+
+    id = CharField(max_length=32, primary_key=True)
+    tenant_id = CharField(max_length=32, null=False, index=True)
+    dataset_id = CharField(max_length=32, null=True, index=True, help_text="Target knowledge base id")
+    name = CharField(max_length=256, null=False, help_text="Display name")
+    source_type = CharField(max_length=64, null=False, index=True, default="static_web", help_text="static_web|rss")
+    seed_urls = ListField(null=False, default=list, help_text="Seed URLs")
+    schedule_cron = CharField(max_length=128, null=True, default="", help_text="Cron; empty = manual only")
+    enabled = BooleanField(null=False, default=False, index=True)
+    run_state = CharField(max_length=32, null=False, default="draft", index=True, help_text="draft|ready|paused")
+    last_run_at = DateTimeField(null=True, index=True)
+    last_error = LongTextField(null=True, default="", help_text="Last error message")
+    extra_config = JSONField(null=False, default=dict, help_text="robots, depth, headers, etc.")
+    created_by = CharField(max_length=32, null=False, index=True)
+    status = CharField(max_length=1, null=True, help_text="1 valid 0 deleted", default="1", index=True)
+
+    class Meta:
+        db_table = "tbox_crawl_task"
+        indexes = ((("tenant_id", "status"), False),)
+
+
 class EvaluationDataset(DataBaseModel):
     """Ground truth dataset for RAG evaluation"""
     id = CharField(max_length=32, primary_key=True)
