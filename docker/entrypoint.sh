@@ -9,11 +9,12 @@ cat /ragflow/VERSION
 # Usage and command-line argument parsing
 # -----------------------------------------------------------------------------
 function usage() {
-    echo "Usage: $0 [--disable-webserver] [--disable-taskexecutor] [--disable-datasync] [--consumer-no-beg=<num>] [--consumer-no-end=<num>] [--workers=<num>] [--host-id=<string>]"
+    echo "Usage: $0 [--disable-webserver] [--disable-taskexecutor] [--disable-datasync] [--enable-tbox-crawl-worker] [--consumer-no-beg=<num>] [--consumer-no-end=<num>] [--workers=<num>] [--host-id=<string>]"
     echo
     echo "  --disable-webserver             Disables the web server (nginx + ragflow_server)."
     echo "  --disable-taskexecutor          Disables task executor workers."
     echo "  --disable-datasync              Disables synchronization of datasource workers."
+    echo "  --enable-tbox-crawl-worker      Enables TBOX crawl task worker (rag/svr/tbox_crawl_worker.py)."
     echo "  --enable-mcpserver              Enables the MCP server."
     echo "  --enable-adminserver            Enables the Admin server."
     echo "  --init-superuser                Initializes the superuser."
@@ -37,6 +38,7 @@ ENABLE_TASKEXECUTOR=1  # Default to enable task executor
 ENABLE_DATASYNC=1
 ENABLE_MCP_SERVER=0
 ENABLE_ADMIN_SERVER=0 # Default close admin server
+ENABLE_TBOX_CRAWL_WORKER="${ENABLE_TBOX_CRAWL_WORKER:-0}"
 INIT_SUPERUSER_ARGS="" # Default to not initialize superuser
 CONSUMER_NO_BEG=0
 CONSUMER_NO_END=0
@@ -79,6 +81,10 @@ for arg in "$@"; do
       ;;
     --disable-datasync)
       ENABLE_DATASYNC=0
+      shift
+      ;;
+    --enable-tbox-crawl-worker)
+      ENABLE_TBOX_CRAWL_WORKER=1
       shift
       ;;
     --enable-mcpserver)
@@ -312,6 +318,15 @@ if [[ "${ENABLE_DATASYNC}" -eq 1 ]]; then
     echo "Starting data sync..."
     while true; do
         "$PY" rag/svr/sync_data_source.py &
+        wait;
+        sleep 1;
+    done &
+fi
+
+if [[ "${ENABLE_TBOX_CRAWL_WORKER}" -eq 1 ]]; then
+    echo "Starting TBOX crawl worker..."
+    while true; do
+        "$PY" rag/svr/tbox_crawl_worker.py &
         wait;
         sleep 1;
     done &
