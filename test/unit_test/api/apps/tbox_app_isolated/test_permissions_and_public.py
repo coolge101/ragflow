@@ -44,6 +44,17 @@ def test_tbox_permissions_empty_tenants(tbox_module):
 
 
 @pytest.mark.p2
+def test_tbox_permissions_admin_matches_all(tbox_module):
+    from api.db import UserTenantRole
+
+    perms = tbox_module._tbox_permissions_for_tenants(
+        False,
+        [{"tenant_id": "t1", "role": UserTenantRole.ADMIN.value}],
+    )
+    assert perms == list(tbox_module._TBOX_PERMISSIONS_ALL)
+
+
+@pytest.mark.p2
 def test_tbox_permissions_normal_lacks_ops_perms(tbox_module):
     from api.db import UserTenantRole
 

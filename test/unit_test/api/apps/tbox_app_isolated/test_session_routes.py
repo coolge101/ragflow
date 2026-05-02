@@ -19,6 +19,7 @@ from __future__ import annotations
 import pytest
 
 from api.constants import API_VERSION
+from common.constants import RetCode
 
 from ._shared import TBOX_ROUTE_TEST_USER
 
@@ -43,6 +44,24 @@ async def test_tbox_me_returns_profile(tbox_quart_app, monkeypatch: pytest.Monke
     assert data["data"]["is_superuser"] is False
     assert data["data"]["tenants"] == tenants
     assert "crawl.manage" in data["data"]["permissions"]
+
+
+@pytest.mark.p2
+@pytest.mark.asyncio
+async def test_tbox_me_server_error_when_memberships_fail(tbox_quart_app, monkeypatch: pytest.MonkeyPatch):
+    app, mod = tbox_quart_app
+
+    def boom(_uid):
+        raise RuntimeError("db unreachable")
+
+    monkeypatch.setattr(mod, "_active_tenant_memberships", boom)
+    TBOX_ROUTE_TEST_USER.is_superuser = False
+    async with app.test_client() as client:
+        resp = await client.get(f"/{API_VERSION}/tbox/me")
+    assert resp.status_code == 200
+    data = await resp.get_json()
+    assert data["code"] == RetCode.EXCEPTION_ERROR
+    assert "unreachable" in data["message"]
 
 
 @pytest.mark.p2

@@ -129,6 +129,36 @@ async def test_crawl_tasks_list_passes_dataset_id_and_caps_page_size(tbox_quart_
 
 @pytest.mark.p2
 @pytest.mark.asyncio
+async def test_crawl_tasks_list_passes_tenant_id_query(tbox_quart_app, monkeypatch: pytest.MonkeyPatch):
+    app, mod = tbox_quart_app
+    monkeypatch.setattr(mod, "_active_tenant_memberships", lambda _uid: [])
+    resolve_calls: list[tuple] = []
+
+    def resolve_list_tenant_id(tid, allowed):
+        resolve_calls.append((tid, allowed))
+        return ("tf-from-resolve", None)
+
+    fake = SimpleNamespace(
+        tenant_ids_for_crawl=lambda uid, is_sup: None,
+        resolve_list_tenant_id=resolve_list_tenant_id,
+        list_tasks=lambda tf, al, p, ps, ds: (0, []),
+        task_row_to_dict=lambda t: {},
+    )
+    monkeypatch.setattr(mod, "crawl_svc", fake)
+    TBOX_ROUTE_TEST_USER.is_superuser = True
+    async with app.test_client() as client:
+        resp = await client.get(
+            f"/{API_VERSION}/tbox/crawl/tasks",
+            query_string={"tenant_id": "  ten-from-query  "},
+        )
+    data = await resp.get_json()
+    assert data["code"] == 0
+    assert len(resolve_calls) == 1
+    assert resolve_calls[0][0] == "  ten-from-query  "
+
+
+@pytest.mark.p2
+@pytest.mark.asyncio
 async def test_crawl_tasks_list_invalid_page_args_fallback(tbox_quart_app, monkeypatch: pytest.MonkeyPatch):
     app, mod = tbox_quart_app
     monkeypatch.setattr(mod, "_active_tenant_memberships", lambda _uid: [])
