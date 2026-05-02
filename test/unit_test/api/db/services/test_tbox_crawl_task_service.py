@@ -18,7 +18,8 @@ from __future__ import annotations
 
 import warnings
 
-# xgboost (via rag/llm import chain) emits pkg_resources deprecation; pytest treats UserWarning as error.
+# Scoped mitigation only for this module: importing tbox_crawl_task_service pulls xgboost, which
+# triggers pkg_resources deprecation. Global pytest filterwarnings stays "error" in pyproject.toml.
 warnings.filterwarnings(
     "ignore",
     message="pkg_resources is deprecated as an API.*",
