@@ -158,8 +158,7 @@
 | 2026-05-01 | 登录页 + `/v1/tbox/me`、`/v1/tbox/logout`；文档与 `web-tbox` 依赖更新 |
 | 2026-05-01 | S3 首包：`/kbs` 知识库列表与删除（官方 datasets API）、`NavBar` |
 | 2026-05-01 | 新增 **§2.1** UI 设计文档索引；`TBOX_UI_DESIGN_OVERVIEW.md` / `TBOX_UI_DESIGN_DETAIL.md`；§9.0 S2 与参考原型路径对齐 |
-| 2026-05-02 | §7.3：补充 PR 轻量 CI（`web-tbox` / `harness-monitor-unit` / `tbox-crawl-common-unit`）与 **`docs/TBOX_ENV_AND_VERSIONS.md`** §6 索引 |
-| 2026-05-02 | PR 爬取单测 workflow 自 **`tbox-crawl-ssrf-unit.yml`** 重命名为 **`tbox-crawl-common-unit.yml`**（与覆盖的模块一致） |
+| 2026-05-02 | §7.3：PR 轻量 CI（`web-tbox` / `harness-monitor-unit` / **`tbox-crawl-common-unit.yml`**，原 `tbox-crawl-ssrf-unit.yml`）与 **`docs/TBOX_ENV_AND_VERSIONS.md`** §6 索引 |
 | 2026-05-01 | `web-tbox`：主布局、全路由与 `RequirePermission`；`/me` 增加 `permissions`（契约 **v3**）；`TBOX_ENV_AND_VERSIONS.md` §2 填基线 commit；§9.0 S3 更新 |
 | 2026-05-01 | `web-tbox`：对话流式、知识库检索、租户用户列表对接官方 API；`TBOX_API_BOUNDARY` / 快速启动 / §9.0 同步 |
 | 2026-05-01 | `web-tbox` 对话：应用列表 + 会话创建/复用 + 引用侧栏（`reference.chunks`）；`chats.ts` / `ReferenceChunks.tsx` |
