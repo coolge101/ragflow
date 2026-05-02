@@ -83,6 +83,22 @@ def test_tbox_permissions_missing_role_key_yields_empty(tbox_module):
 
 
 @pytest.mark.p2
+def test_tbox_permissions_normal_plus_invite_uses_normal_bundle(tbox_module):
+    from api.db import UserTenantRole
+
+    perms = tbox_module._tbox_permissions_for_tenants(
+        False,
+        [
+            {"tenant_id": "t1", "role": UserTenantRole.INVITE.value},
+            {"tenant_id": "t2", "role": UserTenantRole.NORMAL.value},
+        ],
+    )
+    assert "crawl.manage" in perms
+    assert "doc.upload" in perms
+    assert len(perms) > 3
+
+
+@pytest.mark.p2
 def test_tbox_permissions_normal_lacks_ops_perms(tbox_module):
     from api.db import UserTenantRole
 

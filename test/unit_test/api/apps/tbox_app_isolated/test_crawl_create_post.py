@@ -174,6 +174,29 @@ async def test_crawl_tasks_create_ok(tbox_quart_app, monkeypatch: pytest.MonkeyP
 
 @pytest.mark.p2
 @pytest.mark.asyncio
+async def test_crawl_tasks_create_server_error_when_get_request_json_raises(tbox_quart_app, monkeypatch: pytest.MonkeyPatch):
+    app, mod = tbox_quart_app
+    monkeypatch.setattr(mod, "_active_tenant_memberships", lambda _uid: [])
+
+    async def boom():
+        raise RuntimeError("read body failed")
+
+    monkeypatch.setattr(
+        mod,
+        "crawl_svc",
+        SimpleNamespace(tenant_ids_for_crawl=lambda uid, is_sup: None),
+    )
+    monkeypatch.setattr(mod, "get_request_json", boom)
+    TBOX_ROUTE_TEST_USER.is_superuser = True
+    async with app.test_client() as client:
+        resp = await client.post(f"/{API_VERSION}/tbox/crawl/tasks")
+    data = await resp.get_json()
+    assert data["code"] == RetCode.EXCEPTION_ERROR
+    assert "read body failed" in data["message"]
+
+
+@pytest.mark.p2
+@pytest.mark.asyncio
 async def test_crawl_tasks_create_server_error_when_create_task_raises(tbox_quart_app, monkeypatch: pytest.MonkeyPatch):
     app, mod = tbox_quart_app
     monkeypatch.setattr(mod, "_active_tenant_memberships", lambda _uid: [])
