@@ -29,6 +29,14 @@ from quart import Blueprint, Quart
 from api.constants import API_VERSION
 
 
+def _repo_root() -> Path:
+    here = Path(__file__).resolve()
+    for d in (here, *here.parents):
+        if (d / "api" / "apps" / "tbox_app.py").is_file():
+            return d
+    raise RuntimeError("Could not locate repo root (api/apps/tbox_app.py).")
+
+
 def _install_import_stubs(monkeypatch: pytest.MonkeyPatch) -> None:
     api_apps = ModuleType("api.apps")
 
@@ -75,7 +83,7 @@ def _install_import_stubs(monkeypatch: pytest.MonkeyPatch) -> None:
 
 def _load_tbox_module(monkeypatch: pytest.MonkeyPatch):
     _install_import_stubs(monkeypatch)
-    repo = Path(__file__).resolve().parents[4]
+    repo = _repo_root()
     path = repo / "api" / "apps" / "tbox_app.py"
     name = "tbox_app_smoke_isolated"
     spec = importlib.util.spec_from_file_location(name, path)
@@ -88,11 +96,54 @@ def _load_tbox_module(monkeypatch: pytest.MonkeyPatch):
 
 
 @pytest.fixture
-def tbox_quart_app(monkeypatch: pytest.MonkeyPatch):
-    mod = _load_tbox_module(monkeypatch)
+def tbox_module(monkeypatch: pytest.MonkeyPatch):
+    return _load_tbox_module(monkeypatch)
+
+
+@pytest.fixture
+def tbox_quart_app(tbox_module):
     app = Quart(__name__)
-    app.register_blueprint(mod.manager, url_prefix=f"/{API_VERSION}/tbox")
-    return app, mod
+    app.register_blueprint(tbox_module.manager, url_prefix=f"/{API_VERSION}/tbox")
+    return app, tbox_module
+
+
+@pytest.mark.p2
+def test_tbox_permissions_superuser_matches_all(tbox_module):
+    perms = tbox_module._tbox_permissions_for_tenants(True, [])
+    assert perms == list(tbox_module._TBOX_PERMISSIONS_ALL)
+
+
+@pytest.mark.p2
+def test_tbox_permissions_invite_minimal(tbox_module):
+    from api.db import UserTenantRole
+
+    perms = tbox_module._tbox_permissions_for_tenants(
+        False,
+        [{"tenant_id": "t1", "role": UserTenantRole.INVITE.value}],
+    )
+    assert perms == ["chat.use", "search.use", "doc.view"]
+
+
+@pytest.mark.p2
+def test_tbox_permissions_empty_tenants(tbox_module):
+    assert tbox_module._tbox_permissions_for_tenants(False, []) == []
+
+
+@pytest.mark.p2
+def test_tbox_permissions_normal_lacks_ops_perms(tbox_module):
+    from api.db import UserTenantRole
+
+    normal = tbox_module._tbox_permissions_for_tenants(
+        False,
+        [{"tenant_id": "t1", "role": UserTenantRole.NORMAL.value}],
+    )
+    owner = tbox_module._tbox_permissions_for_tenants(
+        False,
+        [{"tenant_id": "t1", "role": UserTenantRole.OWNER.value}],
+    )
+    assert "audit.read" in owner and "audit.read" not in normal
+    assert "user.manage" in owner and "user.manage" not in normal
+    assert "crawl.manage" in normal
 
 
 @pytest.mark.p2
@@ -119,3 +170,4 @@ async def test_tbox_contract(tbox_quart_app):
     body = await resp.get_json()
     assert body["data"]["tbox_api_contract_version"] == mod.TBOX_API_CONTRACT_VERSION
     assert "TBOX_API_BOUNDARY" in body["data"]["docs"]
+    assert "TBOX_KB_DELIVERY_HARNESS" in body["data"]["delivery_harness"]
