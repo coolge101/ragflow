@@ -177,6 +177,7 @@
 | 2026-05-02 | **`tbox_app_isolated`**：原 **`test_crawl_tasks_routes.py`** 拆为 **`test_crawl_list_get.py`** / **`test_crawl_create_post.py`** / **`test_crawl_patch.py`** / **`test_crawl_delete_run.py`**，共享工厂迁至 **`crawl_helpers.py`**（**`super_create_fake`**、**`patchable_row`**、**`crawl_allowed_sets`** 再导出） |
 | 2026-05-02 | **`tbox_app_isolated`**：**`GET /crawl/tasks`** 查询串 **`tenant_id`** 透传 **`resolve_list_tenant_id`**；**`/me`** 在 **`_active_tenant_memberships`** 抛错时走 **`server_error_response`**；**`UserTenantRole.ADMIN`** 权限与 **`OWNER`** 同为全量 |
 | 2026-05-02 | **`pytest` marker** **`tbox_app_isolated`**（**`pyproject.toml`** 注册 + 包 **`conftest.py`** **`pytest_collection_modifyitems`** 自动打标）；**`tbox-app-routes-unit.yml`** / **`TBOX_QUICKSTART`** / **`TBOX_ENV_AND_VERSIONS`** §6 命令与 **`pytest -m tbox_app_isolated`** 对齐 |
+| 2026-05-02 | **`tbox_app_isolated`**：crawl **`GET`/`POST`/`PATCH`/`DELETE`/`POST …/run`** 在 **`list_tasks`** / **`task_row_to_dict`** / **`create_task`** / **`update_task_fields`** / **`soft_delete_task`** / 二次 **`get_task`** 抛错时走 **`server_error_response`**；**`_tbox_permissions_for_tenants`** 跨租户 **`invite`+`owner`** 合并为全量权限 |
 | 2026-05-01 | `web-tbox`：主布局、全路由与 `RequirePermission`；`/me` 增加 `permissions`（契约 **v3**）；`TBOX_ENV_AND_VERSIONS.md` §2 填基线 commit；§9.0 S3 更新 |
 | 2026-05-01 | `web-tbox`：对话流式、知识库检索、租户用户列表对接官方 API；`TBOX_API_BOUNDARY` / 快速启动 / §9.0 同步 |
 | 2026-05-01 | `web-tbox` 对话：应用列表 + 会话创建/复用 + 引用侧栏（`reference.chunks`）；`chats.ts` / `ReferenceChunks.tsx` |

@@ -174,6 +174,42 @@ async def test_crawl_tasks_create_ok(tbox_quart_app, monkeypatch: pytest.MonkeyP
 
 @pytest.mark.p2
 @pytest.mark.asyncio
+async def test_crawl_tasks_create_server_error_when_create_task_raises(tbox_quart_app, monkeypatch: pytest.MonkeyPatch):
+    app, mod = tbox_quart_app
+    monkeypatch.setattr(mod, "_active_tenant_memberships", lambda _uid: [])
+
+    async def body():
+        return {
+            "name": "job",
+            "source_type": "static_web",
+            "seed_urls": ["https://example.com/one"],
+        }
+
+    def create_task(**_kwargs):
+        raise OSError("disk full")
+
+    fake = SimpleNamespace(
+        tenant_ids_for_crawl=lambda uid, is_sup: None,
+        ALLOWED_SOURCE_TYPES=frozenset({"static_web", "rss"}),
+        ALLOWED_RUN_STATES=frozenset({"draft", "ready", "paused"}),
+        validate_seed_urls=lambda urls: (["https://example.com/one"], None),
+        validate_schedule_cron=lambda s: None,
+        kb_valid_for_tenant=lambda kb, ten: True,
+        create_task=create_task,
+        task_row_to_dict=lambda t: {},
+    )
+    monkeypatch.setattr(mod, "crawl_svc", fake)
+    monkeypatch.setattr(mod, "get_request_json", body)
+    TBOX_ROUTE_TEST_USER.is_superuser = True
+    async with app.test_client() as client:
+        resp = await client.post(f"/{API_VERSION}/tbox/crawl/tasks")
+    data = await resp.get_json()
+    assert data["code"] == RetCode.EXCEPTION_ERROR
+    assert "disk full" in data["message"]
+
+
+@pytest.mark.p2
+@pytest.mark.asyncio
 async def test_crawl_tasks_create_invalid_run_state(tbox_quart_app, monkeypatch: pytest.MonkeyPatch):
     app, mod = tbox_quart_app
     monkeypatch.setattr(mod, "_active_tenant_memberships", lambda _uid: [])

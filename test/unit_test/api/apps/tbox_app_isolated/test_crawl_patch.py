@@ -125,6 +125,39 @@ async def test_crawl_tasks_patch_name_ok(tbox_quart_app, monkeypatch: pytest.Mon
 
 @pytest.mark.p2
 @pytest.mark.asyncio
+async def test_crawl_tasks_patch_server_error_when_update_task_fields_raises(tbox_quart_app, monkeypatch: pytest.MonkeyPatch):
+    app, mod = tbox_quart_app
+    monkeypatch.setattr(mod, "_active_tenant_memberships", lambda _uid: [])
+    row = SimpleNamespace(id="p3b", tenant_id="tbox-route-test-user", name="old")
+    st, rs = crawl_allowed_sets()
+
+    async def body():
+        return {"name": "  newname  "}
+
+    def update_task_fields(_t, _fields):
+        raise RuntimeError("db write failed")
+
+    fake = SimpleNamespace(
+        tenant_ids_for_crawl=lambda uid, is_sup: None,
+        get_task=lambda tid: row if tid == "p3b" else None,
+        user_may_access_task=lambda t, allowed: True,
+        ALLOWED_SOURCE_TYPES=st,
+        ALLOWED_RUN_STATES=rs,
+        update_task_fields=update_task_fields,
+        task_row_to_dict=lambda t: {"id": t.id},
+    )
+    monkeypatch.setattr(mod, "crawl_svc", fake)
+    monkeypatch.setattr(mod, "get_request_json", body)
+    TBOX_ROUTE_TEST_USER.is_superuser = True
+    async with app.test_client() as client:
+        resp = await client.patch(f"/{API_VERSION}/tbox/crawl/tasks/p3b")
+    data = await resp.get_json()
+    assert data["code"] == RetCode.EXCEPTION_ERROR
+    assert "db write failed" in data["message"]
+
+
+@pytest.mark.p2
+@pytest.mark.asyncio
 async def test_crawl_tasks_patch_forbidden_wrong_tenant(tbox_quart_app, monkeypatch: pytest.MonkeyPatch):
     app, mod = tbox_quart_app
     monkeypatch.setattr(

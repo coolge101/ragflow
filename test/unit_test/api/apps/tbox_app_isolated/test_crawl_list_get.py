@@ -159,6 +159,55 @@ async def test_crawl_tasks_list_passes_tenant_id_query(tbox_quart_app, monkeypat
 
 @pytest.mark.p2
 @pytest.mark.asyncio
+async def test_crawl_tasks_list_server_error_when_list_tasks_raises(tbox_quart_app, monkeypatch: pytest.MonkeyPatch):
+    app, mod = tbox_quart_app
+    monkeypatch.setattr(mod, "_active_tenant_memberships", lambda _uid: [])
+
+    def list_tasks(*_a, **_k):
+        raise RuntimeError("db list failed")
+
+    fake = SimpleNamespace(
+        tenant_ids_for_crawl=lambda uid, is_sup: None,
+        resolve_list_tenant_id=lambda tid, allowed: ("tf", None),
+        list_tasks=list_tasks,
+        task_row_to_dict=lambda t: {},
+    )
+    monkeypatch.setattr(mod, "crawl_svc", fake)
+    TBOX_ROUTE_TEST_USER.is_superuser = True
+    async with app.test_client() as client:
+        resp = await client.get(f"/{API_VERSION}/tbox/crawl/tasks")
+    data = await resp.get_json()
+    assert data["code"] == RetCode.EXCEPTION_ERROR
+    assert "db list failed" in data["message"]
+
+
+@pytest.mark.p2
+@pytest.mark.asyncio
+async def test_crawl_tasks_list_server_error_when_task_row_to_dict_raises(tbox_quart_app, monkeypatch: pytest.MonkeyPatch):
+    app, mod = tbox_quart_app
+    monkeypatch.setattr(mod, "_active_tenant_memberships", lambda _uid: [])
+    row = SimpleNamespace(id="L9")
+
+    def task_row_to_dict(_t):
+        raise ValueError("serialization failed")
+
+    fake = SimpleNamespace(
+        tenant_ids_for_crawl=lambda uid, is_sup: None,
+        resolve_list_tenant_id=lambda tid, allowed: ("tf", None),
+        list_tasks=lambda *_a, **_k: (1, [row]),
+        task_row_to_dict=task_row_to_dict,
+    )
+    monkeypatch.setattr(mod, "crawl_svc", fake)
+    TBOX_ROUTE_TEST_USER.is_superuser = True
+    async with app.test_client() as client:
+        resp = await client.get(f"/{API_VERSION}/tbox/crawl/tasks")
+    data = await resp.get_json()
+    assert data["code"] == RetCode.EXCEPTION_ERROR
+    assert "serialization failed" in data["message"]
+
+
+@pytest.mark.p2
+@pytest.mark.asyncio
 async def test_crawl_tasks_list_invalid_page_args_fallback(tbox_quart_app, monkeypatch: pytest.MonkeyPatch):
     app, mod = tbox_quart_app
     monkeypatch.setattr(mod, "_active_tenant_memberships", lambda _uid: [])
@@ -227,6 +276,31 @@ async def test_crawl_tasks_get_ok(tbox_quart_app, monkeypatch: pytest.MonkeyPatc
     data = await resp.get_json()
     assert data["code"] == 0
     assert data["data"] == {"id": "g1", "name": "task-one"}
+
+
+@pytest.mark.p2
+@pytest.mark.asyncio
+async def test_crawl_tasks_get_server_error_when_task_row_to_dict_raises(tbox_quart_app, monkeypatch: pytest.MonkeyPatch):
+    app, mod = tbox_quart_app
+    monkeypatch.setattr(mod, "_active_tenant_memberships", lambda _uid: [])
+    row = SimpleNamespace(id="g9", tenant_id="tbox-route-test-user")
+
+    def task_row_to_dict(_t):
+        raise RuntimeError("dict build failed")
+
+    fake = SimpleNamespace(
+        tenant_ids_for_crawl=lambda uid, is_sup: None,
+        get_task=lambda tid: row if tid == "g9" else None,
+        user_may_access_task=lambda t, allowed: True,
+        task_row_to_dict=task_row_to_dict,
+    )
+    monkeypatch.setattr(mod, "crawl_svc", fake)
+    TBOX_ROUTE_TEST_USER.is_superuser = True
+    async with app.test_client() as client:
+        resp = await client.get(f"/{API_VERSION}/tbox/crawl/tasks/g9")
+    data = await resp.get_json()
+    assert data["code"] == RetCode.EXCEPTION_ERROR
+    assert "dict build failed" in data["message"]
 
 
 @pytest.mark.p2

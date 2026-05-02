@@ -55,6 +55,31 @@ async def test_crawl_tasks_delete_ok(tbox_quart_app, monkeypatch: pytest.MonkeyP
 
 @pytest.mark.p2
 @pytest.mark.asyncio
+async def test_crawl_tasks_delete_server_error_when_soft_delete_raises(tbox_quart_app, monkeypatch: pytest.MonkeyPatch):
+    app, mod = tbox_quart_app
+    monkeypatch.setattr(mod, "_active_tenant_memberships", lambda _uid: [])
+    row = SimpleNamespace(id="d1x", tenant_id="tbox-route-test-user")
+
+    def soft_delete_task(_t):
+        raise RuntimeError("db delete failed")
+
+    fake = SimpleNamespace(
+        tenant_ids_for_crawl=lambda uid, is_sup: None,
+        get_task=lambda tid: row if tid == "d1x" else None,
+        user_may_access_task=lambda t, allowed: True,
+        soft_delete_task=soft_delete_task,
+    )
+    monkeypatch.setattr(mod, "crawl_svc", fake)
+    TBOX_ROUTE_TEST_USER.is_superuser = True
+    async with app.test_client() as client:
+        resp = await client.delete(f"/{API_VERSION}/tbox/crawl/tasks/d1x")
+    data = await resp.get_json()
+    assert data["code"] == RetCode.EXCEPTION_ERROR
+    assert "db delete failed" in data["message"]
+
+
+@pytest.mark.p2
+@pytest.mark.asyncio
 async def test_crawl_tasks_delete_forbidden_wrong_tenant(tbox_quart_app, monkeypatch: pytest.MonkeyPatch):
     app, mod = tbox_quart_app
     monkeypatch.setattr(
@@ -205,3 +230,40 @@ async def test_crawl_tasks_run_runtimeerror_records_tick(tbox_quart_app, monkeyp
     assert tick_args[0][0] == "r3"
     assert tick_args[0][1] is False
     assert "[tbox:WORKER_STUB]" in tick_args[0][2]
+
+
+@pytest.mark.p2
+@pytest.mark.asyncio
+async def test_crawl_tasks_run_server_error_when_refetch_get_task_raises(tbox_quart_app, monkeypatch: pytest.MonkeyPatch):
+    app, mod = tbox_quart_app
+    monkeypatch.setattr(mod, "_active_tenant_memberships", lambda _uid: [])
+    row = SimpleNamespace(id="r4", tenant_id="tbox-route-test-user", ran=False)
+    gt_calls = [0]
+
+    def get_task(tid):
+        if tid != "r4":
+            return None
+        gt_calls[0] += 1
+        if gt_calls[0] == 1:
+            return row
+        raise RuntimeError("refetch failed")
+
+    def execute_crawl_task_stub_tick(_tid):
+        row.ran = True
+
+    fake = SimpleNamespace(
+        tenant_ids_for_crawl=lambda uid, is_sup: None,
+        get_task=get_task,
+        user_may_access_task=lambda t, allowed: True,
+        execute_crawl_task_stub_tick=execute_crawl_task_stub_tick,
+        record_worker_tick=lambda *a, **k: None,
+        task_row_to_dict=lambda t: {"id": t.id},
+    )
+    monkeypatch.setattr(mod, "crawl_svc", fake)
+    TBOX_ROUTE_TEST_USER.is_superuser = True
+    async with app.test_client() as client:
+        resp = await client.post(f"/{API_VERSION}/tbox/crawl/tasks/r4/run")
+    data = await resp.get_json()
+    assert data["code"] == RetCode.EXCEPTION_ERROR
+    assert "refetch failed" in data["message"]
+    assert gt_calls[0] == 2
