@@ -21,12 +21,23 @@ from __future__ import annotations
 import importlib.util
 import sys
 from pathlib import Path
-from types import ModuleType
+from types import ModuleType, SimpleNamespace
 
 import pytest
 from quart import Blueprint, Quart
 
 from api.constants import API_VERSION
+from common.constants import RetCode
+
+
+class MutableTboxRouteUser:
+    """Bound to ``api.apps.current_user`` before ``tbox_app`` loads; mutate fields per test."""
+
+    id: str = "tbox-route-test-user"
+    is_superuser: bool = True
+
+
+TBOX_ROUTE_TEST_USER = MutableTboxRouteUser()
 
 
 def _repo_root() -> Path:
@@ -45,11 +56,7 @@ def _install_import_stubs(monkeypatch: pytest.MonkeyPatch) -> None:
 
     api_apps.login_required = login_required
     api_apps.logout_user = lambda: None
-
-    class _DummyUser:
-        id = "u1"
-
-    api_apps.current_user = _DummyUser()
+    api_apps.current_user = TBOX_ROUTE_TEST_USER
     monkeypatch.setitem(sys.modules, "api.apps", api_apps)
 
     import api.db as api_db
@@ -93,6 +100,15 @@ def _load_tbox_module(monkeypatch: pytest.MonkeyPatch):
     monkeypatch.setitem(sys.modules, name, mod)
     spec.loader.exec_module(mod)
     return mod
+
+
+@pytest.fixture(autouse=True)
+def _reset_mutable_tbox_route_user():
+    TBOX_ROUTE_TEST_USER.id = "tbox-route-test-user"
+    TBOX_ROUTE_TEST_USER.is_superuser = True
+    yield
+    TBOX_ROUTE_TEST_USER.id = "tbox-route-test-user"
+    TBOX_ROUTE_TEST_USER.is_superuser = True
 
 
 @pytest.fixture
@@ -171,3 +187,58 @@ async def test_tbox_contract(tbox_quart_app):
     assert body["data"]["tbox_api_contract_version"] == mod.TBOX_API_CONTRACT_VERSION
     assert "TBOX_API_BOUNDARY" in body["data"]["docs"]
     assert "TBOX_KB_DELIVERY_HARNESS" in body["data"]["delivery_harness"]
+
+
+@pytest.mark.p2
+@pytest.mark.asyncio
+async def test_crawl_tasks_list_superuser_empty(tbox_quart_app, monkeypatch: pytest.MonkeyPatch):
+    app, mod = tbox_quart_app
+    monkeypatch.setattr(mod, "_active_tenant_memberships", lambda _uid: [])
+    fake = SimpleNamespace(
+        tenant_ids_for_crawl=lambda uid, is_sup: None,
+        resolve_list_tenant_id=lambda tid, allowed: (tid, None),
+        list_tasks=lambda tf, allowed, page, ps, ds: (0, []),
+        task_row_to_dict=lambda t: {"id": getattr(t, "id", "")},
+    )
+    monkeypatch.setattr(mod, "crawl_svc", fake)
+    TBOX_ROUTE_TEST_USER.is_superuser = True
+    async with app.test_client() as client:
+        resp = await client.get(f"/{API_VERSION}/tbox/crawl/tasks")
+    assert resp.status_code == 200
+    body = await resp.get_json()
+    assert body["code"] == 0
+    assert body["data"]["total"] == 0
+    assert body["data"]["page"] == 1
+    assert body["data"]["items"] == []
+
+
+@pytest.mark.p2
+@pytest.mark.asyncio
+async def test_crawl_tasks_list_crawl_manage_forbidden(tbox_quart_app, monkeypatch: pytest.MonkeyPatch):
+    app, mod = tbox_quart_app
+    monkeypatch.setattr(mod, "_active_tenant_memberships", lambda _uid: [])
+    TBOX_ROUTE_TEST_USER.is_superuser = False
+    async with app.test_client() as client:
+        resp = await client.get(f"/{API_VERSION}/tbox/crawl/tasks")
+    assert resp.status_code == 200
+    body = await resp.get_json()
+    assert body["code"] == RetCode.FORBIDDEN
+    assert "crawl.manage" in body["message"].lower()
+
+
+@pytest.mark.p2
+@pytest.mark.asyncio
+async def test_crawl_tasks_get_not_found(tbox_quart_app, monkeypatch: pytest.MonkeyPatch):
+    app, mod = tbox_quart_app
+    monkeypatch.setattr(mod, "_active_tenant_memberships", lambda _uid: [])
+    fake = SimpleNamespace(
+        tenant_ids_for_crawl=lambda uid, is_sup: None,
+        get_task=lambda _tid: None,
+    )
+    monkeypatch.setattr(mod, "crawl_svc", fake)
+    TBOX_ROUTE_TEST_USER.is_superuser = True
+    async with app.test_client() as client:
+        resp = await client.get(f"/{API_VERSION}/tbox/crawl/tasks/missing-task-id")
+    assert resp.status_code == 200
+    body = await resp.get_json()
+    assert body["code"] == RetCode.NOT_FOUND
