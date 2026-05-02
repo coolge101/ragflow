@@ -19,7 +19,7 @@ const NAV_ITEMS: NavItem[] = [
 
 export function MainLayout() {
   const navigate = useNavigate();
-  const { me, permissions, loading, error, refresh } = useAuth();
+  const { me, permissions, loading, error, contractWarning, refresh } = useAuth();
 
   async function onLogout() {
     await logoutServer();
@@ -70,6 +70,19 @@ export function MainLayout() {
         </nav>
         {error ? (
           <div style={{ padding: "0 1rem 0.5rem", fontSize: "0.8rem", color: "#b91c1c" }}>{error}</div>
+        ) : null}
+        {contractWarning ? (
+          <div
+            style={{
+              padding: "0.5rem 1rem",
+              fontSize: "0.78rem",
+              color: "#92400e",
+              background: "#fffbeb",
+              borderTop: "1px solid #fde68a",
+            }}
+          >
+            {contractWarning}
+          </div>
         ) : null}
         {loading ? <div className="muted" style={{ padding: "0 1rem", fontSize: "0.8rem" }}>同步用户信息…</div> : null}
       </aside>

@@ -32,6 +32,7 @@ from common.constants import RetCode, StatusEnum
 from common.tbox_crawl_last_error import format_crawl_worker_error
 
 # Bumped when response shape or semantics change for external clients (e.g. web-tbox).
+# Keep aligned with web-tbox/src/constants/tboxContract.ts → TBOX_API_CONTRACT_VERSION_EXPECTED.
 TBOX_API_CONTRACT_VERSION = 4
 
 # UI permission keys — aligned with docs/TBOX_UI_DESIGN_DETAIL.md §2.2

@@ -1,6 +1,26 @@
 import { getAuthorizationHeader } from "../auth/session";
 import { TBOX_PERMISSIONS, type TboxPermission } from "../constants/permissions";
 
+export type TboxContractResponse = {
+  code: number;
+  message?: string;
+  data?: {
+    tbox_api_contract_version?: number;
+    docs?: string;
+    delivery_harness?: string;
+  };
+};
+
+export type TboxHealthResponse = {
+  code: number;
+  message?: string;
+  data?: {
+    status?: string;
+    tbox_api_contract_version?: number;
+    path?: string;
+  };
+};
+
 export type TboxMeResponse = {
   code: number;
   message?: string;
@@ -21,6 +41,20 @@ export async function fetchTboxMe(): Promise<{ res: Response; body: TboxMeRespon
     headers: auth ? { Authorization: auth } : {},
   });
   const body = (await res.json()) as TboxMeResponse;
+  return { res, body };
+}
+
+/** Public route — no auth (same as `tbox_app.contract`). */
+export async function fetchTboxContract(): Promise<{ res: Response; body: TboxContractResponse }> {
+  const res = await fetch("/v1/tbox/contract");
+  const body = (await res.json()) as TboxContractResponse;
+  return { res, body };
+}
+
+/** Public route — no auth (same as `tbox_app.health`). */
+export async function fetchTboxHealth(): Promise<{ res: Response; body: TboxHealthResponse }> {
+  const res = await fetch("/v1/tbox/health");
+  const body = (await res.json()) as TboxHealthResponse;
   return { res, body };
 }
 
