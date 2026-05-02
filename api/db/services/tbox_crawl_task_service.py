@@ -343,8 +343,9 @@ def execute_crawl_task_stub_tick(task_id: str) -> None:
     Ingest runs when ``dataset_id`` is set (unless ``extra_config.tbox_skip_ingest``):
     ``static_web`` uses SSRF-safe GET + upload; ``rss`` uses ``RSSConnector`` + per-entry ``.txt`` upload.
     ``robots.txt`` is consulted via ``common/tbox_crawl_robots.py`` unless ``extra_config.tbox_skip_robots_check``.
-    Transient HTTP retry whitelist: ``extra_config.tbox_crawl_retry_extra_statuses`` is passed to
-    ``common.tbox_crawl_ssrf_fetch.effective_retry_statuses`` for probe + ingest (with process env overrides).
+    Transient HTTP retry whitelist: ``extra_config.tbox_crawl_retry_statuses`` (task full replace) /
+    ``tbox_crawl_retry_extra_statuses`` (union) are passed to ``common.tbox_crawl_ssrf_fetch.effective_retry_statuses``
+    for probe + ingest (process ``TBOX_CRAWL_RETRY_STATUSES`` overrides task keys when set).
 
     Used by the background worker and by POST /v1/tbox/crawl/tasks/<id>/run.
     Raises ValueError if task missing; RuntimeError if extra_config.worker_stub_fail is set.

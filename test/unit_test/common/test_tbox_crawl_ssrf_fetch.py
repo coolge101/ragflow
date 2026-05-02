@@ -130,6 +130,30 @@ class TestTboxCrawlSsrfFetch(unittest.TestCase):
         self.assertIn(599, s)
         self.assertIn(429, s)
 
+    def test_effective_retry_task_full_replace_statuses(self):
+        with patch.dict(os.environ, {"TBOX_CRAWL_RETRY_STATUSES": "", "TBOX_CRAWL_RETRY_EXTRA_STATUSES": ""}, clear=False):
+            s = effective_retry_statuses({"tbox_crawl_retry_statuses": "404, 502"})
+        self.assertEqual(s, frozenset({404, 502}))
+
+    def test_effective_retry_task_full_wins_over_extra_statuses(self):
+        with patch.dict(os.environ, {"TBOX_CRAWL_RETRY_STATUSES": "", "TBOX_CRAWL_RETRY_EXTRA_STATUSES": ""}, clear=False):
+            s = effective_retry_statuses(
+                {
+                    "tbox_crawl_retry_statuses": [503],
+                    "tbox_crawl_retry_extra_statuses": [418, 599],
+                }
+            )
+        self.assertEqual(s, frozenset({503}))
+
+    def test_effective_retry_env_full_overrides_task_full(self):
+        with patch.dict(
+            os.environ,
+            {"TBOX_CRAWL_RETRY_STATUSES": "429", "TBOX_CRAWL_RETRY_EXTRA_STATUSES": ""},
+            clear=False,
+        ):
+            s = effective_retry_statuses({"tbox_crawl_retry_statuses": [503, 404]})
+        self.assertEqual(s, frozenset({429}))
+
     def test_retry_backoff_base_522_override(self):
         r = requests.Response()
         r.status_code = 522

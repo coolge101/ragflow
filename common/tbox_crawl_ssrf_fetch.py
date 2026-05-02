@@ -110,8 +110,10 @@ def effective_retry_statuses(extra_config: dict[str, Any] | None = None) -> froz
     Resolution order:
 
     * If ``TBOX_CRAWL_RETRY_STATUSES`` is non-empty and parses to at least one code in **100–599**,
-      that set **replaces** the built-in default (``TBOX_CRAWL_RETRY_EXTRA_STATUSES`` and task
-      extras are ignored).
+      that set **replaces** everything else (task ``extra_config`` retry keys are ignored).
+    * Else if ``extra_config["tbox_crawl_retry_statuses"]`` is present and parses to at least one
+      code in **100–599**, that set **replaces** the built-in default, ``TBOX_CRAWL_RETRY_EXTRA_STATUSES``,
+      and ``tbox_crawl_retry_extra_statuses`` for this task.
     * Else: built-in defaults ∪ ``TBOX_CRAWL_RETRY_EXTRA_STATUSES`` ∪
       ``extra_config["tbox_crawl_retry_extra_statuses"]`` (comma string or JSON array of ints).
     """
@@ -121,6 +123,13 @@ def effective_retry_statuses(extra_config: dict[str, Any] | None = None) -> froz
         if parsed:
             return frozenset(parsed)
         _LOG.warning("TBOX_CRAWL_RETRY_STATUSES set but no valid codes in 100–599; using built-in defaults + extras")
+
+    if extra_config:
+        task_full = extra_config.get("tbox_crawl_retry_statuses")
+        if task_full is not None:
+            task_parsed = _parse_extra_config_retry_statuses(task_full)
+            if task_parsed:
+                return frozenset(task_parsed)
 
     codes = set(DEFAULT_RETRY_STATUS_CODES)
     codes |= _parse_retry_status_int_list((os.environ.get("TBOX_CRAWL_RETRY_EXTRA_STATUSES") or "").strip())
