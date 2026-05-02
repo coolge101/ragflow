@@ -16,7 +16,9 @@
 
 from __future__ import annotations
 
+import os
 import unittest
+from unittest.mock import patch
 
 import requests
 
@@ -43,6 +45,13 @@ class TestTboxCrawlSsrfFetch(unittest.TestCase):
         d1 = _retry_delay_seconds(r, attempt_idx=1)
         self.assertGreaterEqual(d0, 0.0)
         self.assertGreaterEqual(d1, d0)
+
+    def test_retry_backoff_base_429_override(self):
+        r = requests.Response()
+        r.status_code = 429
+        with patch.dict(os.environ, {"TBOX_CRAWL_RETRY_BACKOFF_BASE_429": "3"}, clear=False):
+            self.assertAlmostEqual(_retry_delay_seconds(r, 0), 3.0)
+            self.assertAlmostEqual(_retry_delay_seconds(r, 1), 6.0)
 
 
 if __name__ == "__main__":

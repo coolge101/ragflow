@@ -44,18 +44,56 @@ _RETRY_BACKOFF_MAX = max(0.0, float(os.environ.get("TBOX_CRAWL_RETRY_BACKOFF_MAX
 _RETRY_AFTER_CAP_SEC = max(0.0, float(os.environ.get("TBOX_CRAWL_RETRY_AFTER_CAP_SEC", "30")))
 
 
+def _retry_max_for_status(status_code: int) -> int:
+    if status_code == 429:
+        v = os.environ.get("TBOX_CRAWL_RETRY_MAX_ATTEMPTS_429", "").strip()
+        if v != "":
+            return max(0, int(v))
+    if status_code == 503:
+        v = os.environ.get("TBOX_CRAWL_RETRY_MAX_ATTEMPTS_503", "").strip()
+        if v != "":
+            return max(0, int(v))
+    return _RETRY_MAX_ATTEMPTS
+
+
+def _retry_backoff_base_for_status(status_code: int) -> float:
+    if status_code == 429:
+        v = os.environ.get("TBOX_CRAWL_RETRY_BACKOFF_BASE_429", "").strip()
+        if v != "":
+            return max(0.0, float(v))
+    if status_code == 503:
+        v = os.environ.get("TBOX_CRAWL_RETRY_BACKOFF_BASE_503", "").strip()
+        if v != "":
+            return max(0.0, float(v))
+    return _RETRY_BACKOFF_BASE
+
+
+def _retry_after_cap_for_status(status_code: int) -> float:
+    if status_code == 429:
+        v = os.environ.get("TBOX_CRAWL_RETRY_AFTER_CAP_SEC_429", "").strip()
+        if v != "":
+            return max(0.0, float(v))
+    if status_code == 503:
+        v = os.environ.get("TBOX_CRAWL_RETRY_AFTER_CAP_SEC_503", "").strip()
+        if v != "":
+            return max(0.0, float(v))
+    return _RETRY_AFTER_CAP_SEC
+
+
 def _retry_delay_seconds(response: requests.Response, attempt_idx: int) -> float:
     """
     Delay before retry for transient statuses.
 
     Priority: ``Retry-After`` (delta-seconds / HTTP-date, capped) > exponential backoff.
     """
+    status_code = int(response.status_code)
+    cap = _retry_after_cap_for_status(status_code)
     ra = (response.headers.get("Retry-After") or "").strip()
     if ra:
         try:
             sec = float(ra)
             if sec >= 0.0:
-                return min(sec, _RETRY_AFTER_CAP_SEC) if _RETRY_AFTER_CAP_SEC > 0.0 else sec
+                return min(sec, cap) if cap > 0.0 else sec
         except ValueError:
             try:
                 dt = parsedate_to_datetime(ra)
@@ -65,13 +103,14 @@ def _retry_delay_seconds(response: requests.Response, attempt_idx: int) -> float
                     now = datetime.datetime.now(datetime.timezone.utc)
                     sec = (dt - now).total_seconds()
                     if sec > 0.0:
-                        return min(sec, _RETRY_AFTER_CAP_SEC) if _RETRY_AFTER_CAP_SEC > 0.0 else sec
+                        return min(sec, cap) if cap > 0.0 else sec
             except Exception:
                 pass
 
-    if _RETRY_BACKOFF_BASE <= 0.0:
+    base = _retry_backoff_base_for_status(status_code)
+    if base <= 0.0:
         return 0.0
-    sec = _RETRY_BACKOFF_BASE * (2 ** max(0, attempt_idx))
+    sec = base * (2 ** max(0, attempt_idx))
     if _RETRY_BACKOFF_MAX > 0.0:
         sec = min(sec, _RETRY_BACKOFF_MAX)
     return max(0.0, sec)
@@ -114,7 +153,7 @@ def _ssrf_redirecting_stream_get(
                     headers=headers,
                     stream=True,
                 )
-            if response.status_code in _RETRY_STATUSES and attempt < _RETRY_MAX_ATTEMPTS:
+            if response.status_code in _RETRY_STATUSES and attempt < _retry_max_for_status(response.status_code):
                 wait_sec = _retry_delay_seconds(response, attempt)
                 if origin_throttle is not None:
                     try:
