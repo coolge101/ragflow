@@ -1,4 +1,4 @@
-import { useLocation, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 
 export function NoPermissionPage() {
   const location = useLocation();
@@ -17,10 +17,11 @@ export function NoPermissionPage() {
         ) : null}
         。请联系管理员分配角色，或使用左侧菜单进入有权限的模块。
       </p>
-      <p style={{ marginTop: "1.5rem" }}>
+      <p style={{ marginTop: "1.5rem", display: "flex", flexWrap: "wrap", gap: "0.75rem", alignItems: "center" }}>
         <button type="button" onClick={() => navigate(-1)} style={{ cursor: "pointer" }}>
           返回上一页
         </button>
+        <Link to="/">进入对话首页</Link>
       </p>
     </div>
   );

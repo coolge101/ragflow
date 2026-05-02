@@ -1,5 +1,6 @@
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import { logoutServer } from "../api/auth";
+import { ApiErrorBanner } from "../components/ApiErrorBanner";
 import { clearSession } from "../auth/session";
 import { hasPermission } from "../constants/permissions";
 import type { TboxPermission } from "../constants/permissions";
@@ -69,7 +70,15 @@ export function MainLayout() {
           ))}
         </nav>
         {error ? (
-          <div style={{ padding: "0 1rem 0.5rem", fontSize: "0.8rem", color: "#b91c1c" }}>{error}</div>
+          <ApiErrorBanner
+            style={{ margin: "0 0.75rem 0.5rem", padding: "0.45rem 0.65rem", fontSize: "0.8rem" }}
+            onRetry={() => void refresh()}
+            retryLabel="重试同步"
+            retryDisabled={loading}
+            retryBusy={loading}
+          >
+            {error}
+          </ApiErrorBanner>
         ) : null}
         {contractWarning ? (
           <div
