@@ -46,7 +46,14 @@
 
 CI 中的重型对抗流程仍可通过 `python test/adversarial_tests.py --target …` 生成报告（见 `harness_engineering` workflow）。
 
-## 6. 相关文档
+## 6. PR 轻量 CI（GitHub `ubuntu-latest`）
+
+| Workflow | 触发路径（节选） | 作用 |
+|----------|------------------|------|
+| **`web-tbox.yml`** | `web-tbox/**` | `npm ci` + **`npm run typecheck`** + **`npm run build`** |
+| **`harness-monitor-unit.yml`** | `common/harness_monitor.py`、`test/test_harness_monitor.py`、`test/adversarial_tests.py`、`pyproject.toml`、`uv.lock` 等 | **`uv sync --group test --frozen`** + **`pytest`** `test/test_harness_monitor.py` 与 **`test/adversarial_tests.py`**（后者 **live** 用例默认 **skip**，见 §5） |
+
+## 7. 相关文档
 
 - 总纲与分期：`docs/TBOX_KB_DELIVERY_HARNESS.md`
 - API 边界：`docs/TBOX_API_BOUNDARY.md`
