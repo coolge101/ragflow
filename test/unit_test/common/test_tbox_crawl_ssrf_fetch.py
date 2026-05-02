@@ -75,8 +75,11 @@ class TestTboxCrawlSsrfFetch(unittest.TestCase):
             self.assertAlmostEqual(_retry_delay_seconds(r, 1), 2.5)
 
     def test_retry_statuses_includes_cloudflare_edge(self):
-        for code in (520, 521, 522, 523, 524):
+        for code in (520, 521, 522, 523, 524, 525, 526, 530):
             self.assertIn(code, _RETRY_STATUSES)
+
+    def test_retry_statuses_excludes_generic_500(self):
+        self.assertNotIn(500, _RETRY_STATUSES)
 
     def test_retry_backoff_base_522_override(self):
         r = requests.Response()
@@ -84,6 +87,13 @@ class TestTboxCrawlSsrfFetch(unittest.TestCase):
         with patch.dict(os.environ, {"TBOX_CRAWL_RETRY_BACKOFF_BASE_522": "3"}, clear=False):
             self.assertAlmostEqual(_retry_delay_seconds(r, 0), 3.0)
             self.assertAlmostEqual(_retry_delay_seconds(r, 1), 6.0)
+
+    def test_retry_backoff_base_530_override(self):
+        r = requests.Response()
+        r.status_code = 530
+        with patch.dict(os.environ, {"TBOX_CRAWL_RETRY_BACKOFF_BASE_530": "2"}, clear=False):
+            self.assertAlmostEqual(_retry_delay_seconds(r, 0), 2.0)
+            self.assertAlmostEqual(_retry_delay_seconds(r, 1), 4.0)
 
 
 if __name__ == "__main__":
