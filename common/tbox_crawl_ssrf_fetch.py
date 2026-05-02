@@ -34,7 +34,8 @@ from common.tbox_crawl_origin_throttle import OriginFetchThrottler
 _MAX_REDIRECTS = 10
 _REDIRECT_STATUSES = frozenset({301, 302, 303, 307, 308})
 # Standard-ish transient codes + Cloudflare-style edge codes (non-RFC; common on CDN front).
-# 525/526/528/530 per Cloudflare-style CDN docs; 527 (Railgun) omitted as legacy.
+# 525/526/528/529/530: CDN / host overload style (529 non-standard, used by some providers).
+# 527 (Railgun) omitted as legacy.
 _RETRY_STATUS_ENV_SUFFIXES: tuple[tuple[int, str], ...] = (
     (408, "408"),
     (429, "429"),
@@ -49,6 +50,7 @@ _RETRY_STATUS_ENV_SUFFIXES: tuple[tuple[int, str], ...] = (
     (525, "525"),
     (526, "526"),
     (528, "528"),
+    (529, "529"),
     (530, "530"),
 )
 _RETRY_STATUSES = frozenset(code for code, _ in _RETRY_STATUS_ENV_SUFFIXES)

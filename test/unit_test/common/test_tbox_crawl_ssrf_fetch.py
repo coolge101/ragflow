@@ -22,7 +22,7 @@ from unittest.mock import patch
 
 import requests
 
-from common.tbox_crawl_ssrf_fetch import _RETRY_STATUSES, _retry_delay_seconds
+from common.tbox_crawl_ssrf_fetch import _RETRY_STATUSES, _retry_delay_seconds, _retry_max_for_status
 
 
 class TestTboxCrawlSsrfFetch(unittest.TestCase):
@@ -75,7 +75,7 @@ class TestTboxCrawlSsrfFetch(unittest.TestCase):
             self.assertAlmostEqual(_retry_delay_seconds(r, 1), 2.5)
 
     def test_retry_statuses_includes_cloudflare_edge(self):
-        for code in (520, 521, 522, 523, 524, 525, 526, 528, 530):
+        for code in (520, 521, 522, 523, 524, 525, 526, 528, 529, 530):
             self.assertIn(code, _RETRY_STATUSES)
 
     def test_retry_statuses_excludes_generic_500(self):
@@ -101,6 +101,17 @@ class TestTboxCrawlSsrfFetch(unittest.TestCase):
         with patch.dict(os.environ, {"TBOX_CRAWL_RETRY_BACKOFF_BASE_528": "1.5"}, clear=False):
             self.assertAlmostEqual(_retry_delay_seconds(r, 0), 1.5)
             self.assertAlmostEqual(_retry_delay_seconds(r, 1), 3.0)
+
+    def test_retry_backoff_base_529_override(self):
+        r = requests.Response()
+        r.status_code = 529
+        with patch.dict(os.environ, {"TBOX_CRAWL_RETRY_BACKOFF_BASE_529": "2"}, clear=False):
+            self.assertAlmostEqual(_retry_delay_seconds(r, 0), 2.0)
+            self.assertAlmostEqual(_retry_delay_seconds(r, 1), 4.0)
+
+    def test_retry_max_attempts_zero_disables_per_code(self):
+        with patch.dict(os.environ, {"TBOX_CRAWL_RETRY_MAX_ATTEMPTS_529": "0"}, clear=False):
+            self.assertEqual(_retry_max_for_status(529), 0)
 
 
 if __name__ == "__main__":
