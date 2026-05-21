@@ -2,6 +2,10 @@
 
 目标：在一台机器上同时跑 **RAGFlow 后端** 与 **TBOX 独立前端（web-tbox）**，并打通到 **`/v1/tbox/*`** 与既有 API。
 
+**完整部署与验收路径（Docker / 本机 Python / Nginx / 冒烟清单）**见 **[`TBOX_DEPLOY_RUNBOOK.md`](./TBOX_DEPLOY_RUNBOOK.md)**。
+**在新服务器上从 GitHub 克隆并一键部署**见 **[`TBOX_DEPLOY_FROM_GITHUB.md`](./TBOX_DEPLOY_FROM_GITHUB.md)**（推荐 `bash scripts/deploy-on-new-server.sh`）。
+**部署后的使用说明、菜单与权限**见 **[`TBOX_SYSTEM_USER_MANUAL.md`](./TBOX_SYSTEM_USER_MANUAL.md)**；**按界面逐步验收**见 **[`TBOX_UI_ACCEPTANCE_WALKTHROUGH.md`](./TBOX_UI_ACCEPTANCE_WALKTHROUGH.md)**。
+
 ## 1. 前置
 
 - 已按官方文档启动依赖（MySQL、ES/Infinity、Redis、MinIO 等），或直接使用 **`docker compose`** 起全栈（见仓库 `docker/README.md`）。
@@ -33,12 +37,44 @@ npm run dev
 
 提交或发版前建议在 `web-tbox/` 下执行 **`npm run typecheck`** 与 **`npm run build`**（与 GitHub Actions **`.github/workflows/web-tbox.yml`** 一致）；路由与权限说明见同目录 **`README.md`**。
 
+### 3.0 没有邮箱/密码（首次账号）
+
+`web-tbox` 的 **`/login`** 只做**已有账号**的密码登录，不提供自助注册；账号来自 **RAGFlow 用户库**。
+
+**做法一（推荐）：初始化内置超级用户**
+
+RAGFlow 在 **`api/db/init_data.py`** 里定义了默认超级用户（可用环境变量覆盖）：
+
+| 变量 | 未设置时的默认值 |
+|------|------------------|
+| `DEFAULT_SUPERUSER_EMAIL` | **`admin@ragflow.io`** |
+| `DEFAULT_SUPERUSER_PASSWORD` | **`admin`** |
+| `DEFAULT_SUPERUSER_NICKNAME` | **`admin`** |
+
+在 **`docker/docker-compose.yml`** 里为 **`ragflow-cpu` / `ragflow-gpu`** 的 **`command`** 增加一项 **`--init-superuser`**（与现有 **`--enable-adminserver`** 并列），例如：
+
+```yaml
+command:
+  - --enable-adminserver
+  - --init-superuser
+```
+
+保存后 **`docker compose … up -d` 重建/重启** RAGFlow 容器一次；若该邮箱已存在则不会重复创建。之后用 **`admin@ragflow.io` / `admin`** 在 **`web-tbox`** 登录（登录后请尽快改密）。
+
+**注意（旧镜像）**：部分 **`infiniflow/ragflow:v0.24.x`** 在 **`--init-superuser`** 创建用户后，会因默认 Chat 模型未配置而在初始化阶段抛错，导致 **`ragflow_server` 起不来**；此时应**去掉** compose 里的 **`--init-superuser`** 并重建容器（用户已在库里则无需再 init）。另：仅 **很旧的官方 stock 镜像（如 v0.24.x）** 登录为 **`POST /v1/user/login`**，才在 **`web-tbox/.env`** 设置 **`VITE_AUTH_LOGIN_PATH=/v1/user/login`**。本仓库 **`ragflow-tbox:local`** 与当前 Quart 后端用默认 **`POST /api/v1/auth/login`**，**不要**设置旧路径，否则会出现 **`Not Found: /v1/user/login`**。
+
+**做法二：开放注册**
+
+若 **`docker/.env`** 中 **`REGISTER_ENABLED=1`**（默认常见为 1），可通过 **官方 `web/`** 或调用 **`POST /api/v1/users`** 注册新用户（需满足邮箱格式等校验），再用该邮箱登录 **`web-tbox`**。
+
 ### 3.1 登录与鉴权接口
 
-1. 浏览器访问 **`/login`**，使用与 RAGFlow 相同的**邮箱 + 密码**。前端会调用 **`POST /api/v1/auth/login`**，密码使用与官方 `web/` 相同的 **RSA 公钥**加密后再提交。
+1. 浏览器访问 **`/login`**，使用与 RAGFlow 相同的**邮箱 + 密码**。前端会调用登录接口（默认 **`POST /api/v1/auth/login`**；旧镜像见 **§3.0** 中的 **`VITE_AUTH_LOGIN_PATH`**），密码使用与官方 `web/` 相同的 **RSA 公钥**加密后再提交。修改 **`web-tbox/.env` 后须重启 `npm run dev`** 才会生效。
+
+若提示 **`Email and password do not match!`** 且确认密码为 **`admin`**：多为库里 **同名邮箱多行**（`.first()` 命中错误行）。在仓库根执行 **`./scripts/tbox-dedupe-admin-email.sh`**（需 **`docker-mysql-1`** 与 **`docker/.env` 中 `MYSQL_PASSWORD`**），或自行在 **`user`** 表只保留一条 **`admin@ragflow.io`**。
 2. 登录成功后，响应头 **`Authorization`** 与 JSON 中的 **`access_token`** 会写入 `localStorage`（键名与官方 `web/` 一致：`Authorization`、`token`、`userInfo`）。
 3. 主壳加载时请求 **`GET /v1/tbox/me`**（含 **`permissions`**）并带上 `Authorization`；**`POST /v1/tbox/logout`** 可退出并使 token 失效（与 `POST /api/v1/auth/logout` 语义对齐）。
-4. 知识库与文档：**`/documents`**（**`/kbs`** 重定向至此）— **`GET/DELETE /api/v1/datasets`**；展开知识库后 **`GET/POST/DELETE .../datasets/<id>/documents`**（上传需 `doc.upload`，删文档需 `doc.delete`）。ZIP 等导出若 REST 未对齐可暂用官方 `web/`。侧栏与权限见 **`docs/TBOX_UI_DESIGN_DETAIL.md`**。
+4. 知识库与文档：**`/documents`**（**`/kbs`** 重定向至此）— **`GET/DELETE /api/v1/datasets`**；**新建空库**为 **`POST /api/v1/datasets`**（需 **`doc.upload` 或 `kb.configure`**）；展开知识库后 **`GET/POST/DELETE .../datasets/<id>/documents`**（上传需 `doc.upload`，删文档需 `doc.delete`；**删整库**需 **`kb.dangerous`**）。**`/kb`**（`kb.configure`）— 单库 **`GET/PUT /api/v1/datasets/<id>`**；删整库同样需 **`kb.dangerous`**。ZIP 等导出若 REST 未对齐可暂用官方 `web/`。侧栏与权限见 **`docs/TBOX_UI_DESIGN_DETAIL.md`**。
 5. **对话**：**`/`** 使用 **`POST /api/v1/chat/completions`**（流式）。可选 **应用**（`GET /api/v1/chats`）、**会话列表/详情**（`GET .../chats/:id/sessions`、`GET .../sessions/:sid`）、**新建会话**（`POST .../sessions`）；选「仅模型」则不传 `chat_id`。侧栏展示 **`reference.chunks`**。需已配置可用 Chat 模型。
 6. **检索**：**`/search`** 使用 **`POST /api/v1/datasets/<id>/search`**；**用户**：**`/users`** 使用 **`GET /api/v1/tenants/<当前用户 id>/users`**。
 7. **审计**：**`/audit`** 使用 **`GET /api/v1/datasets/<id>/ingestions`**；**采集**：**`/crawl`** 需 **`crawl.manage`**；任务 CRUD 走 **`/v1/tbox/crawl/tasks`**，手动执行一次 tick 走 **`POST /v1/tbox/crawl/tasks/<id>/run`**（**`robots.txt` 预检** + 探测 + 已绑定 **`dataset_id`** 时 **`static_web`/`rss`** 入库；**`tbox_skip_robots_check`** 等见 **`docs/TBOX_API_BOUNDARY.md`** §1.2–1.3；**`/me`** 契约 **v4+**）。
@@ -61,10 +97,12 @@ Docker：在 **`docker/.env`** 中设置 **`ENABLE_TBOX_CRAWL_WORKER=1`**，或�
 
 ## 5. 更多
 
+- 使用说明书（功能、权限、FAQ）：**[`TBOX_SYSTEM_USER_MANUAL.md`](./TBOX_SYSTEM_USER_MANUAL.md)**
 - 环境与版本：`docs/TBOX_ENV_AND_VERSIONS.md`
 - API 边界：`docs/TBOX_API_BOUNDARY.md`
 - 总纲：`docs/TBOX_KB_DELIVERY_HARNESS.md`
 - UI 概要/详细设计：`docs/TBOX_UI_DESIGN_OVERVIEW.md`、`docs/TBOX_UI_DESIGN_DETAIL.md`（参考原型：`tbox-ragflow-platform/others/apps/web/`，见总纲 §2.1）
+- 二期能力备忘：`docs/TBOX_PHASE2_PAGE_REQUIREMENTS_MEMO.md`
 
 ## 6. PR 前自检（与 `ubuntu-latest` 轻量 CI 对齐）
 

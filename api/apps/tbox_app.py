@@ -19,6 +19,7 @@ TBOX product extension API (isolated under /v1/tbox).
 Contract: docs/TBOX_API_BOUNDARY.md
 """
 
+import json
 import secrets
 
 from quart import request
@@ -27,13 +28,14 @@ from api.apps import current_user, login_required, logout_user
 from api.db import UserTenantRole
 from api.db.db_models import UserTenant
 from api.db.services import tbox_crawl_task_service as crawl_svc
+from api.db.services import tbox_managed_user_service as managed_users
 from api.utils.api_utils import get_json_result, get_request_json, server_error_response
 from common.constants import RetCode, StatusEnum
 from common.tbox_crawl_last_error import format_crawl_worker_error
 
 # Bumped when response shape or semantics change for external clients (e.g. web-tbox).
 # Keep aligned with web-tbox/src/constants/tboxContract.ts → TBOX_API_CONTRACT_VERSION_EXPECTED.
-TBOX_API_CONTRACT_VERSION = 4
+TBOX_API_CONTRACT_VERSION = 5
 
 # UI permission keys — aligned with docs/TBOX_UI_DESIGN_DETAIL.md §2.2
 _TBOX_PERMISSIONS_ALL = (
@@ -54,14 +56,24 @@ _TBOX_PERMISSIONS_ALL = (
 )
 
 
-def _tbox_permissions_for_tenants(is_superuser: bool, tenant_rows: list[dict]) -> list[str]:
-    if is_superuser:
-        return list(_TBOX_PERMISSIONS_ALL)
-    roles = {str(row.get("role") or "") for row in tenant_rows}
-    if UserTenantRole.OWNER.value in roles or UserTenantRole.ADMIN.value in roles:
-        return list(_TBOX_PERMISSIONS_ALL)
-    if UserTenantRole.NORMAL.value in roles:
-        return [
+def _parse_tbox_permissions_column(raw) -> list[str] | None:
+    if raw is None or raw == "":
+        return None
+    try:
+        arr = json.loads(raw) if isinstance(raw, str) else raw
+        if isinstance(arr, list) and len(arr) > 0:
+            return [str(p) for p in arr if p in _TBOX_PERMISSIONS_ALL]
+    except Exception:
+        return None
+    return None
+
+
+def _single_role_permissions(role: str) -> set[str]:
+    r = str(role or "")
+    if r in (UserTenantRole.OWNER.value, UserTenantRole.ADMIN.value):
+        return set(_TBOX_PERMISSIONS_ALL)
+    if r == UserTenantRole.NORMAL.value:
+        return {
             "chat.use",
             "search.use",
             "doc.view",
@@ -72,15 +84,74 @@ def _tbox_permissions_for_tenants(is_superuser: bool, tenant_rows: list[dict]) -
             "kb.configure",
             "export.data",
             "crawl.manage",
-        ]
-    if UserTenantRole.INVITE.value in roles:
-        return ["chat.use", "search.use", "doc.view"]
-    return []
+        }
+    if r == UserTenantRole.INVITE.value:
+        return {"chat.use", "search.use", "doc.view"}
+    return set()
+
+
+def _effective_permissions_for_membership_row(row: dict) -> set[str]:
+    ovr = _parse_tbox_permissions_column(row.get("tbox_permissions"))
+    if ovr is not None:
+        return set(ovr)
+    return _single_role_permissions(str(row.get("role") or ""))
+
+
+def _tbox_permissions_for_tenants(is_superuser: bool, tenant_rows: list[dict]) -> list[str]:
+    if is_superuser:
+        return list(_TBOX_PERMISSIONS_ALL)
+    acc: set[str] = set()
+    for row in tenant_rows:
+        acc.update(_effective_permissions_for_membership_row(row))
+    order = list(_TBOX_PERMISSIONS_ALL)
+    return [p for p in order if p in acc]
 
 
 def _active_tenant_memberships(user_id: str) -> list[dict]:
-    q = UserTenant.select(UserTenant.tenant_id, UserTenant.role).where((UserTenant.user_id == user_id) & (UserTenant.status == StatusEnum.VALID.value)).dicts()
-    return [{"tenant_id": r["tenant_id"], "role": r["role"]} for r in q]
+    q = UserTenant.select(UserTenant.tenant_id, UserTenant.role, UserTenant.tbox_permissions).where((UserTenant.user_id == user_id) & (UserTenant.status == StatusEnum.VALID.value)).dicts()
+    return [{"tenant_id": r["tenant_id"], "role": r["role"], "tbox_permissions": r.get("tbox_permissions")} for r in q]
+
+
+def _team_manage_tenant_users(tenant_id: str) -> bool:
+    """Same rules as tenant_api: personal owner or team OWNER/ADMIN."""
+    from api.db.services.user_service import UserTenantService
+
+    if current_user.id == tenant_id:
+        return True
+    rel = UserTenantService.filter_by_tenant_and_user_id(tenant_id, current_user.id)
+    if not rel or str(rel.status) != str(StatusEnum.VALID.value):
+        return False
+    role = str(rel.role or "")
+    return role in (UserTenantRole.OWNER.value, UserTenantRole.ADMIN.value)
+
+
+def _team_view_tenant_users(tenant_id: str) -> bool:
+    from api.db.services.user_service import UserTenantService
+
+    if bool(getattr(current_user, "is_superuser", False)):
+        return True
+    if _team_manage_tenant_users(tenant_id):
+        return True
+    rel = UserTenantService.filter_by_tenant_and_user_id(tenant_id, current_user.id)
+    return bool(rel and str(rel.status) == str(StatusEnum.VALID.value))
+
+
+def _assert_managed_users_read(tenant_id: str):
+    if not _team_view_tenant_users(tenant_id):
+        return get_json_result(
+            data=False,
+            message="No authorization.",
+            code=RetCode.AUTHENTICATION_ERROR,
+        )
+    return None
+
+
+def _assert_managed_users_write(tenant_id: str):
+    if bool(getattr(current_user, "is_superuser", False)):
+        return None
+    if _team_manage_tenant_users(tenant_id):
+        return None
+    return get_json_result(code=RetCode.FORBIDDEN, message="No authorization to manage workspace users.")
 
 
 def _crawl_manage_denied_response():
@@ -412,5 +483,92 @@ async def crawl_tasks_run(task_id: str):
             return get_json_result(code=RetCode.EXCEPTION_ERROR, message=str(e))
         t2 = crawl_svc.get_task(task_id)
         return get_json_result(data=crawl_svc.task_row_to_dict(t2) if t2 else None)
+    except Exception as e:  # noqa: BLE001
+        return server_error_response(e)
+
+
+@manager.route("/workspaces/<tenant_id>/managed-users", methods=["GET"])  # noqa: F821
+@login_required
+async def managed_users_list(tenant_id: str):
+    denied = _assert_managed_users_read(tenant_id)
+    if denied:
+        return denied
+    try:
+        data = managed_users.list_managed_users(tenant_id)
+        return get_json_result(data=data)
+    except Exception as e:  # noqa: BLE001
+        return server_error_response(e)
+
+
+@manager.route("/workspaces/<tenant_id>/managed-users", methods=["POST"])  # noqa: F821
+@login_required
+async def managed_users_create(tenant_id: str):
+    denied = _assert_managed_users_write(tenant_id)
+    if denied:
+        return denied
+    try:
+        req = await get_request_json()
+        email = (req.get("email") or "").strip()
+        nickname = (req.get("nickname") or "").strip()
+        password = req.get("password")
+        role = (req.get("role") or "").strip()
+        perms = req.get("permissions")
+        if not email or password is None or str(password).strip() == "" or not role:
+            return get_json_result(
+                code=RetCode.ARGUMENT_ERROR,
+                message="email, password (RSA encrypted), and role are required",
+            )
+        perms_list = perms if isinstance(perms, list) else None
+        row, err = managed_users.create_managed_user(
+            tenant_id,
+            current_user.id,
+            email,
+            nickname,
+            str(password),
+            role,
+            perms_list,
+        )
+        if err:
+            return get_json_result(code=RetCode.OPERATING_ERROR, message=err)
+        return get_json_result(data=row)
+    except Exception as e:  # noqa: BLE001
+        return server_error_response(e)
+
+
+@manager.route("/workspaces/<tenant_id>/managed-users/<user_id>", methods=["PATCH"])  # noqa: F821
+@login_required
+async def managed_users_patch(tenant_id: str, user_id: str):
+    denied = _assert_managed_users_write(tenant_id)
+    if denied:
+        return denied
+    try:
+        req = await get_request_json()
+        if not isinstance(req, dict):
+            return get_json_result(code=RetCode.ARGUMENT_ERROR, message="JSON body required")
+        row, err = managed_users.update_managed_user_fields(tenant_id, user_id, req)
+        if err:
+            return get_json_result(code=RetCode.OPERATING_ERROR, message=err)
+        return get_json_result(data=row)
+    except Exception as e:  # noqa: BLE001
+        return server_error_response(e)
+
+
+@manager.route("/workspaces/<tenant_id>/managed-users/<user_id>", methods=["DELETE"])  # noqa: F821
+@login_required
+async def managed_users_delete(tenant_id: str, user_id: str):
+    is_self = current_user.id == user_id
+    if not is_self:
+        denied = _assert_managed_users_write(tenant_id)
+        if denied:
+            return denied
+    else:
+        denied = _assert_managed_users_read(tenant_id)
+        if denied:
+            return denied
+    try:
+        ok, err = managed_users.remove_managed_member(tenant_id, user_id)
+        if not ok:
+            return get_json_result(code=RetCode.OPERATING_ERROR, message=err or "delete failed")
+        return get_json_result(data=True)
     except Exception as e:  # noqa: BLE001
         return server_error_response(e)

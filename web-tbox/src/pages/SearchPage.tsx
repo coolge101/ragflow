@@ -24,6 +24,8 @@ export function SearchPage() {
   const [loadingSearch, setLoadingSearch] = useState(false);
   const [listError, setListError] = useState<string | null>(null);
   const [searchError, setSearchError] = useState<string | null>(null);
+  /** 最近一次「成功」检索对应的 `datasetId\\ttrim(question)`，用于区分未检索与 0 结果 */
+  const [lastSuccessSearchKey, setLastSuccessSearchKey] = useState<string | null>(null);
 
   const loadDatasets = useCallback(async () => {
     setLoadingList(true);
@@ -57,6 +59,14 @@ export function SearchPage() {
     void loadDatasets();
   }, [loadDatasets]);
 
+  useEffect(() => {
+    const key = `${datasetId}\t${question.trim()}`;
+    if (lastSuccessSearchKey !== null && lastSuccessSearchKey !== key) {
+      setChunks([]);
+      setTotal(0);
+    }
+  }, [datasetId, question, lastSuccessSearchKey]);
+
   const runSearch = useCallback(async () => {
     const q = question.trim();
     if (!datasetId || !q) {
@@ -78,6 +88,7 @@ export function SearchPage() {
       const data = body.data;
       setChunks(Array.isArray(data?.chunks) ? data.chunks : []);
       setTotal(typeof data?.total === "number" ? data.total : data?.chunks?.length ?? 0);
+      setLastSuccessSearchKey(`${datasetId}\t${q}`);
     } catch (err) {
       setSearchError(err instanceof Error ? err.message : String(err));
     } finally {
@@ -92,6 +103,30 @@ export function SearchPage() {
     },
     [runSearch],
   );
+
+  const currentSearchKey = `${datasetId}\t${question.trim()}`;
+  const showNoHits =
+    lastSuccessSearchKey !== null &&
+    lastSuccessSearchKey === currentSearchKey &&
+    chunks.length === 0 &&
+    !loadingSearch &&
+    !searchError;
+  const showKbEmpty = !loadingList && !listError && datasets.length === 0;
+  const showHintBeforeSearch =
+    datasets.length > 0 &&
+    !loadingList &&
+    !listError &&
+    lastSuccessSearchKey === null &&
+    !loadingSearch &&
+    !searchError;
+
+  function onClearSearchForm() {
+    setQuestion("");
+    setChunks([]);
+    setTotal(0);
+    setSearchError(null);
+    setLastSuccessSearchKey(null);
+  }
 
   return (
     <div style={{ maxWidth: 880 }}>
@@ -122,6 +157,38 @@ export function SearchPage() {
         >
           {searchError}
         </ApiErrorBanner>
+      ) : null}
+
+      {showKbEmpty ? (
+        <div
+          className="muted"
+          style={{
+            marginTop: "1rem",
+            padding: "0.75rem 1rem",
+            background: "#fff",
+            border: "1px solid var(--border-subtle)",
+            borderRadius: 8,
+            fontSize: "0.92rem",
+          }}
+        >
+          当前<strong>没有可用知识库</strong>。请先在 RAGFlow 中创建知识库并入库后，点下方「重试加载知识库」或刷新页面。
+        </div>
+      ) : null}
+
+      {showHintBeforeSearch ? (
+        <div
+          className="muted"
+          style={{
+            marginTop: "1rem",
+            padding: "0.65rem 0.9rem",
+            background: "#f8fafc",
+            border: "1px dashed var(--border-subtle)",
+            borderRadius: 8,
+            fontSize: "0.9rem",
+          }}
+        >
+          选择知识库并输入问题后，点「检索」查看向量检索结果。
+        </div>
       ) : null}
 
       <form onSubmit={(ev) => void onSearch(ev)} style={{ marginTop: "1rem", display: "flex", flexDirection: "column", gap: 12 }}>
@@ -157,12 +224,38 @@ export function SearchPage() {
             placeholder="输入要检索的内容"
           />
         </label>
-        <button type="submit" disabled={loadingSearch || !datasetId || !question.trim()}>
-          {loadingSearch ? "检索中…" : "检索"}
-        </button>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: "0.5rem", alignItems: "center" }}>
+          <button type="submit" disabled={loadingSearch || !datasetId || !question.trim()}>
+            {loadingSearch ? "检索中…" : "检索"}
+          </button>
+          <button type="button" disabled={loadingSearch} onClick={onClearSearchForm} style={{ cursor: "pointer" }}>
+            清空条件
+          </button>
+        </div>
       </form>
 
-      {chunks.length > 0 ? (
+      {showNoHits ? (
+        <section style={{ marginTop: "1.5rem" }}>
+          <h2 style={{ fontSize: "1.1rem", marginTop: 0 }}>结果（0）</h2>
+          <div
+            className="muted"
+            style={{
+              padding: "0.85rem 1rem",
+              background: "#fffbeb",
+              border: "1px solid #fde68a",
+              borderRadius: 8,
+              fontSize: "0.92rem",
+            }}
+          >
+            本次检索<strong>无命中片段</strong>。可尝试换关键词、换知识库，或确认该库已解析入库。
+          </div>
+          <p style={{ marginTop: "0.75rem" }}>
+            <button type="button" onClick={onClearSearchForm} style={{ cursor: "pointer" }}>
+              清空条件后重试
+            </button>
+          </p>
+        </section>
+      ) : chunks.length > 0 ? (
         <section style={{ marginTop: "1.5rem" }}>
           <h2 style={{ fontSize: "1.1rem" }}>结果（{total}）</h2>
           <ol style={{ paddingLeft: "1.2rem", display: "flex", flexDirection: "column", gap: "0.75rem" }}>

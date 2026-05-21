@@ -8,8 +8,20 @@ import {
   type ReactNode,
 } from "react";
 import { useNavigate } from "react-router-dom";
-import { fetchTboxContract, fetchTboxMe, fallbackPermissions, type TboxMeResponse } from "../api/tbox";
-import { clearSession, getAuthorizationHeader } from "../auth/session";
+import {
+  fetchTboxContract,
+  fetchTboxMe,
+  fallbackPermissions,
+  isTboxMeUnavailable,
+  type TboxMeResponse,
+} from "../api/tbox";
+import {
+  clearSession,
+  getAuthorizationHeader,
+  getStoredUserInfo,
+  storedUserIsSuperuser,
+  trustedSuperuserFromEmail,
+} from "../auth/session";
 import { TBOX_API_CONTRACT_VERSION_EXPECTED } from "../constants/tboxContract";
 import type { TboxPermission } from "../constants/permissions";
 
@@ -57,15 +69,41 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return;
       }
       if (body.code !== 0) {
-        setError(body.message || `错误码 ${body.code}`);
-        setMe(null);
-        setPermissions([]);
-        setContractWarning(null);
+        if (isTboxMeUnavailable(res, body)) {
+          const stored = getStoredUserInfo();
+          const su = storedUserIsSuperuser(stored);
+          setMe({
+            email: stored?.email,
+            nickname: stored?.name,
+            is_superuser: su,
+            tenants: [],
+          });
+          setPermissions(fallbackPermissions({ is_superuser: su }));
+          setError(null);
+          setContractWarning(
+            [
+              "当前 API 未提供 TBOX（/v1/tbox/me 不可用），界面已按登录信息启用有限默认权限。",
+              "处理方式：① 使用包含本仓库 `api/apps/tbox_app.py` 的后端（在仓库根目录 docker build -f Dockerfile -t ragflow-tbox:local .，docker/.env 设置 RAGFLOW_IMAGE=ragflow-tbox:local 后重启 compose）；② 开发时 export PYTHONPATH=<仓库根> 运行官方 launch 脚本；③ 若经 Nginx 反代，确认 location 包含 /v1 并转发到 API。",
+              "自检：curl 或浏览器打开 /v1/tbox/health，应返回 JSON 且含 tbox_api_contract_version。",
+            ].join("\n"),
+          );
+        } else {
+          setError(body.message || `错误码 ${body.code}`);
+          setMe(null);
+          setPermissions([]);
+          setContractWarning(null);
+        }
         return;
       }
       const data = body.data || null;
       setMe(data);
-      setPermissions(fallbackPermissions(data));
+      setPermissions(
+        fallbackPermissions({
+          ...data,
+          is_superuser:
+            Boolean(data?.is_superuser) || trustedSuperuserFromEmail(data?.email),
+        }),
+      );
 
       try {
         const c = await fetchTboxContract();
@@ -85,10 +123,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setContractWarning(null);
       }
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
-      setMe(null);
-      setPermissions([]);
-      setContractWarning(null);
+      const authAfter = getAuthorizationHeader();
+      if (authAfter && import.meta.env.VITE_TBOX_OFFLINE_PERMISSIONS === "1") {
+        const stored = getStoredUserInfo();
+        const su = storedUserIsSuperuser(stored);
+        setMe({
+          email: stored?.email,
+          nickname: stored?.name,
+          is_superuser: su,
+          tenants: [],
+        });
+        setPermissions(fallbackPermissions({ is_superuser: su }));
+        setError(null);
+        setContractWarning(
+          "无法请求 TBOX「/v1/tbox/me」（网络或 CORS）。已启用 VITE_TBOX_OFFLINE_PERMISSIONS=1，按登录信息授予默认权限。",
+        );
+      } else {
+        setError(e instanceof Error ? e.message : String(e));
+        setMe(null);
+        setPermissions([]);
+        setContractWarning(null);
+      }
     } finally {
       setLoading(false);
     }

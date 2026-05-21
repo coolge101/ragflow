@@ -1,5 +1,7 @@
 import { getAuthorizationHeader } from "../auth/session";
 
+import { messageFromUnknownResponseBody } from "./readJsonBody";
+
 export type ChatStreamEvent =
   | { type: "delta"; answer: string; reference?: unknown }
   | { type: "done" }
@@ -82,7 +84,10 @@ export async function streamChatCompletions(
 
     if (!res.ok) {
       const t = await res.text().catch(() => "");
-      onEvent({ type: "error", message: t || `HTTP ${res.status}` });
+      onEvent({
+        type: "error",
+        message: messageFromUnknownResponseBody(t, `HTTP ${res.status}`),
+      });
       return;
     }
 

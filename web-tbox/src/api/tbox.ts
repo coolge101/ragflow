@@ -1,6 +1,8 @@
 import { getAuthorizationHeader } from "../auth/session";
 import { TBOX_PERMISSIONS, type TboxPermission } from "../constants/permissions";
 
+import { readJsonBody } from "./readJsonBody";
+
 export type TboxContractResponse = {
   code: number;
   message?: string;
@@ -21,19 +23,6 @@ export type TboxHealthResponse = {
   };
 };
 
-/** Parse TBOX JSON bodies even when the server returns HTML or empty (proxy misconfig). */
-async function readTboxJson<T extends { code?: number; message?: string }>(res: Response): Promise<T> {
-  const text = await res.text();
-  if (!text.trim()) {
-    return { code: -1, message: "空响应体" } as T;
-  }
-  try {
-    return JSON.parse(text) as T;
-  } catch {
-    return { code: -1, message: "响应不是有效 JSON" } as T;
-  }
-}
-
 export type TboxMeResponse = {
   code: number;
   message?: string;
@@ -42,7 +31,7 @@ export type TboxMeResponse = {
     email?: string;
     nickname?: string;
     is_superuser?: boolean;
-    tenants?: Array<{ tenant_id: string; role: string }>;
+    tenants?: Array<{ tenant_id: string; role: string; tbox_permissions?: string | null }>;
     /** Server-computed UI permissions (contract v3+). */
     permissions?: string[];
   };
@@ -53,21 +42,33 @@ export async function fetchTboxMe(): Promise<{ res: Response; body: TboxMeRespon
   const res = await fetch("/v1/tbox/me", {
     headers: auth ? { Authorization: auth } : {},
   });
-  const body = await readTboxJson<TboxMeResponse>(res);
+  const body = await readJsonBody<TboxMeResponse>(res);
   return { res, body };
+}
+
+/** True when the server has no TBOX `/me` (e.g. stock image) or route not found. */
+export function isTboxMeUnavailable(res: Response, body: TboxMeResponse): boolean {
+  if (res.status === 404 || body.code === 404) {
+    return true;
+  }
+  const offline = import.meta.env.VITE_TBOX_OFFLINE_PERMISSIONS === "1";
+  if (offline && body.code !== 0 && body.code !== 401) {
+    return true;
+  }
+  return false;
 }
 
 /** Public route — no auth (same as `tbox_app.contract`). */
 export async function fetchTboxContract(): Promise<{ res: Response; body: TboxContractResponse }> {
   const res = await fetch("/v1/tbox/contract");
-  const body = await readTboxJson<TboxContractResponse>(res);
+  const body = await readJsonBody<TboxContractResponse>(res);
   return { res, body };
 }
 
 /** Public route — no auth (same as `tbox_app.health`). */
 export async function fetchTboxHealth(): Promise<{ res: Response; body: TboxHealthResponse }> {
   const res = await fetch("/v1/tbox/health");
-  const body = await readTboxJson<TboxHealthResponse>(res);
+  const body = await readJsonBody<TboxHealthResponse>(res);
   return { res, body };
 }
 

@@ -7,6 +7,7 @@ export default defineConfig(({ mode }) => {
   return {
     plugins: [react()],
     server: {
+      host: true, // listen on 0.0.0.0 — use VM/LAN IP from another machine, not only 127.0.0.1 on that machine
       port: 5174,
       proxy: {
         "/v1": { target, changeOrigin: true },

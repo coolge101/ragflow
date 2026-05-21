@@ -1,0 +1,53 @@
+/* 静态 UI 参考页共用样式（与 SPA tokens 大致对齐，便于对照） */
+:root {
+  --color-primary: #2563eb;
+  --text: #0f172a;
+  --muted: #64748b;
+  --border: #e2e8f0;
+  --bg: #f8fafc;
+}
+* {
+  box-sizing: border-box;
+}
+body {
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, "PingFang SC", "Microsoft YaHei", sans-serif;
+  margin: 0;
+  padding: 1.5rem 1rem 2rem;
+  color: var(--text);
+  background: var(--bg);
+  line-height: 1.5;
+  max-width: 40rem;
+  margin-left: auto;
+  margin-right: auto;
+}
+h1 {
+  font-size: 1.2rem;
+  margin: 0 0 0.75rem;
+}
+p {
+  margin: 0.5rem 0;
+}
+.muted {
+  color: var(--muted);
+  font-size: 0.92rem;
+}
+.brand {
+  color: var(--color-primary);
+  font-weight: 700;
+}
+.panel {
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 1rem 1.1rem;
+  margin: 1rem 0;
+}
+a {
+  color: var(--color-primary);
+}
+code {
+  font-size: 0.88em;
+  background: #f1f5f9;
+  padding: 0.1em 0.35em;
+  border-radius: 4px;
+}

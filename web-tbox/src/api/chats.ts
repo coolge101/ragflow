@@ -1,5 +1,7 @@
 import { getAuthorizationHeader } from "../auth/session";
 
+import { readJsonBody } from "./readJsonBody";
+
 export type ChatRow = Record<string, unknown> & {
   id?: string;
   name?: string;
@@ -69,7 +71,7 @@ export async function listChats(params: { page?: number; page_size?: number } = 
   const res = await fetch(`/api/v1/chats?${q.toString()}`, {
     headers: authHeaders(),
   });
-  const body = (await res.json()) as ListChatsJson;
+  const body = await readJsonBody<ListChatsJson>(res);
   return { res, body };
 }
 
@@ -83,7 +85,7 @@ export async function createChatSession(
     headers: authHeaders(),
     body: JSON.stringify({ name }),
   });
-  const body = (await res.json()) as CreateSessionJson;
+  const body = await readJsonBody<CreateSessionJson>(res);
   return { res, body };
 }
 
@@ -101,7 +103,7 @@ export async function listSessions(
     `/api/v1/chats/${encodeURIComponent(chatId)}/sessions?${q.toString()}`,
     { headers: authHeadersGet() },
   );
-  const body = (await res.json()) as ListSessionsJson;
+  const body = await readJsonBody<ListSessionsJson>(res);
   return { res, body };
 }
 
@@ -114,6 +116,6 @@ export async function getSession(
     `/api/v1/chats/${encodeURIComponent(chatId)}/sessions/${encodeURIComponent(sessionId)}`,
     { headers: authHeadersGet() },
   );
-  const body = (await res.json()) as GetSessionJson;
+  const body = await readJsonBody<GetSessionJson>(res);
   return { res, body };
 }

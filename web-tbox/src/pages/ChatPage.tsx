@@ -1,4 +1,4 @@
-import { FormEvent, useCallback, useEffect, useRef, useState } from "react";
+import { FormEvent, useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { streamChatCompletions } from "../api/chatCompletion";
 import {
   createChatSession,
@@ -11,6 +11,7 @@ import {
 } from "../api/chats";
 import { ApiErrorBanner } from "../components/ApiErrorBanner";
 import { ReferenceChunks } from "../components/ReferenceChunks";
+import { useNarrowLayout } from "../hooks/useNarrowLayout";
 
 type ChatMessage = { role: "user" | "assistant"; content: string };
 
@@ -35,6 +36,8 @@ function toApiMessages(msgs: ChatMessage[]): Array<{ role: string; content: stri
 }
 
 export function ChatPage() {
+  const narrow = useNarrowLayout();
+  const messagesEndRef = useRef<HTMLDivElement | null>(null);
   const [chats, setChats] = useState<ChatRow[]>([]);
   const [chatsLoading, setChatsLoading] = useState(true);
   const [selectedChatId, setSelectedChatId] = useState("");
@@ -80,6 +83,10 @@ export function ChatPage() {
   useEffect(() => {
     void loadChats();
   }, [loadChats]);
+
+  useLayoutEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
+  }, [messages, streaming]);
 
   const reloadSessions = useCallback(async () => {
     if (!selectedChatId) {
@@ -276,6 +283,14 @@ export function ChatPage() {
               }
               setStreaming(null);
             } else if (ev.type === "error") {
+              if (ev.message === "已取消") {
+                setStreaming(null);
+                setError(null);
+                if (acc.trim()) {
+                  setMessages((prev) => [...prev, { role: "assistant", content: acc }]);
+                }
+                return;
+              }
               setError(ev.message);
               setStreaming(null);
               if (!acc.trim()) {
@@ -288,7 +303,11 @@ export function ChatPage() {
           signal,
         );
       } catch (err) {
-        setError(err instanceof Error ? err.message : String(err));
+        if (err instanceof DOMException && err.name === "AbortError") {
+          setError(null);
+        } else {
+          setError(err instanceof Error ? err.message : String(err));
+        }
         setStreaming(null);
       } finally {
         setLoading(false);
@@ -302,8 +321,19 @@ export function ChatPage() {
     abortRef.current?.abort();
   }
 
+  const showAppsEmpty = !chatsLoading && !chatsError && chats.length === 0;
+  const showThreadEmpty = messages.length === 0 && streaming === null;
+
   return (
-    <div style={{ display: "flex", gap: "1rem", alignItems: "stretch", maxWidth: 1120 }}>
+    <div
+      style={{
+        display: "flex",
+        flexDirection: narrow ? "column" : "row",
+        gap: "1rem",
+        alignItems: "stretch",
+        maxWidth: 1120,
+      }}
+    >
       <div style={{ flex: 1, minWidth: 0 }}>
         <h1 style={{ marginTop: 0 }}>对话</h1>
         <p className="muted">
@@ -369,6 +399,22 @@ export function ChatPage() {
           {selectedChatId && sessionsLoading ? <span className="muted">加载会话…</span> : null}
         </div>
 
+        {showAppsEmpty ? (
+          <div
+            className="muted"
+            style={{
+              marginBottom: "1rem",
+              padding: "0.75rem 1rem",
+              background: "#fff",
+              border: "1px solid var(--border-subtle)",
+              borderRadius: 8,
+              fontSize: "0.92rem",
+            }}
+          >
+            当前账号下<strong>暂无「应用」</strong>。请在 RAGFlow 官方界面创建对话应用后，点「刷新应用」；在此之前仍可使用「仅模型」对话。
+          </div>
+        ) : null}
+
         {chatsError ? (
           <ApiErrorBanner
             onRetry={() => void loadChats()}
@@ -404,6 +450,25 @@ export function ChatPage() {
             minHeight: 200,
           }}
         >
+          {showThreadEmpty ? (
+            <div
+              className="muted"
+              style={{
+                alignSelf: "stretch",
+                padding: "1rem 1.1rem",
+                borderRadius: 10,
+                border: "1px dashed var(--border-subtle)",
+                background: "#f8fafc",
+                fontSize: "0.92rem",
+              }}
+            >
+              {selectedChatId
+                ? sessionId
+                  ? "本会话尚无消息，在下方输入后发送即可开始。"
+                  : "已选择应用：将使用「首次发送时新建会话」创建会话，或直接选择历史会话加载记录。"
+                : "未选择应用：使用「仅模型」模式与默认模型对话（不传知识库应用）。"}
+            </div>
+          ) : null}
           {messages.map((m, i) => (
             <div
               key={`msg-${i}`}
@@ -443,6 +508,7 @@ export function ChatPage() {
               {streaming || "…"}
             </div>
           ) : null}
+          <div ref={messagesEndRef} aria-hidden />
         </div>
 
         <form onSubmit={(ev) => void onSubmit(ev)} style={{ display: "flex", gap: 8, alignItems: "flex-end" }}>
@@ -475,16 +541,16 @@ export function ChatPage() {
 
       <aside
         style={{
-          width: 300,
+          width: narrow ? "100%" : 300,
           flexShrink: 0,
           background: "#fff",
           border: "1px solid var(--border-subtle)",
           borderRadius: 10,
           padding: "0.75rem 1rem",
-          alignSelf: "flex-start",
-          position: "sticky",
-          top: 12,
-          maxHeight: "min(70vh, 520px)",
+          alignSelf: narrow ? "stretch" : "flex-start",
+          position: narrow ? "static" : "sticky",
+          top: narrow ? undefined : 12,
+          maxHeight: narrow ? "none" : "min(70vh, 520px)",
           overflow: "auto",
         }}
       >

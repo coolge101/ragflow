@@ -1,5 +1,7 @@
 import { getAuthorizationHeader } from "../auth/session";
 
+import { readJsonBody } from "./readJsonBody";
+
 export type CrawlTaskRow = {
   id: string;
   tenant_id: string;
@@ -63,7 +65,7 @@ export async function listCrawlTasks(params: {
   const res = await fetch(`/v1/tbox/crawl/tasks?${q.toString()}`, {
     headers: authHeaders(),
   });
-  const body = (await res.json()) as ListCrawlTasksJson;
+  const body = await readJsonBody<ListCrawlTasksJson>(res);
   return { res, body };
 }
 
@@ -83,7 +85,7 @@ export async function createCrawlTask(payload: {
     headers: authHeaders(),
     body: JSON.stringify(payload),
   });
-  const body = (await res.json()) as CrawlTaskMutationJson;
+  const body = await readJsonBody<CrawlTaskMutationJson>(res);
   return { res, body };
 }
 
@@ -96,7 +98,7 @@ export async function patchCrawlTask(
     headers: authHeaders(),
     body: JSON.stringify(payload),
   });
-  const body = (await res.json()) as CrawlTaskMutationJson;
+  const body = await readJsonBody<CrawlTaskMutationJson>(res);
   return { res, body };
 }
 
@@ -105,7 +107,7 @@ export async function deleteCrawlTask(taskId: string): Promise<{ res: Response; 
     method: "DELETE",
     headers: authHeaders(),
   });
-  const body = (await res.json()) as { code: number; message?: string };
+  const body = await readJsonBody<{ code: number; message?: string }>(res);
   return { res, body };
 }
 
@@ -115,6 +117,6 @@ export async function runCrawlTask(taskId: string): Promise<{ res: Response; bod
     method: "POST",
     headers: authHeaders(),
   });
-  const body = (await res.json()) as CrawlTaskMutationJson;
+  const body = await readJsonBody<CrawlTaskMutationJson>(res);
   return { res, body };
 }

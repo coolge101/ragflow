@@ -1,11 +1,16 @@
 import { getAuthorizationHeader } from "../auth/session";
 
+import { readJsonBody } from "./readJsonBody";
+
 export type DocRow = Record<string, unknown> & {
   id?: string;
   name?: string;
   run?: string;
   chunk_count?: number;
   size?: number;
+  /** 0~1 为主，失败时后端可能为 -1 */
+  progress?: number;
+  progress_msg?: string | null;
 };
 
 export type ListDocumentsJson = {
@@ -37,7 +42,7 @@ export async function listDocuments(
     `/api/v1/datasets/${encodeURIComponent(datasetId)}/documents?${q.toString()}`,
     { headers: authOnly() },
   );
-  const body = (await res.json()) as ListDocumentsJson;
+  const body = await readJsonBody<ListDocumentsJson>(res);
   return { res, body };
 }
 
@@ -58,7 +63,21 @@ export async function uploadDocuments(
     headers: authOnly(),
     body: fd,
   });
-  const body = (await res.json()) as MutationJson;
+  const body = await readJsonBody<MutationJson>(res);
+  return { res, body };
+}
+
+/** `POST /api/v1/datasets/:id/documents/parse` — start chunking / embedding pipeline for given document ids. */
+export async function parseDocuments(
+  datasetId: string,
+  documentIds: string[],
+): Promise<{ res: Response; body: MutationJson }> {
+  const res = await fetch(`/api/v1/datasets/${encodeURIComponent(datasetId)}/documents/parse`, {
+    method: "POST",
+    headers: { ...authOnly(), "Content-Type": "application/json" },
+    body: JSON.stringify({ document_ids: documentIds }),
+  });
+  const body = await readJsonBody<MutationJson>(res);
   return { res, body };
 }
 
@@ -72,6 +91,6 @@ export async function deleteDocuments(
     headers: { ...authOnly(), "Content-Type": "application/json" },
     body: JSON.stringify({ ids }),
   });
-  const body = (await res.json()) as MutationJson;
+  const body = await readJsonBody<MutationJson>(res);
   return { res, body };
 }

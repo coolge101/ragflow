@@ -1,5 +1,7 @@
 import { getAuthorizationHeader } from "../auth/session";
 
+import { readJsonBody } from "./readJsonBody";
+
 export type ChunkRow = Record<string, unknown>;
 
 export type DatasetSearchJson = {
@@ -24,7 +26,7 @@ function authHeaders(): HeadersInit {
 /** POST /api/v1/datasets/:id/search — 知识库内检索试用 */
 export async function searchDataset(
   datasetId: string,
-  body: { question: string; top_k?: number; page?: number; size?: number; keyword?: boolean },
+  payload: { question: string; top_k?: number; page?: number; size?: number; keyword?: boolean },
 ): Promise<{ res: Response; body: DatasetSearchJson }> {
   const res = await fetch(`/api/v1/datasets/${encodeURIComponent(datasetId)}/search`, {
     method: "POST",
@@ -34,9 +36,9 @@ export async function searchDataset(
       page: 1,
       size: 10,
       keyword: false,
-      ...body,
+      ...payload,
     }),
   });
-  const json = (await res.json()) as DatasetSearchJson;
-  return { res, body: json };
+  const body = await readJsonBody<DatasetSearchJson>(res);
+  return { res, body };
 }

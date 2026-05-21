@@ -1,5 +1,7 @@
 import { getAuthorizationHeader } from "../auth/session";
 
+import { readJsonBody } from "./readJsonBody";
+
 export type IngestionLogRow = Record<string, unknown>;
 
 export type ListIngestionLogsJson = {
@@ -34,6 +36,6 @@ export async function listIngestionLogs(
     `/api/v1/datasets/${encodeURIComponent(datasetId)}/ingestions?${q.toString()}`,
     { headers: authGet() },
   );
-  const body = (await res.json()) as ListIngestionLogsJson;
+  const body = await readJsonBody<ListIngestionLogsJson>(res);
   return { res, body };
 }

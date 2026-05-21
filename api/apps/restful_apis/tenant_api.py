@@ -34,10 +34,29 @@ from common.misc_utils import get_uuid
 from common.time_utils import delta_seconds
 
 
+def _can_manage_tenant_users(tenant_id: str) -> bool:
+    """Personal workspace owner (user id == tenant id) or team OWNER/ADMIN on this tenant."""
+    if current_user.id == tenant_id:
+        return True
+    rel = UserTenantService.filter_by_tenant_and_user_id(tenant_id, current_user.id)
+    if not rel or str(rel.status) != str(StatusEnum.VALID.value):
+        return False
+    role = str(rel.role or "")
+    return role in (UserTenantRole.OWNER.value, UserTenantRole.ADMIN.value)
+
+
+def _can_view_tenant_users(tenant_id: str) -> bool:
+    """Managers or any active member may list team (read-only for non-managers)."""
+    if _can_manage_tenant_users(tenant_id):
+        return True
+    rel = UserTenantService.filter_by_tenant_and_user_id(tenant_id, current_user.id)
+    return bool(rel and str(rel.status) == str(StatusEnum.VALID.value))
+
+
 @manager.route("/tenants/<tenant_id>/users", methods=["GET"])  # noqa: F821
 @login_required
 def user_list(tenant_id):
-    if current_user.id != tenant_id:
+    if not _can_view_tenant_users(tenant_id):
         return get_json_result(
             data=False,
             message="No authorization.",
@@ -47,8 +66,36 @@ def user_list(tenant_id):
     try:
         users = UserTenantService.get_by_tenant_id(tenant_id)
         for user in users:
-            user["delta_seconds"] = delta_seconds(str(user["update_date"]))
-        return get_json_result(data=users)
+            if user.get("update_date") is not None:
+                try:
+                    user["delta_seconds"] = delta_seconds(str(user["update_date"]))
+                except Exception:
+                    user["delta_seconds"] = None
+            else:
+                user["delta_seconds"] = None
+
+        result = []
+        ok_owner, owner = UserService.get_by_id(tenant_id)
+        if ok_owner and owner:
+            ud = getattr(owner, "update_date", None)
+            ud_str = str(ud) if ud is not None else None
+            try:
+                ds = delta_seconds(ud_str) if ud_str else None
+            except Exception:
+                ds = None
+            result.append(
+                {
+                    "user_id": tenant_id,
+                    "email": getattr(owner, "email", None),
+                    "nickname": getattr(owner, "nickname", None),
+                    "role": UserTenantRole.OWNER.value,
+                    "status": getattr(owner, "status", None),
+                    "update_date": ud_str,
+                    "delta_seconds": ds,
+                }
+            )
+        result.extend(users)
+        return get_json_result(data=result)
     except Exception as exc:
         return server_error_response(exc)
 
@@ -57,7 +104,7 @@ def user_list(tenant_id):
 @login_required
 @validate_request("email")
 async def create(tenant_id):
-    if current_user.id != tenant_id:
+    if not _can_manage_tenant_users(tenant_id):
         return get_json_result(
             data=False,
             message="No authorization.",
@@ -78,9 +125,7 @@ async def create(tenant_id):
             return get_data_error_result(message=f"{invite_user_email} is already in the team.")
         if user_tenant_role == UserTenantRole.OWNER:
             return get_data_error_result(message=f"{invite_user_email} is the owner of the team.")
-        return get_data_error_result(
-            message=f"{invite_user_email} is in the team, but the role: {user_tenant_role} is invalid."
-        )
+        return get_data_error_result(message=f"{invite_user_email} is in the team, but the role: {user_tenant_role} is invalid.")
 
     UserTenantService.save(
         id=get_uuid(),
@@ -118,18 +163,70 @@ async def create(tenant_id):
     return get_json_result(data=user)
 
 
+@manager.route("/tenants/<tenant_id>/users", methods=["PATCH"])  # noqa: F821
+@login_required
+@validate_request("user_id", "role")
+async def update_member_role(tenant_id):
+    """Set a member's tenant role (admin / normal / invite). Workspace owner or team ADMIN."""
+    if not _can_manage_tenant_users(tenant_id):
+        return get_json_result(
+            data=False,
+            message="No authorization.",
+            code=RetCode.AUTHENTICATION_ERROR,
+        )
+
+    req = await get_request_json()
+    user_id = req["user_id"]
+    new_role = str(req["role"]).strip().lower()
+
+    if user_id == tenant_id:
+        return get_data_error_result(message="Cannot change workspace owner role via this API.")
+
+    assignable = {
+        UserTenantRole.ADMIN.value,
+        UserTenantRole.NORMAL.value,
+        UserTenantRole.INVITE.value,
+    }
+    if new_role not in assignable:
+        return get_data_error_result(message=f"Invalid role: must be one of {', '.join(sorted(assignable))}.")
+
+    rel = UserTenantService.filter_by_tenant_and_user_id(tenant_id, user_id)
+    if not rel:
+        return get_data_error_result(message="User is not a member of this team.")
+
+    if rel.role == UserTenantRole.OWNER.value:
+        return get_data_error_result(message="Cannot change owner role.")
+
+    try:
+        UserTenantService.filter_update(
+            [
+                UserTenant.tenant_id == tenant_id,
+                UserTenant.user_id == user_id,
+                UserTenant.status == StatusEnum.VALID.value,
+            ],
+            {"role": new_role},
+        )
+        return get_json_result(data=True)
+    except Exception as exc:
+        return server_error_response(exc)
+
+
 @manager.route("/tenants/<tenant_id>/users", methods=["DELETE"])  # noqa: F821
 @login_required
 @validate_request("user_id")
 async def rm(tenant_id):
     req = await get_request_json()
     user_id = req["user_id"]
-    if current_user.id != tenant_id and current_user.id != user_id:
-        return get_json_result(
-            data=False,
-            message="No authorization.",
-            code=RetCode.AUTHENTICATION_ERROR,
-        )
+    if user_id == tenant_id:
+        return get_data_error_result(message="Cannot remove the workspace owner from the team.")
+
+    if not _can_manage_tenant_users(tenant_id):
+        if current_user.id != user_id:
+            return get_json_result(
+                data=False,
+                message="No authorization.",
+                code=RetCode.AUTHENTICATION_ERROR,
+            )
 
     try:
         UserTenantService.filter_delete([UserTenant.tenant_id == tenant_id, UserTenant.user_id == user_id])

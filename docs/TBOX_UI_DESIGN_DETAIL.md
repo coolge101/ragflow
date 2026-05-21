@@ -129,10 +129,11 @@
 
 ### 3.4 文档页（`views/DocumentsView.vue`）
 
-参考当前为占位；**详细交付**需包含：
+**web-tbox 现状**：`/documents` 已实现知识库列表、**新建空知识库**（`POST /api/v1/datasets`，需 **`doc.upload` 或 `kb.configure`**）、展开、文档列表/分页、上传与删文档；**删整库**需 **`kb.dangerous`**。下列为设计全集，**重解析 / 版本 / 导出** 等仍以后端 REST 与排期为准：
 
 | 功能 | UI 元素 | 权限 |
 |------|---------|------|
+| 新建知识库 | 按钮 + 弹窗表单（名称、描述、可见范围、分块方式） | `doc.upload` 或 `kb.configure` |
 | 列表 | 表格：名称、大小、状态（解析中/成功/失败）、更新时间 | `doc.view` |
 | 上传 | 拖拽区 + 文件选择；进度条 | `doc.upload` |
 | 删除 | 行内删除 + `ElMessageBox.confirm` | `doc.delete` |
@@ -142,10 +143,12 @@
 
 ### 3.5 知识库配置（`views/KbConfigView.vue`）
 
+**web-tbox 现状**：`/kb` 已对接 **`GET/PUT /api/v1/datasets/:id`**（含 `parser_config` JSON 编辑）；整库删除仅 **`kb.dangerous`** + 浏览器确认。下表为理想形态，可逐步收敛：
+
 | 项 | 要求 |
 |----|------|
 | 单库 | 表单分区：嵌入模型、分块策略、解析器相关（与 RAGFlow 配置项对齐，字段随 API 文档迭代）。 |
-| 危险操作 | 单独区块，仅 `kb.dangerous` 可见；**二次确认 + 输入确认词**。 |
+| 危险操作 | 单独区块，仅 `kb.dangerous` 可见；**二次确认**（可选再加「输入确认词」）。 |
 
 ### 3.6 审计页（`views/AuditView.vue`）
 
