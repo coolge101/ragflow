@@ -1,5 +1,6 @@
-# base stage
-FROM ubuntu:24.04 AS base
+# base stage — override when Docker Hub times out (e.g. set RAGFLOW_BASE_IMAGE in docker/.env).
+ARG BASE_IMAGE=ubuntu:24.04
+FROM ${BASE_IMAGE} AS base
 USER root
 SHELL ["/bin/bash", "-c"]
 
@@ -9,20 +10,50 @@ WORKDIR /ragflow
 
 # copy models downloaded via download_deps.py
 RUN mkdir -p /ragflow/rag/res/deepdoc /root/.ragflow
+# huggingface_hub stores weights under snapshots/<revision>/ (and sometimes .cache); OCR expects *.onnx in rag/res/deepdoc/.
+# Do not use tar --exclude='.*' here — it can drop .cache blobs and break the model tree.
 RUN --mount=type=bind,from=infiniflow/ragflow_deps:latest,source=/huggingface.co,target=/huggingface.co \
-    tar --exclude='.*' -cf - \
+    tar -cf - \
         /huggingface.co/InfiniFlow/text_concat_xgb_v1.0 \
         /huggingface.co/InfiniFlow/deepdoc \
-        | tar -xf - --strip-components=3 -C /ragflow/rag/res/deepdoc
+        | tar -xf - --strip-components=3 -C /ragflow/rag/res/deepdoc \
+    && bash -ec 'shopt -s nullglob; \
+      if [[ -d /ragflow/rag/res/deepdoc/snapshots ]]; then \
+        for snap in /ragflow/rag/res/deepdoc/snapshots/*/; do \
+          [[ -d "$snap" ]] && cp -a "$snap"/. /ragflow/rag/res/deepdoc/; \
+        done; \
+        rm -rf /ragflow/rag/res/deepdoc/snapshots; \
+      fi; \
+      if [[ ! -f /ragflow/rag/res/deepdoc/det.onnx ]]; then \
+        f=$(find /ragflow/rag/res/deepdoc -name det.onnx -type f 2>/dev/null | head -1); \
+        if [[ -n "$f" ]]; then \
+          cp -a "$(dirname "$f")"/* /ragflow/rag/res/deepdoc/; \
+        fi; \
+      fi; \
+      if [[ ! -f /ragflow/rag/res/deepdoc/det.onnx ]]; then \
+        echo "FATAL: det.onnx missing after unpacking InfiniFlow/deepdoc from ragflow_deps."; \
+        echo "Cause: host huggingface.co/InfiniFlow/deepdoc is incomplete (often many .cache/.../*.incomplete = interrupted hf download)."; \
+        echo "Fix: rm -rf huggingface.co/InfiniFlow/deepdoc && re-run hf download / download_deps.py until det.onnx exists, then Dockerfile.deps rebuild."; \
+        find /ragflow/rag/res/deepdoc -type f 2>/dev/null | head -60 || true; \
+        exit 1; \
+      fi'
 
 # https://github.com/chrismattmann/tika-python
 # This is the only way to run python-tika without internet access. Without this set, the default is to check the tika version and pull latest every time from Apache.
+# ragflow_deps on Hub may ship 3.2.3 or 3.3.0 — copy whichever exists (do not hard-code one version in cp).
 RUN --mount=type=bind,from=infiniflow/ragflow_deps:latest,source=/,target=/deps \
     cp -r /deps/nltk_data /root/ && \
-    cp /deps/tika-server-standard-3.3.0.jar /deps/tika-server-standard-3.3.0.jar.md5 /ragflow/ && \
+    bash -ec 'shopt -s nullglob; jars=(/deps/tika-server-standard-*.jar); \
+      if [[ ${#jars[@]} -eq 0 ]]; then \
+        echo "FATAL: no tika-server-standard-*.jar in infiniflow/ragflow_deps — rebuild deps: bash scripts/pull-local-deps-for-docker.sh"; exit 1; fi; \
+      jar="${jars[0]}"; base="${jar%.jar}"; \
+      cp "$jar" /ragflow/; \
+      [[ -f "${base}.jar.md5" ]] && cp "${base}.jar.md5" /ragflow/; \
+      ln -sf "$(basename "$jar")" /ragflow/tika-server-standard.jar; \
+      [[ -f "${base}.jar.md5" ]] && ln -sf "$(basename "${base}.jar.md5")" /ragflow/tika-server-standard.jar.md5 || true' && \
     cp /deps/cl100k_base.tiktoken /ragflow/9b5ad71b2ce5302211f9c61530b329a4922fc6a4
 
-ENV TIKA_SERVER_JAR="file:///ragflow/tika-server-standard-3.3.0.jar"
+ENV TIKA_SERVER_JAR="file:///ragflow/tika-server-standard.jar"
 ENV DEBIAN_FRONTEND=noninteractive
 
 # Setup apt
@@ -45,15 +76,30 @@ RUN --mount=type=cache,id=ragflow_apt,target=/var/cache/apt,sharing=locked \
     apt install -y \
     build-essential libglib2.0-0 libglx-mesa0 libgl1 pkg-config libicu-dev libgdiplus default-jdk libatk-bridge2.0-0 libpython3-dev libgtk-4-1 libnss3 xdg-utils libgbm-dev libjemalloc-dev gnupg unzip curl wget git vim less ghostscript pandoc texlive texlive-latex-extra texlive-xetex texlive-lang-chinese fonts-freefont-ttf fonts-noto-cjk postgresql-client
 
-# Download resource from GitHub to /usr/share/infinity
+# Download resource repo for Infinity (GitHub often drops HTTP/2 mid-clone in CN; retry + Gitee fallback).
 RUN mkdir -p /usr/share/infinity/resource && \
-    if [ "$NEED_MIRROR" == "1" ]; then \
-        git clone --depth 1 --single-branch https://gitee.com/infiniflow/resource /tmp/resource; \
-    else \
-        git clone --depth 1 --single-branch https://github.com/infiniflow/resource.git /tmp/resource; \
-    fi && \
-    cp -r /tmp/resource/* /usr/share/infinity/resource && \
-    rm -rf /tmp/resource
+    git config --global http.version HTTP/1.1 && \
+    git config --global http.postBuffer 524288000 && \
+    bash -ec 'set +e; \
+    ok=0; \
+    for attempt in 1 2 3; do \
+      rm -rf /tmp/resource; \
+      if [[ "$NEED_MIRROR" == "1" ]]; then \
+        git clone --depth 1 --single-branch https://gitee.com/infiniflow/resource /tmp/resource && ok=1 && break; \
+      else \
+        git clone --depth 1 --single-branch https://github.com/infiniflow/resource.git /tmp/resource && ok=1 && break; \
+      fi; \
+      echo "resource git clone attempt ${attempt}/3 failed, retry in 25s"; \
+      sleep 25; \
+    done; \
+    if [[ "$ok" != "1" ]] && [[ "$NEED_MIRROR" != "1" ]]; then \
+      echo "GitHub clone failed after 3 tries; trying Gitee mirror..."; \
+      rm -rf /tmp/resource; \
+      git clone --depth 1 --single-branch https://gitee.com/infiniflow/resource /tmp/resource && ok=1; \
+    fi; \
+    if [[ "$ok" != "1" ]]; then echo "FATAL: could not clone infiniflow/resource"; exit 1; fi; \
+    set -e; \
+    cp -a /tmp/resource/. /usr/share/infinity/resource/ && rm -rf /tmp/resource'
 
 ARG NGINX_VERSION=1.29.5-1~noble
 RUN --mount=type=cache,id=ragflow_apt,target=/var/cache/apt,sharing=locked \

@@ -76,8 +76,9 @@ command:
 3. 主壳加载时请求 **`GET /v1/tbox/me`**（含 **`permissions`**）并带上 `Authorization`；**`POST /v1/tbox/logout`** 可退出并使 token 失效（与 `POST /api/v1/auth/logout` 语义对齐）。
 4. 知识库与文档：**`/documents`**（**`/kbs`** 重定向至此）— **`GET/DELETE /api/v1/datasets`**；**新建空库**为 **`POST /api/v1/datasets`**（需 **`doc.upload` 或 `kb.configure`**）；展开知识库后 **`GET/POST/DELETE .../datasets/<id>/documents`**（上传需 `doc.upload`，删文档需 `doc.delete`；**删整库**需 **`kb.dangerous`**）。**`/kb`**（`kb.configure`）— 单库 **`GET/PUT /api/v1/datasets/<id>`**；删整库同样需 **`kb.dangerous`**。ZIP 等导出若 REST 未对齐可暂用官方 `web/`。侧栏与权限见 **`docs/TBOX_UI_DESIGN_DETAIL.md`**。
 5. **对话**：**`/`** 使用 **`POST /api/v1/chat/completions`**（流式）。可选 **应用**（`GET /api/v1/chats`）、**会话列表/详情**（`GET .../chats/:id/sessions`、`GET .../sessions/:sid`）、**新建会话**（`POST .../sessions`）；选「仅模型」则不传 `chat_id`。侧栏展示 **`reference.chunks`**。需已配置可用 Chat 模型。
-6. **检索**：**`/search`** 使用 **`POST /api/v1/datasets/<id>/search`**；**用户**：**`/users`** 使用 **`GET /api/v1/tenants/<当前用户 id>/users`**。
-7. **审计**：**`/audit`** 使用 **`GET /api/v1/datasets/<id>/ingestions`**；**采集**：**`/crawl`** 需 **`crawl.manage`**；任务 CRUD 走 **`/v1/tbox/crawl/tasks`**，手动执行一次 tick 走 **`POST /v1/tbox/crawl/tasks/<id>/run`**（**`robots.txt` 预检** + 探测 + 已绑定 **`dataset_id`** 时 **`static_web`/`rss`** 入库；**`tbox_skip_robots_check`** 等见 **`docs/TBOX_API_BOUNDARY.md`** §1.2–1.3；**`/me`** 契约 **v4+**）。
+6. **对话应用**：**`/apps`**（需 **`kb.configure`**）— 在本系统内 **新建/编辑** 对话应用（`POST/PUT /api/v1/chats`），绑定知识库与 Prompt；保存后在 **`/`** 应用下拉中选用，完成「建库 → 建应用 → RAG 对话」闭环。
+7. **检索**：**`/search`** 使用 **`POST /api/v1/datasets/<id>/search`**；**用户**：**`/users`** 使用 **`GET /api/v1/tenants/<当前用户 id>/users`**。
+8. **审计**：**`/audit`** 使用 **`GET /api/v1/datasets/<id>/ingestions`**；**采集**：**`/crawl`** 需 **`crawl.manage`**；任务 CRUD 走 **`/v1/tbox/crawl/tasks`**，手动执行一次 tick 走 **`POST /v1/tbox/crawl/tasks/<id>/run`**（**`robots.txt` 预检** + 探测 + 已绑定 **`dataset_id`** 时 **`static_web`/`rss`** 入库；**`tbox_skip_robots_check`** 等见 **`docs/TBOX_API_BOUNDARY.md`** §1.2–1.3；**`/me`** 契约 **v4+**）。
 
 ### 3.2 采集 Worker（可选，骨架）
 

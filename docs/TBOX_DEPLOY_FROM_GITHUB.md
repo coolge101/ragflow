@@ -252,9 +252,39 @@ TBOX_BUILD_RAGFLOW=1 bash docker/tbox-compose-up.sh
 
 ## 9. 常见问题
 
-### 9.1 `tika-server-standard-*.jar` 找不到
+### 9.0 `download_deps.py: error: unrecognized arguments: --skip-chrome`
 
-→ 未做 **§5 步骤 1+2**，或用了 Hub 的旧 deps。执行步骤 2 重建 deps，**不要**只 `docker pull`。
+**原因**：服务器上的 **`download_deps.py` 较旧**（只有 `--china-mirrors`），而部署脚本按新版传了 **`--skip-chrome`**（通常因设置了 **`NO_CHROME_DOWNLOAD=1`**）。
+
+**处理**：
+
+```bash
+cd /opt/ragflow/ragflow
+git pull   # 拉取含「自动跳过不支持参数」的 scripts/pull-local-deps-for-docker.sh
+export TBOX_CHINA_DOWNLOAD=1
+unset NO_CHROME_DOWNLOAD SKIP_CHROME_DEPS
+bash scripts/deploy-on-new-server.sh
+```
+
+或暂不跑全量下载，仅构建 API（Hub 上已有 **`ragflow_deps:latest`** 且 **`Dockerfile` 已支持 `tika-server-standard-*.jar`**）：
+
+```bash
+cd /opt/ragflow/ragflow/docker
+docker compose -f docker-compose.yml --profile cpu build ragflow-cpu
+cd .. && bash docker/tbox-compose-up.sh
+```
+
+### 9.1 `tika-server-standard-*.jar` 找不到（如 `cannot stat .../3.2.3.jar`）
+
+**原因**：`Dockerfile` 里写死的 Tika 版本与 Hub 上 **`infiniflow/ragflow_deps:latest`** 内实际文件不一致（例如代码要 **3.2.3**、镜像里是 **3.3.0**）。
+
+**处理（任选其一）**：
+
+1. **拉取含兼容 Dockerfile 的代码**（本仓库已改为自动匹配 `tika-server-standard-*.jar`），再构建：
+   `git pull && docker build -f Dockerfile -t ragflow-tbox:local .`
+2. **推荐新服务器**：`bash scripts/deploy-on-new-server.sh`（先 `download_deps` 再本地 **`Dockerfile.deps`** 构建 deps，与主 Dockerfile 一致）。
+3. 查看 Hub deps 里有什么：
+   `docker run --rm infiniflow/ragflow_deps:latest ls / | grep tika`
 
 ### 9.2 `docker compose build` → `No services to build`
 

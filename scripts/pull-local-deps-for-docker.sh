@@ -80,6 +80,23 @@ if [[ "$DOWNLOAD_ONLY" -eq 1 && "$DOCKER_DEPS_ONLY" -eq 1 ]]; then
   exit 1
 fi
 
+# Older clones may only support --china-mirrors; do not fail when env/CLI passes newer flags.
+_download_deps_help() {
+  uv run python download_deps.py -h 2>&1 || true
+}
+_deps_flag_supported() {
+  _download_deps_help | grep -qF -- "$1"
+}
+FILTERED_DEPS_ARGS=()
+for _a in "${DEPS_ARGS[@]}"; do
+  if _deps_flag_supported "$_a"; then
+    FILTERED_DEPS_ARGS+=("$_a")
+  else
+    echo "WARN: download_deps.py does not support $_a — skipped (git pull for full TBOX deploy flags)." >&2
+  fi
+done
+DEPS_ARGS=("${FILTERED_DEPS_ARGS[@]}")
+
 if [[ "$DOCKER_DEPS_ONLY" -eq 1 ]]; then
   echo "==> docker build -f Dockerfile.deps -t infiniflow/ragflow_deps:latest ."
   docker build -f Dockerfile.deps -t infiniflow/ragflow_deps:latest .

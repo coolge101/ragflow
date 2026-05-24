@@ -39,6 +39,7 @@
 |--------|------|
 | **登录与主壳** | RSA + **`POST /api/v1/auth/login`**；主壳 **`GET /v1/tbox/me`**（含 **`permissions`**）；**`POST /v1/tbox/logout`** 退出。 |
 | **对话 / 检索** | **`/`** 流式 **`POST /api/v1/chat/completions`**（含引用侧栏）；**`/search`** 数据集内检索。 |
+| **对话应用** | **`/apps`**（**`kb.configure`**）：**`GET/POST/PUT/DELETE /api/v1/chats`**；列表、新建、编辑（绑定知识库、Prompt、检索与高级配置）。 |
 | **文档与知识库** | **`/documents`**（**`/kbs`** 重定向）：官方 **`GET/DELETE /api/v1/datasets`** 与 **`…/datasets/<id>/documents`**；删文档需 **`doc.delete`**；**删整库**需 **`kb.dangerous`**。 |
 | **知识库配置** | **`/kb`**（**`kb.configure`**）：单库 **`GET/PUT /api/v1/datasets/<id>`**（名称、描述、嵌入模型、分块、`permission`、`parser_config` 等）；删整库同需 **`kb.dangerous`**。 |
 | **审计** | **`/audit`**（**`audit.read`**）：**`GET /api/v1/datasets/<id>/ingestions`**（`log_type=dataset|file`）。 |

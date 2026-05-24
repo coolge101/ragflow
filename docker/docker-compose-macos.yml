@@ -10,6 +10,9 @@ services:
     build:
       context: ../
       dockerfile: Dockerfile
+      args:
+        BASE_IMAGE: ${RAGFLOW_BASE_IMAGE:-ubuntu:24.04}
+        NEED_MIRROR: ${NEED_MIRROR:-0}
     ports:
       - ${SVR_HTTP_PORT}:9380
       - 80:80

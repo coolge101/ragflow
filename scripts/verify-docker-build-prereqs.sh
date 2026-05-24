@@ -24,18 +24,18 @@ if [[ ! -f docker/tbox-compose-up.sh ]]; then
   die "Missing docker/tbox-compose-up.sh"
 fi
 
-TIKA_VER="$(grep -oE 'tika-server-standard-[0-9]+\.[0-9]+\.[0-9]+\.jar' Dockerfile | head -1 | sed 's/tika-server-standard-//;s/\.jar//')"
-if [[ -z "$TIKA_VER" ]]; then
-  die "Could not parse Tika version from Dockerfile"
-fi
-
-TIKA_JAR="tika-server-standard-${TIKA_VER}.jar"
-TIKA_MD5="tika-server-standard-${TIKA_VER}.jar.md5"
-
-if [[ -f "$TIKA_JAR" && -f "$TIKA_MD5" ]]; then
-  ok "Tika $TIKA_VER present in repo root"
+shopt -s nullglob
+TIKA_JARS=(tika-server-standard-*.jar)
+shopt -u nullglob
+if [[ ${#TIKA_JARS[@]} -gt 0 ]]; then
+  TIKA_JAR="${TIKA_JARS[0]}"
+  TIKA_MD5="${TIKA_JAR}.md5"
+  ok "Tika present in repo root: $(basename "$TIKA_JAR")"
+elif grep -q 'tika-server-standard-\*\.jar' Dockerfile 2>/dev/null; then
+  warn "No tika-server-standard-*.jar in repo root — OK if infiniflow/ragflow_deps:latest already has Tika"
+  TIKA_JAR=""
 else
-  die "Missing $TIKA_JAR (and/or .md5). Run: bash scripts/tbox-deps-step-by-step.sh 1"
+  die "Missing tika-server-standard-*.jar in repo root. Run: bash scripts/tbox-deps-step-by-step.sh 1"
 fi
 
 if [[ -f huggingface.co/InfiniFlow/deepdoc/det.onnx ]]; then
@@ -53,7 +53,7 @@ fi
 
 if docker image inspect infiniflow/ragflow_deps:latest >/dev/null 2>&1; then
   ok "infiniflow/ragflow_deps:latest present"
-  if [[ -f "$TIKA_JAR" ]]; then
+  if [[ -n "${TIKA_JAR:-}" && -f "$TIKA_JAR" ]]; then
     jar_ts=$(stat -c %Y "$TIKA_JAR" 2>/dev/null || stat -f %m "$TIKA_JAR")
     img_ts=$(docker image inspect infiniflow/ragflow_deps:latest -f '{{.Created}}' | xargs -I{} date -d "{}" +%s 2>/dev/null || echo 0)
     if [[ "$jar_ts" -gt "$img_ts" && "$img_ts" != 0 ]]; then
@@ -73,4 +73,4 @@ if [[ "$fail" -ne 0 ]]; then
   exit 1
 fi
 
-echo "All docker build prerequisites look good (Tika ${TIKA_VER}, deepdoc, deps image)."
+echo "All docker build prerequisites look good (deepdoc, deps image${TIKA_JAR:+, Tika $(basename "$TIKA_JAR")})."

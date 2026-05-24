@@ -1,0 +1,16 @@
+# Production static UI for web-tbox + nginx reverse proxy to RAGFlow API.
+# Build context: repository root (--file docker/Dockerfile.tbox-console).
+FROM node:20-bookworm AS web-build
+WORKDIR /build
+COPY web-tbox/package.json web-tbox/package-lock.json ./
+RUN npm ci
+COPY web-tbox/ ./
+RUN npm run build
+
+FROM nginx:1.27-alpine
+COPY docker/nginx/proxy.conf /etc/nginx/proxy.conf
+COPY docker/nginx/ragflow-tbox-console.conf.template /etc/nginx/templates/default.conf.template
+COPY --from=web-build /build/dist /usr/share/nginx/html/tbox
+# Substituted in /etc/nginx/templates/*.template by the stock nginx entrypoint.
+ENV RAGFLOW_UPSTREAM=host.docker.internal:9380
+EXPOSE 80
