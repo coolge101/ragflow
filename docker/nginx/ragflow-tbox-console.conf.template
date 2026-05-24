@@ -16,7 +16,7 @@ server {
 
     location / {
         index index.html;
-        try_files $$uri $$uri/ /index.html;
+        try_files $uri $uri/ /index.html;
     }
 
     location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2)$ {
