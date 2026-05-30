@@ -25,6 +25,14 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 cd "$SCRIPT_DIR"
 
+# Large docker builds use /tmp on root by default; prefer /data/tbox/tmp when available.
+if [[ -d /data/tbox ]]; then
+  mkdir -p /data/tbox/tmp
+  chmod 1777 /data/tbox/tmp 2>/dev/null || true
+  export TMPDIR="${TMPDIR:-/data/tbox/tmp}"
+  export DOCKER_TMPDIR="${DOCKER_TMPDIR:-/data/tbox/tmp}"
+fi
+
 if [[ ! -f .env ]]; then
   echo "Missing docker/.env — copy template:  cp .env.example .env" >&2
   exit 1

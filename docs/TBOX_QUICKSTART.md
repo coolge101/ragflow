@@ -69,6 +69,7 @@ bash scripts/tbox_post_upstream_merge.sh
 | 记录 | [`TBOX_UPSTREAM_MERGE_RUNBOOK.md`](./TBOX_UPSTREAM_MERGE_RUNBOOK.md) §4 |
 | 差异 | `bash scripts/tbox_upstream_divergence.sh --fetch` |
 | 磁盘 | build 后 **no space left on device**：镜像可能已成功 → `docker builder prune -af` 再 `--force-recreate ragflow-cpu`（Runbook §3.1） |
+| 日常清理 | `bash scripts/tbox_disk_cleanup.sh`（不删 DB volume）；Docker 数据应在 **`/data/docker`** |
 
 ## 2. 启动 RAGFlow API
 
