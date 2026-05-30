@@ -15,8 +15,8 @@
 | 字段 | 值 |
 |------|-----|
 | 记录日期 | 2026-05-30 |
-| 本 fork 工作区 `HEAD`（文档更新时钉扎） | `bfb0cb63cf6be5f33e568e9c18291ff8ad8014df` |
-| 备注 | **Phase 13** @ `bfb0cb63c`。P2 回归 smoke + 漂移记录脚本 ✅。S6 merge @ `f9bd37fdd`；**ahead 104 / behind 0**。 |
+| 本 fork 工作区 `HEAD`（文档更新时钉扎） | `6a93e01382ce15737083d97c1e4efad100b93893` |
+| 备注 | **Phase 14** @ `6a93e0138`。5180 手测归档 ✅；`tbox_chat_apps_smoke.sh` ✅。S6 merge @ `f9bd37fdd`；**ahead 105 / behind 0**。 |
 
 ## 3. 常用端口（默认本地开发）
 
