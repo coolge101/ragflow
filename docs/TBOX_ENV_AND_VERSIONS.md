@@ -15,8 +15,8 @@
 | 字段 | 值 |
 |------|-----|
 | 记录日期 | 2026-05-30 |
-| 本 fork 工作区 `HEAD`（文档更新时钉扎） | `a3f86c0c3a651a14fe6aea424f085706c2093236` |
-| 备注 | **Phase 17** @ `a3f86c0c3`。S6 `--fetch` ahead **114**（Runbook §5）；检索高亮 ✅。S6 merge @ `f9bd37fdd`；**behind 0**。 |
+| 本 fork 工作区 `HEAD`（文档更新时钉扎） | `0f075b3c7e01ff0125fa8921d2ce669a015dc572` |
+| 备注 | **Phase 18** @ `0f075b3c7`。双账号 smoke env ✅；S6 merge @ `f9bd37fdd`；**behind 0 / ahead ~116**。 |
 
 ## 3. 常用端口（默认本地开发）
 

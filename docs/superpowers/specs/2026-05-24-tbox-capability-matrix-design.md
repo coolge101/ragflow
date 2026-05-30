@@ -119,7 +119,7 @@
 
 | ID | 能力 | 官方 | web-tbox | 后端 | 优先级 | 备注 |
 |----|------|------|----------|------|--------|------|
-| G5-UI-SHELL | 登录、权限壳、窄屏 | ✅ 官方 web | ✅ MainLayout | `/v1/tbox/me` | ✅ | |
+| G5-UI-SHELL | 登录、权限壳、窄屏 | ✅ 官方 web | ✅ MainLayout | `/v1/tbox/me` | ✅ | 双账号 API：`TBOX_SMOKE_ENV.md` |
 | G5-UI-USERS | 用户与 TBOX 权限 | ✅ team | ✅ `/users` | TBOX managed-users | ✅ | |
 | G5-UI-AUDIT | 入库/流水线日志 | ✅ ingestions | ✅ **`/audit`** 筛选+导出 | 官方 REST | P2 | 时间/状态/关键词；CSV/Excel |
 | G5-BRAND | 用户可见零 RAGFlow 品牌 | — | ✅ | — | P0 | 2026-05-24 阶段 1 文案清理 |
