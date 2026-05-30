@@ -19,7 +19,7 @@ bash scripts/start-tbox-ragflow.sh --console
 bash scripts/tbox_vm_production_acceptance.sh
 ```
 
-验收清单：**[`TBOX_VM_PRODUCTION_ACCEPTANCE.md`](./TBOX_VM_PRODUCTION_ACCEPTANCE.md)**（5180 + 内网双账号 + Walkthrough）。
+验收清单：**[`TBOX_VM_PRODUCTION_ACCEPTANCE.md`](./TBOX_VM_PRODUCTION_ACCEPTANCE.md)**（5180 + 内网双账号 + Walkthrough）。双账号 API 冒烟配置：**[`TBOX_SMOKE_ENV.md`](./TBOX_SMOKE_ENV.md)**。
 
 ## 1. 前置
 

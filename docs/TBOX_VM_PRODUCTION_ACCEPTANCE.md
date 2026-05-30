@@ -39,7 +39,7 @@ bash scripts/tbox_record_upstream_drift.sh --fetch
 bash scripts/tbox_p2_regression_smoke.sh
 # G3 对话应用 CRUD：
 bash scripts/tbox_chat_apps_smoke.sh
-# G5 权限 API（admin 必测；双账号见 TBOX_SMOKE_NORMAL_*）：
+# G5 权限 API（admin 必测；双账号见 docs/TBOX_SMOKE_ENV.md）：
 bash scripts/tbox_permissions_smoke.sh
 ```
 
@@ -87,7 +87,7 @@ LAN IP：`hostname -I | awk '{print $1}'`
 | `tbox_permissions_smoke.sh` | ☑ pass（admin） |
 | §3 内网与双账号 A–D | ☑ 手测 2026-05-30 |
 | §4 产品动线 Walkthrough | ☑ 手测 2026-05-30 |
-| 备注 | Phase 13–15 归档 ✅；双账号 API 回归可设 `TBOX_SMOKE_NORMAL_*` |
+| 备注 | Phase 13–17 归档 ✅；双账号 API：`cp scripts/tbox_smoke.env.example scripts/tbox_smoke.env` — **`docs/TBOX_SMOKE_ENV.md`** |
 
 ---
 

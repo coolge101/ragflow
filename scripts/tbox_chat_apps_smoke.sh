@@ -5,6 +5,9 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT"
 export PYTHONPATH="$ROOT"
+# shellcheck source=scripts/tbox_load_smoke_env.sh
+source "$ROOT/scripts/tbox_load_smoke_env.sh"
+_tbox_load_smoke_env "$ROOT"
 
 if [[ -z "${TBOX_SMOKE_RUNNER:-}" ]] && docker ps --format '{{.Names}}' 2>/dev/null | grep -q 'ragflow-cpu'; then
   export TBOX_SMOKE_RUNNER=docker

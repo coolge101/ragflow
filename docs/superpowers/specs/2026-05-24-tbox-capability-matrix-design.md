@@ -150,6 +150,7 @@
 | **15** | G5 权限 API 回归 | 产品/运维 | **`tbox_permissions_smoke.sh`** — phase15 plan |
 | **16** | G3 Citation 侧栏联动 | 产品 | **`ChatMessageContent` / `ReferenceChunks`** — phase16 plan |
 | **17** | S6 漂移 + 检索高亮 | 运维/产品 | Runbook §5 **`--fetch`**；**`SearchResultList`** — phase17 plan |
+| **18** | 双账号 smoke env | 运维 | **`scripts/tbox_smoke.env.example`** + Walkthrough 16–17 — phase18 plan |
 
 详细 Task 见 implementation plan。
 

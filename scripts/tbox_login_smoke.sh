@@ -5,6 +5,9 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT"
+# shellcheck source=scripts/tbox_load_smoke_env.sh
+source "$ROOT/scripts/tbox_load_smoke_env.sh"
+_tbox_load_smoke_env "$ROOT"
 
 EMAIL="${TBOX_LOGIN_EMAIL:-admin@ragflow.io}"
 PASSWORD="${TBOX_LOGIN_PASSWORD:-admin}"

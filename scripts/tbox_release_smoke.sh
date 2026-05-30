@@ -11,6 +11,9 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT"
 export PYTHONPATH="$ROOT"
+# shellcheck source=scripts/tbox_load_smoke_env.sh
+source "$ROOT/scripts/tbox_load_smoke_env.sh"
+_tbox_load_smoke_env "$ROOT"
 
 BASE="${TBOX_SMOKE_BASE_URL:-http://127.0.0.1:9380}"
 fail=0

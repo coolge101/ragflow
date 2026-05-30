@@ -5,6 +5,9 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT"
 export PYTHONPATH="$ROOT"
+# shellcheck source=scripts/tbox_load_smoke_env.sh
+source "$ROOT/scripts/tbox_load_smoke_env.sh"
+_tbox_load_smoke_env "$ROOT"
 
 if [[ -z "${TBOX_SMOKE_RUNNER:-}" ]] && docker ps --format '{{.Names}}' 2>/dev/null | grep -q 'ragflow-cpu'; then
   export TBOX_SMOKE_RUNNER=docker
@@ -18,7 +21,9 @@ _run_python() {
     local name
     name="$(basename "$script")"
     docker cp "$script" "${c}:/tmp/tbox-smoke-${name}"
-    docker exec -e PYTHONPATH=/ragflow -e TBOX_SMOKE_BASE_URL="$base" "$c" python3 "/tmp/tbox-smoke-${name}"
+    local -a exec_env=()
+    _tbox_smoke_docker_exec_env exec_env
+    docker exec "${exec_env[@]}" "$c" python3 "/tmp/tbox-smoke-${name}"
   else
     uv run python3 "$script"
   fi
