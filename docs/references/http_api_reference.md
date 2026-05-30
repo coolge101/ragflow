@@ -27,6 +27,32 @@ A complete reference for RAGFlow's RESTful API. Before proceeding, please ensure
 
 ---
 
+## Deprecated API Aliases
+
+The following v0.24.0 REST API paths are deprecated. They remain available through the backward compatibility layer, but new integrations should use the replacement endpoints.
+
+| Deprecated endpoint | Replacement endpoint |
+|---------------------|----------------------|
+| **POST** `/api/v1/chats_openai/{chat_id}/chat/completions` | **POST** `/api/v1/openai/{chat_id}/chat/completions` |
+| **PUT** `/api/v1/chats/{chat_id}/sessions/{session_id}` | **PATCH** `/api/v1/chats/{chat_id}/sessions/{session_id}` |
+| **POST** `/api/v1/chats/{chat_id}/completions` | **POST** `/api/v1/chat/completions` |
+| **POST** `/api/v1/sessions/related_questions` | **POST** `/api/v1/chat/recommandation` |
+| **PUT** `/api/v1/datasets/{dataset_id}/documents/{document_id}/chunks/{chunk_id}` | **PATCH** `/api/v1/datasets/{dataset_id}/documents/{document_id}/chunks/{chunk_id}` |
+| **GET** `/v1/system/healthz` | **GET** `/api/v1/system/healthz` |
+| **POST** `/api/v1/file/upload` | **POST** `/api/v1/files` |
+| **POST** `/api/v1/file/create` | **POST** `/api/v1/files` |
+| **GET** `/api/v1/file/list` | **GET** `/api/v1/files` |
+| **GET** `/api/v1/file/root_folder` | **GET** `/api/v1/files` |
+| **GET** `/api/v1/file/parent_folder` | **GET** `/api/v1/files/{file_id}/parent` |
+| **GET** `/api/v1/file/all_parent_folder` | **GET** `/api/v1/files/{file_id}/ancestors` |
+| **POST** `/api/v1/file/rm` | **DELETE** `/api/v1/files` |
+| **POST** `/api/v1/file/rename` | **POST** `/api/v1/files/move` |
+| **GET** `/api/v1/file/get/{file_id}` | **GET** `/api/v1/files/{file_id}` |
+| **POST** `/api/v1/file/mv` | **POST** `/api/v1/files/move` |
+| **POST** `/api/v1/file/convert` | **POST** `/api/v1/files/link-to-datasets` |
+
+---
+
 ## OpenAI-Compatible API
 
 ---
@@ -4056,11 +4082,14 @@ The previous endpoint `POST /api/v1/chats/{chat_id}/completions` is deprecated. 
   - `'content-Type: application/json'`
   - `'Authorization: Bearer <YOUR_API_KEY>'`
 - Body:
+
   - `"messages"`: `list[object]`
+  - `"question"`: `string`
   - `"stream"`: `boolean`
   - `"chat_id"`: `string` (optional)
   - `"session_id"`: `string` (optional)
   - `"llm_id"`: `string` (optional)
+  - `"pass_all_history_messages"`: `boolean` (optional)
 
 ##### Request example
 
@@ -4092,10 +4121,6 @@ curl --request POST \
           "session_id":"9fa7691cb85c11ef9c5f0242ac120005",
           "messages": [
               {
-                  "role": "assistant",
-                  "content": "Hi! I'\''m your assistant. What can I do for you?"
-              },
-              {
                   "role": "user",
                   "content": "Who are you?"
               }
@@ -4105,8 +4130,10 @@ curl --request POST \
 
 ##### Request Parameters
 
-- `"messages"`: (*Body Parameter*), `list[object]`, *Required*
-  The conversation messages sent to the model.
+- `"messages"`: (*Body Parameter*), `list[object]`
+  The latest user message, or the conversation messages sent to the model when `pass_all_history_messages` is `true`. Either `messages` or `question` is required.
+- `"question"`: (*Body Parameter*), `string`
+  Latest user question. This is equivalent to passing `messages: [{"role": "user", "content": question}]`.
 - `"stream"`: (*Body Parameter*), `boolean`
   Indicates whether to output responses in a streaming way:
   - `true`: Enable streaming (default).
@@ -4117,6 +4144,8 @@ curl --request POST \
   Optional session ID. If `chat_id` is provided but `session_id` is omitted, a new session will be generated automatically.
 - `"llm_id"`: (*Body Parameter*), `string`
   Optional model override when a specific chat model should be used for this request.
+- `"pass_all_history_messages"`: (*Body Parameter*), `boolean`
+  When `chat_id` and `session_id` are provided, defaults to `false`, so the server uses stored session history and only the latest user message from the request. Set to `true` to replace/use the submitted full `messages` history, and overrides the stored session history.
 
 #### Response
 
@@ -4486,21 +4515,14 @@ Asks a specified agent a question to start an AI-powered conversation.
 
 Uses a single completion endpoint for all agent conversations.
 
-- Standard mode: send `agent_id` with `query`.
-- OpenAI-compatible mode: send the same endpoint with `"openai-compatible": true`.
-
-:::tip NOTE
-
-- Older agent completion routes have been removed. Use only `/api/v1/agents/chat/completion`.
-- In standard streaming mode, not all responses include a reference, as this depends on the workflow result.
-- In streaming mode, the server terminates the stream with `[DONE]`.
-
+:::caution DEPRECATED
+The API is deprecated. Please use `POST /api/v1/agents/chat/completions` instead.
 :::
 
 #### Request
 
 - Method: POST
-- URL: `/api/v1/agents/chat/completion`
+- URL: `/api/v1/agents/chat/completions`
 - Headers:
   - `'content-Type: application/json'`
   - `'Authorization: Bearer <YOUR_API_KEY>'`
@@ -4520,6 +4542,7 @@ Use this mode for the native agent API.
 - `"user_id"`: `string` (optional)
 - `"return_trace"`: `boolean` (optional, default `false`)
 - `"release"`: `boolean` (optional, default `false`)
+- `"chat_template_kwargs": object` (optional)
 
 #### Streaming events to handle
 
@@ -4541,7 +4564,7 @@ If the **Begin** component does not take parameters:
 
 ```bash
 curl --request POST \
-     --url http://{address}/api/v1/agents/chat/completion \
+     --url http://{address}/api/v1/agents/chat/completions \
      --header 'Content-Type: application/json' \
      --header 'Authorization: Bearer <YOUR_API_KEY>' \
      --data-binary '
@@ -4556,7 +4579,7 @@ curl --request POST \
 
 ```bash
 curl --request POST \
-     --url http://{address}/api/v1/agents/chat/completion \
+     --url http://{address}/api/v1/agents/chat/completions \
      --header 'Content-Type: application/json' \
      --header 'Authorization: Bearer <YOUR_API_KEY>' \
      --data-binary '
@@ -4593,7 +4616,7 @@ To continue an existing session:
 
 ```bash
 curl --request POST \
-     --url http://{address}/api/v1/agents/chat/completion \
+     --url http://{address}/api/v1/agents/chat/completions \
      --header 'Content-Type: application/json' \
      --header 'Authorization: Bearer <YOUR_API_KEY>' \
      --data-binary '
@@ -4621,6 +4644,8 @@ curl --request POST \
   Variables specified in the **Begin** component.
 - `"user_id"`: (*Body parameter*), `string`
   The optional user-defined ID. Valid *only* when no `session_id` is provided.
+- `"chat_template_kwargs"`: (*Body parameter*), `object`  
+  Optional passthrough parameters for the underlying LLM's chat template. Commonly used to toggle thinking/reasoning modes on supported models (e.g., `{"enable_thinking": false}`).
 
 :::tip NOTE
 For now, this method does *not* support a file type input/variable. As a workaround, use the following to upload a file to an agent:
@@ -4692,6 +4717,7 @@ Use the same endpoint and add `"openai-compatible": true`.
 - `"stream"`: `boolean`
 - `"session_id"`: `string` (optional)
 - `"model"`: `string` (optional, accepted for compatibility)
+- `"chat_template_kwargs": object` (optional)
 
 ##### Request examples
 
@@ -4699,7 +4725,7 @@ Streaming request:
 
 ```bash
 curl --request POST \
-     --url http://{address}/api/v1/agents/chat/completion \
+     --url http://{address}/api/v1/agents/chat/completions \
      --header 'Content-Type: application/json' \
      --header 'Authorization: Bearer <YOUR_API_KEY>' \
      --data-binary '
@@ -4712,7 +4738,10 @@ curl --request POST \
                 "role": "user",
                 "content": "Hello"
             }
-        ]
+        ],
+        "chat_template_kwargs": {
+            "enable_thinking": true
+        }
      }'
 ```
 
@@ -4720,7 +4749,7 @@ Non-stream request with existing session:
 
 ```bash
 curl --request POST \
-     --url http://{address}/api/v1/agents/chat/completion \
+     --url http://{address}/api/v1/agents/chat/completions \
      --header 'Content-Type: application/json' \
      --header 'Authorization: Bearer <YOUR_API_KEY>' \
      --data-binary '
@@ -4752,6 +4781,8 @@ curl --request POST \
   Optional existing session ID.
 - `"model"`: (*Body parameter*), `string`  
   Optional compatibility field. The server still routes by `agent_id`.
+- `"chat_template_kwargs"`: (*Body parameter*), `object`  
+  Optional passthrough parameters for the underlying LLM's chat template. Commonly used to toggle thinking/reasoning modes on supported models (e.g., `{"enable_thinking": false}`).
 
 ##### Response
 
@@ -6886,14 +6917,18 @@ Failure:
 
 ### Download attachment
 
-**GET** `/v1/document/download/{attachment_id}`
+**GET** `/api/v1/agents/attachments/{attachment_id}/download`
 
-Downloads a runtime attachment previously uploaded via the [Upload document](#upload-document) method.
+:::caution DEPRECATED
+The previous endpoints `GET /v1/document/download/{doc_id}` and `GET /api/v1/document/download/{doc_id}` are deprecated. Please use this endpoint instead.
+:::
+
+Downloads a runtime attachment previously uploaded for use in the agent system.
 
 #### Request
 
 - Method: GET
-- URL: `/v1/document/download/{attachment_id}`
+- URL: `/api/v1/agents/attachments/{attachment_id}/download`
 - Headers:
   - `'Authorization: Bearer <YOUR_API_KEY>'`
 - Query parameter:
@@ -6903,7 +6938,7 @@ Downloads a runtime attachment previously uploaded via the [Upload document](#up
 
 ```bash
 curl --request GET \
-     --url 'http://{address}/v1/document/download/{attachment_id}?ext=pdf' \
+     --url 'http://{address}/api/v1/agents/attachments/{attachment_id}/download?ext=pdf' \
      --header 'Authorization: Bearer <YOUR_API_KEY>' \
      --output ./downloaded_attachment.pdf
 ```
@@ -6911,7 +6946,7 @@ curl --request GET \
 ##### Request parameters
 
 - `attachment_id`: (*Path parameter*), `string`, *Required*
-  The `id` value returned by the [Upload document](#upload-document) method.
+  The attachment ID whose file should be downloaded.
 - `ext`: (*Query parameter*), `string`, *Optional*
   A file extension hint specifying the response's Content-Type. Defaults to `"markdown"`. Available values:
   - `"markdown"`
@@ -7437,6 +7472,10 @@ or
 
 Converts files to documents and links them to specified datasets.
 
+:::caution DEPRECATED
+The previous endpoint `POST /api/v1/file/convert` is deprecated. Please use this endpoint instead.
+:::
+
 #### Request
 
 - Method: POST
@@ -7809,14 +7848,14 @@ Failure:
 
 ### Search completion
 
-**POST** `/api/v1/searches/{search_id}/completion`
+**POST** `/api/v1/searches/{search_id}/completions`
 
 Generates an answer using the saved search app configuration and returns the result as a Server-Sent Events stream.
 
 #### Request
 
 - Method: POST
-- URL: `/api/v1/searches/{search_id}/completion`
+- URL: `/api/v1/searches/{search_id}/completions`
 - Headers:
   - `'Content-Type: application/json'`
   - `'Authorization: Bearer <YOUR_LOGIN_TOKEN>'`
@@ -7828,7 +7867,7 @@ Generates an answer using the saved search app configuration and returns the res
 
 ```bash
 curl --request POST \
-     --url http://{address}/api/v1/searches/{search_id}/completion \
+     --url http://{address}/api/v1/searches/{search_id}/completions \
      --header 'Content-Type: application/json' \
      --header 'Authorization: Bearer <YOUR_LOGIN_TOKEN>' \
      --data '{

@@ -24,10 +24,8 @@ import kbService, {
   listDocument,
   renameDocument,
   uploadDocument,
-  webCrawlDocument,
 } from '@/services/knowledge-service';
-import { restAPIv1, webAPI } from '@/utils/api';
-import { getSearchValue } from '@/utils/common-util';
+import { restAPIv1 } from '@/utils/api';
 import { buildChunkHighlights } from '@/utils/document-util';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useDebounce } from 'ahooks';
@@ -57,12 +55,11 @@ export const enum DocumentApiAction {
   SetDocumentMeta = 'setDocumentMeta',
   FetchDocumentFilter = 'fetchDocumentFilter',
   CreateDocument = 'createDocument',
-  WebCrawl = 'webCrawl',
   FetchDocumentThumbnails = 'fetchDocumentThumbnails',
   ParseDocument = 'parseDocument',
 }
 
-export const useUploadNextDocument = () => {
+export const useUploadDocument = () => {
   const queryClient = useQueryClient();
   const { id } = useParams();
 
@@ -70,9 +67,13 @@ export const useUploadNextDocument = () => {
     data,
     isPending: loading,
     mutateAsync,
-  } = useMutation<ResponseType<IDocumentInfo[]>, Error, File[]>({
+  } = useMutation<
+    ResponseType<IDocumentInfo[]>,
+    Error,
+    { fileList: File[]; parserConfig?: Record<string, any> }
+  >({
     mutationKey: [DocumentApiAction.UploadDocument],
-    mutationFn: async (fileList) => {
+    mutationFn: async ({ fileList, parserConfig }) => {
       if (!id) {
         return { code: 500, message: 'Dataset ID is required' };
       }
@@ -80,6 +81,9 @@ export const useUploadNextDocument = () => {
       fileList.forEach((file: any) => {
         formData.append('file', file);
       });
+      if (parserConfig) {
+        formData.append('parser_config', JSON.stringify(parserConfig));
+      }
 
       try {
         const ret = await uploadDocument(id, formData);
@@ -101,7 +105,13 @@ export const useUploadNextDocument = () => {
     },
   });
 
-  return { uploadDocument: mutateAsync, loading, data };
+  const upload = useCallback(
+    (fileList: File[], parserConfig?: Record<string, any>) =>
+      mutateAsync({ fileList, parserConfig }),
+    [mutateAsync],
+  );
+
+  return { uploadDocument: upload, loading, data };
 };
 
 export const useFetchDocumentList = (loop = true) => {
@@ -214,6 +224,7 @@ export const useGetDocumentFilter = (): {
   const { id } = useParams();
   const debouncedSearchString = useDebounce(searchString, { wait: 500 });
   const [open, setOpen] = useState<number>(0);
+  const datasetId = knowledgeId || id;
   const { data } = useQuery({
     queryKey: [
       DocumentApiAction.FetchDocumentFilter,
@@ -221,7 +232,10 @@ export const useGetDocumentFilter = (): {
       knowledgeId,
     ],
     queryFn: async () => {
-      const { data } = await documentFilter(knowledgeId || id);
+      if (!datasetId) {
+        return;
+      }
+      const { data } = await documentFilter(datasetId);
       if (data.code === 0) {
         return data.data;
       }
@@ -250,17 +264,17 @@ export const useSetDocumentStatus = () => {
     data,
     isPending: loading,
     mutateAsync,
-  } = useMutation({
-    mutationKey: [DocumentApiAction.UpdateDocumentStatus],
-    mutationFn: async ({
-      status,
-      documentId,
-      datasetId,
-    }: {
+  } = useMutation<
+    any,
+    Error,
+    {
       status: boolean;
       documentId: string | string[];
       datasetId: string;
-    }) => {
+    }
+  >({
+    mutationKey: [DocumentApiAction.UpdateDocumentStatus],
+    mutationFn: async ({ status, documentId, datasetId }) => {
       const ids = Array.isArray(documentId) ? documentId : [documentId];
       const { data } = await changeDocumentsStatus({
         kb_id: datasetId,
@@ -504,14 +518,11 @@ export const useCreateDocument = () => {
 };
 
 export const useGetDocumentUrl = (documentId?: string) => {
-  const auth = getSearchValue('auth');
   const getDocumentUrl = useCallback(
     (id?: string) => {
-      return auth
-        ? `${restAPIv1}/documents/${id || documentId}`
-        : `${webAPI}/document/get/${id || documentId}`;
+      return `${restAPIv1}/documents/${id || documentId}/preview`;
     },
-    [documentId, auth],
+    [documentId],
   );
 
   return getDocumentUrl;
@@ -536,40 +547,6 @@ export const useGetChunkHighlights = (
   };
 
   return { highlights, setWidthAndHeight };
-};
-
-export const useNextWebCrawl = () => {
-  const { knowledgeId } = useGetKnowledgeSearchParams();
-
-  const {
-    data,
-    isPending: loading,
-    mutateAsync,
-  } = useMutation({
-    mutationKey: [DocumentApiAction.WebCrawl],
-    mutationFn: async ({ name, url }: { name: string; url: string }) => {
-      if (!knowledgeId) {
-        return 500;
-      }
-      const formData = new FormData();
-      formData.append('name', name);
-      formData.append('url', url);
-
-      const ret = await webCrawlDocument(knowledgeId, formData);
-      const code = get(ret, 'code');
-      if (code === 0) {
-        message.success(i18n.t('message.uploaded'));
-      }
-
-      return code;
-    },
-  });
-
-  return {
-    data,
-    loading,
-    webCrawl: mutateAsync,
-  };
 };
 
 export const useFetchDocumentThumbnailsByIds = () => {

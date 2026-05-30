@@ -101,7 +101,7 @@ RUN mkdir -p /usr/share/infinity/resource && \
     set -e; \
     cp -a /tmp/resource/. /usr/share/infinity/resource/ && rm -rf /tmp/resource'
 
-ARG NGINX_VERSION=1.29.5-1~noble
+ARG NGINX_VERSION=1.31.0-1~noble
 RUN --mount=type=cache,id=ragflow_apt,target=/var/cache/apt,sharing=locked \
     mkdir -p /etc/apt/keyrings && \
     curl --retry 5 --retry-delay 2 --retry-all-errors -fsSL https://nginx.org/keys/nginx_signing.key | gpg --dearmor -o /etc/apt/keyrings/nginx-archive-keyring.gpg && \
@@ -124,7 +124,7 @@ RUN --mount=type=bind,from=infiniflow/ragflow_deps:latest,source=/,target=/deps 
     tar xzf "/deps/uv-${uv_arch}-unknown-linux-gnu.tar.gz" \
     && cp "uv-${uv_arch}-unknown-linux-gnu/"* /usr/local/bin/ \
     && rm -rf "uv-${uv_arch}-unknown-linux-gnu" \
-    && uv python install 3.12
+    && uv python install 3.13
 
 ENV PYTHONDONTWRITEBYTECODE=1 DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=1 \
     UV_HTTP_TIMEOUT=200 \
@@ -193,7 +193,7 @@ RUN --mount=type=cache,id=ragflow_uv,target=/root/.cache/uv,sharing=locked \
     else \
         sed -i 's|mirrors.aliyun.com/pypi|pypi.org|g' uv.lock; \
     fi; \
-    uv sync --python 3.12 --frozen && \
+    uv sync --python 3.13 --frozen && \
     # Ensure pip is available in the venv for runtime package installation (fixes #12651)
     .venv/bin/python3 -m ensurepip --upgrade
 
@@ -235,6 +235,7 @@ COPY mcp mcp
 COPY common common
 COPY memory memory
 COPY bin bin
+COPY tools/scripts tools/scripts
 
 COPY docker/service_conf.yaml.template ./conf/service_conf.yaml.template
 COPY docker/entrypoint.sh ./

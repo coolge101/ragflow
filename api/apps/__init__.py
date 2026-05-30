@@ -78,8 +78,8 @@ app.config["SESSION_PERMANENT"] = False
 app.config["SESSION_TYPE"] = "redis"
 app.config["SESSION_REDIS"] = settings.decrypt_database_config(name="redis")
 app.config["MAX_CONTENT_LENGTH"] = int(os.environ.get("MAX_CONTENT_LENGTH", 1024 * 1024 * 1024))
-app.config["SECRET_KEY"] = settings.SECRET_KEY
-app.secret_key = settings.SECRET_KEY
+app.config["SECRET_KEY"] = settings.get_secret_key()
+app.secret_key = settings.get_secret_key()
 commands.register_commands(app)
 
 from functools import wraps
@@ -91,19 +91,53 @@ T = TypeVar("T")
 P = ParamSpec("P")
 
 
+def _load_user_from_session():
+    """Resolve the current user from the session cookie set by ``login_user()``.
+
+    OAuth/OIDC callbacks call ``login_user(user)`` which writes ``_user_id``
+    into the session. The frontend's response interceptor wipes the
+    Authorization header from localStorage on the first 401, so post-redirect
+    requests can arrive with no header at all — we still want to honour the
+    server-side session in that window.
+
+    The same access-token validity rules used by the JWT path are applied
+    here so that tokens revoked by ``logout`` (which rewrites the column to
+    ``INVALID_<hex>``) or shortened by data corruption can't keep a stale
+    session authenticated.
+    """
+    user_id = session.get("_user_id")
+    if not user_id:
+        return None
+    try:
+        users = UserService.query(id=user_id, status=StatusEnum.VALID.value)
+    except Exception:
+        logging.exception("load_user from session failed")
+        return None
+    if not users:
+        return None
+    user = users[0]
+    access_token = str(user.access_token or "").strip()
+    if not access_token or len(access_token) < 32 or access_token.startswith("INVALID_"):
+        return None
+    logging.debug("Authenticated request via session fallback for user_id=%s", user_id)
+    g.user = user
+    return user
+
+
 def _load_user():
-    jwt = Serializer(secret_key=settings.SECRET_KEY)
+    jwt = Serializer(secret_key=settings.get_secret_key())
     authorization = request.headers.get("Authorization")
     g.user = None
+    g.auth_via_api_token = False
     if not authorization:
-        return None
+        return _load_user_from_session()
 
     # Extract auth_token based on whether Authorization starts with "bearer" (case-insensitive)
     if authorization.lower().startswith("bearer "):
         parts = authorization.split(maxsplit=1)
         if len(parts) < 2:
             logging.warning("Authorization header has invalid bearer format")
-            return None
+            return _load_user_from_session()
         auth_token = parts[1]
     else:
         auth_token = authorization
@@ -114,20 +148,20 @@ def _load_user():
 
         if not access_token or not access_token.strip():
             logging.warning("Authentication attempt with empty access token")
-            return None
+            return _load_user_from_session()
 
         if len(access_token.strip()) < 32:
             logging.warning(f"Authentication attempt with invalid token format: {len(access_token)} chars")
-            return None
+            return _load_user_from_session()
 
         user = UserService.query(access_token=access_token, status=StatusEnum.VALID.value)
         if user:
             if not user[0].access_token or not user[0].access_token.strip():
                 logging.warning(f"User {user[0].email} has empty access_token in database")
-                return None
+                return _load_user_from_session()
             g.user = user[0]
             return user[0]
-        return None
+        return _load_user_from_session()
     except Exception as e_jwt:
         logging.warning(f"load_user from jwt got exception {e_jwt}")
 
@@ -139,7 +173,8 @@ def _load_user():
             if user:
                 if not user[0].access_token or not user[0].access_token.strip():
                     logging.warning(f"User {user[0].email} has empty access_token in database")
-                    return None
+                    return _load_user_from_session()
+                g.auth_via_api_token = True
                 g.user = user[0]
                 return user[0]
             logging.warning(f"load_user: No user found for tenant_id={objs[0].tenant_id} from APIToken")
@@ -148,7 +183,7 @@ def _load_user():
     except Exception as e_api_token:
         logging.warning(f"load_user from api token got exception {e_api_token}")
 
-    return None
+    return _load_user_from_session()
 
 
 current_user = LocalProxy(_load_user)
@@ -271,8 +306,8 @@ def register_page(page_path):
     sys.modules[module_name] = page
     spec.loader.exec_module(page)
     page_name = getattr(page, "page_name", page_name)
-    sdk_path = "\\sdk\\" if sys.platform.startswith("win") else "/sdk/"
     restful_api_path = "\\restful_apis\\" if sys.platform.startswith("win") else "/restful_apis/"
+    sdk_path = "\\sdk\\" if sys.platform.startswith("win") else "/sdk/"
     url_prefix = f"/api/{API_VERSION}" if sdk_path in path or restful_api_path in path else f"/{API_VERSION}/{page_name}"
 
     app.register_blueprint(page.manager, url_prefix=url_prefix)

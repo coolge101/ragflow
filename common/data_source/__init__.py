@@ -34,6 +34,8 @@ from .dropbox_connector import DropboxConnector
 from .google_drive.connector import GoogleDriveConnector
 from .jira.connector import JiraConnector
 from .sharepoint_connector import SharePointConnector
+from .onedrive_connector import OneDriveConnector
+from .outlook_connector import OutlookConnector
 from .teams_connector import TeamsConnector
 from .moodle_connector import MoodleConnector
 from .airtable_connector import AirtableConnector
@@ -44,6 +46,7 @@ from .zendesk_connector import ZendeskConnector
 from .seafile_connector import SeaFileConnector
 from .rdbms_connector import RDBMSConnector
 from .webdav_connector import WebDAVConnector
+from .rest_api_connector import RestAPIConnector
 from .config import BlobType, DocumentSource
 from .models import Document, TextSection, ImageSection, BasicExpertInfo
 from .exceptions import (
@@ -66,6 +69,8 @@ __all__ = [
     "GoogleDriveConnector",
     "JiraConnector",
     "SharePointConnector",
+    "OneDriveConnector",
+    "OutlookConnector",
     "TeamsConnector",
     "MoodleConnector",
     "BlobType",
@@ -87,4 +92,5 @@ __all__ = [
     "RDBMSConnector",
     "WebDAVConnector",
     "DingTalkAITableConnector",
+    "RestAPIConnector",
 ]

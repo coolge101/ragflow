@@ -128,8 +128,8 @@ See also **[`docs/TBOX_DEPLOY_RUNBOOK.md`](../docs/TBOX_DEPLOY_RUNBOOK.md)** §3
 
 - `SVR_HTTP_PORT`
   The port used to expose RAGFlow's HTTP API service to the host machine, allowing **external** access to the service running inside the Docker container. Defaults to `9380`.
-- `RAGFLOW-IMAGE`
-  The Docker image edition. Defaults to `infiniflow/ragflow:v0.25.1`. The RAGFlow Docker image does not include embedding models.
+- `RAGFLOW_IMAGE`
+  The Docker image edition. Defaults to `infiniflow/ragflow:v0.25.6`. The RAGFlow Docker image does not include embedding models.
 
 
 > [!TIP]

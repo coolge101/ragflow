@@ -59,7 +59,7 @@ def delete_datasets(auth, payload=None, *, headers=HEADERS, data=None):
     return res.json()
 
 
-def delete_all_datasets(auth, *, page_size=1000):
+def delete_all_datasets(auth, *, page_size=100):
     return delete_datasets(auth, {"ids": None, "delete_all": True})
 
 
@@ -133,7 +133,7 @@ def delete_documents(auth, dataset_id, payload=None):
     return res.json()
 
 
-def delete_all_documents(auth, dataset_id, *, page_size=1000):
+def delete_all_documents(auth, dataset_id, *, page_size=100):
     return delete_documents(auth, dataset_id, {"ids": None, "delete_all": True})
 
 
@@ -192,7 +192,7 @@ def delete_chunks(auth, dataset_id, document_id, payload=None):
     return res.json()
 
 
-def delete_all_chunks(auth, dataset_id, document_id, *, page_size=1000):
+def delete_all_chunks(auth, dataset_id, document_id, *, page_size=100):
     return delete_chunks(auth, dataset_id, document_id, {"chunk_ids": None, "delete_all": True})
 
 
@@ -247,7 +247,7 @@ def delete_chat_assistants(auth, payload=None):
     return res.json()
 
 
-def delete_all_chat_assistants(auth, *, page_size=1000):
+def delete_all_chat_assistants(auth, *, page_size=100):
     return delete_chat_assistants(auth, {"ids": None, "delete_all": True})
 
 
@@ -284,7 +284,7 @@ def delete_session_with_chat_assistants(auth, chat_assistant_id, payload=None):
     return res.json()
 
 
-def delete_all_sessions_with_chat_assistant(auth, chat_assistant_id, *, page_size=1000):
+def delete_all_sessions_with_chat_assistant(auth, chat_assistant_id, *, page_size=100):
     return delete_session_with_chat_assistants(auth, chat_assistant_id, {"ids": None, "delete_all": True})
 
 
@@ -298,7 +298,7 @@ def batch_add_sessions_with_chat_assistant(auth, chat_assistant_id, num):
 
 # DATASET GRAPH AND TASKS
 def knowledge_graph(auth, dataset_id, params=None):
-    url = f"{HOST_ADDRESS}{DATASETS_API_URL}/{dataset_id}/graph/search"
+    url = f"{HOST_ADDRESS}{DATASETS_API_URL}/{dataset_id}/graph"
     res = requests.get(url=url, headers=HEADERS, auth=auth, params=params)
     return res.json()
 
@@ -378,12 +378,12 @@ def delete_agent_sessions(auth, agent_id, payload=None):
     return res.json()
 
 
-def delete_all_agent_sessions(auth, agent_id, *, page_size=1000):
+def delete_all_agent_sessions(auth, agent_id, *, page_size=100):
     return delete_agent_sessions(auth, agent_id, {"ids": None, "delete_all": True})
 
 
 def agent_completions(auth, agent_id, payload=None):
-    url = f"{HOST_ADDRESS}{AGENT_API_URL}/chat/completion"
+    url = f"{HOST_ADDRESS}{AGENT_API_URL}/chat/completions"
     body = {"agent_id": agent_id}
     if payload:
         body.update(payload)
@@ -523,6 +523,5 @@ def search_dataset(auth, dataset_id, payload=None, *, headers=HEADERS):
     url = f"{HOST_ADDRESS}{DATASETS_API_URL}/{dataset_id}/search"
     res = requests.post(url=url, headers=headers, auth=auth, json=payload)
     return res.json()
-
 
 

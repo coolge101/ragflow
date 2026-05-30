@@ -772,6 +772,11 @@ export default {
       maxTokenMessage: '最大token数是必填项',
       threshold: '阈值',
       thresholdMessage: '阈值是必填项',
+      clusteringMethod: '聚类方法',
+      clusteringMethodTip:
+        '选择 RAPTOR 聚类方法。AHC 可以使用更大的最大聚类数，但在大规模输入时可能占用更多内存。',
+      clusteringMethodGmm: 'GMM',
+      clusteringMethodAhc: 'AHC',
       maxCluster: '最大聚类数',
       maxClusterMessage: '最大聚类数是必填项',
       randomSeed: '随机种子',
@@ -811,7 +816,11 @@ export default {
         '基于知识库内所有切好的文本块构建知识图谱，用以提升多跳和复杂问题回答的正确率。请注意：构建知识图谱将消耗大量 token 和时间。详见 https://ragflow.io/docs/dev/construct_knowledge_graph。',
       graphRagMethod: '方法',
       graphRagMethodTip: `Light：实体和关系提取提示来自 GitHub - HKUDS/LightRAG：“LightRAG：简单快速的检索增强生成”<br>
-General：实体和关系提取提示来自 GitHub - microsoft/graphrag：基于图的模块化检索增强生成 (RAG) 系统`,
+General：实体和关系提取提示来自 GitHub - microsoft/graphrag：基于图的模块化检索增强生成 (RAG) 系统<br>
+NER：使用 spaCy NER 和基于规则的关键词提取来抽取实体和关系，无需 LLM 参与提取过程，速度快且资源消耗低`,
+      graphRagBatchChunkTokenSize: '批量chunk token 大小',
+      graphRagBatchChunkTokenSizeTip:
+        '发送给 LLM 进行知识图谱实体和关系抽取时，每批文本块的 token 上限。NER 不适用。',
       resolution: '实体归一化',
       resolutionTip: `解析过程会将具有相同含义的实体合并在一起，从而使知识图谱更简洁、更准确。应合并以下实体：特朗普总统、唐纳德·特朗普、唐纳德·J·特朗普、唐纳德·约翰·特朗普`,
       community: '社区报告生成',
@@ -1036,6 +1045,8 @@ General：实体和关系提取提示来自 GitHub - microsoft/graphrag：基于
       Verify: '验证',
       keyValid: '你的 API 密钥有效。',
       keyInvalid: '你的 API 密钥无效。',
+      enableToolCall: '启用工具调用',
+      enableToolCallTip: '当所选模型类型支持工具调用时，允许该模型调用工具。',
       deleteModel: '删除模型',
       modelEmptyTip: '暂无可用模型,<br>请先在右侧面板添加模型。',
       sourceEmptyTip: '暂未添加任何数据源，请从下方选择一个进行连接。',
@@ -1088,6 +1099,37 @@ General：实体和关系提取提示来自 GitHub - microsoft/graphrag：基于
       gmailTokenTip:
         '请上传由 Google Console 生成的 OAuth JSON。如果仅包含 client credentials，请通过浏览器授权一次以获取长期有效的刷新 Token。',
       dropboxDescription: '连接 Dropbox，同步指定账号下的文件与文件夹。',
+      onedriveDescription:
+        '连接 OneDrive 或 OneDrive for Business，通过 Microsoft Graph delta 查询索引文件和文件夹。',
+      onedriveTenantIdTip: 'Microsoft 365 组织的 Azure Active Directory 租户 ID（目录 ID）。',
+      onedriveClientIdTip: '拥有 Files.Read.All 权限的 Azure AD 应用注册的应用程序（客户端）ID。',
+      onedriveClientSecretTip: '在 Azure AD 应用注册中生成的客户端密钥值。',
+      onedriveFolderPathTip:
+        '可选的子文件夹路径，用于限制索引范围（例如 /Documents/Reports）。留空则索引整个云盘。',
+      outlookDescription:
+        '连接 Outlook / Microsoft 365 邮箱，通过 Microsoft Graph delta 查询索引邮件。',
+      outlookTenantIdTip:
+        'Microsoft 365 组织的 Azure Active Directory 租户 ID（目录 ID）。',
+      outlookClientIdTip:
+        '拥有 Mail.Read 权限的 Azure AD 应用注册的应用程序（客户端）ID。',
+      outlookClientSecretTip: '在 Azure AD 应用注册中生成的客户端密钥值。',
+      outlookFolderTip:
+        '要同步的邮件文件夹（例如 inbox、sentitems、archive），默认为 inbox。',
+      outlookUserIdsTip:
+        '要同步的邮箱 UPN 或对象 ID 列表（逗号分隔）。留空则同步租户内的所有邮箱（需要 User.Read.All 权限）。',
+      teamsDescription:
+        '通过 Microsoft Graph 连接 Microsoft Teams，同步频道帖子与回复。',
+      teamsTenantIdTip:
+        'Azure AD 租户 ID。需要具备 Team.ReadBasic.All 与 ChannelMessage.Read.All 应用权限（管理员同意）的应用。',
+      slackDescription: '连接你的 Slack 工作区，同步频道消息与讨论串。',
+      slackBotTokenTip:
+        'Slack 机器人用户 OAuth Token（以 xoxb- 开头）。应用需具备 channels:read、channels:history 和 users:read 权限。',
+      slackChannelsTip:
+        '可选：需要同步的频道名称（例如 general）。留空则同步所有可访问的频道。',
+      sharepointDescription:
+        '通过 Microsoft Graph 连接 SharePoint 站点，同步其文档库。',
+      sharepointSiteUrlTip:
+        '要索引的 SharePoint 站点完整 URL，例如 https://contoso.sharepoint.com/sites/MySite。需要具备 Sites.Read.All 与 Files.Read.All 应用权限（管理员同意）的 Azure AD 应用。',
       boxDescription: '连接你的 Box 云盘以同步文件和文件夹。',
       bitbucketDescription: '连接 Bitbucket，同步 PR 内容。',
       bitbucketTopWorkspaceTip:
@@ -1216,6 +1258,9 @@ General：实体和关系提取提示来自 GitHub - microsoft/graphrag：基于
       addLlmTitle: '添加 LLM',
       editLlmTitle: '编辑 {{name}} 模型',
       editModel: '编辑模型',
+      instanceName: '实例名称',
+      instanceNameMessage: '请输入实例名称！',
+      instanceNameTip: '用于在同一厂商下唯一标识该实例的名称。',
       modelName: '模型名称',
       modelID: '模型ID',
       modelUid: '模型UID',
@@ -1229,8 +1274,8 @@ General：实体和关系提取提示来自 GitHub - microsoft/graphrag：基于
       FishAudioLink: '如何使用Fish Audio',
       TencentCloudLink: '如何使用腾讯云语音识别',
       volcModelNameMessage: '请输入模型名称！',
-      addEndpointID: '模型 EndpointID',
-      endpointIDMessage: '请输入模型对应的EndpointID',
+      addEndpointID: '模型 ID',
+      endpointIDMessage: '请输入模型 ID',
       addArkApiKey: '火山 ARK_API_KEY',
       ArkApiKeyMessage: '请输入火山创建的ARK_API_KEY',
       bedrockModelNameMessage: '请输入名称！',
@@ -1417,6 +1462,11 @@ General：实体和关系提取提示来自 GitHub - microsoft/graphrag：基于
         author: '作者',
         sectionTitle: '章节标题',
       },
+      editTags: '编辑标签',
+      editTagsDescription: '添加标签以整理和筛选你的智能体。按回车或逗号添加。',
+      tagsPlaceholder: '输入标签后按回车',
+      tagSuggestionsLabel: '现有标签',
+      removeTagAriaLabel: '删除 {{tag}}',
       includeHeadingContent: '分离上级标题正文',
       includeHeadingContentTip:
         '启用后，每个分块仅保留标题路径和自身内容，与上级标题紧挨着的内容将作为一个独立的块保留。',
@@ -1513,6 +1563,20 @@ General：实体和关系提取提示来自 GitHub - microsoft/graphrag：基于
       maxRounds: '最大反思轮数',
       delayAfterError: '错误后延迟',
       maxRetries: '最大重试轮数',
+      maxSteps: '最大步数',
+      headless: '无头模式',
+      enableDefaultExtensions: '启用默认扩展',
+      enableDefaultExtensionsTip:
+        '启用 browser-use 默认扩展（uBlock、Cookie 处理、ClearURLs）。关闭后可避免运行时下载扩展。',
+      chromiumSandbox: 'Chromium 沙箱',
+      chromiumSandboxTip:
+        '是否启用 Chromium 沙箱。Docker root 环境通常需要关闭，普通宿主机环境建议开启。',
+      persistSession: '持久化登录态',
+      persistSessionTip:
+        '开启后将复用该 Browser 节点的浏览器会话，避免重复登录。',
+      uploadSources: '上传来源',
+      uploadSourcesTip:
+        '支持文件 ID、文件 URL 或变量。可用逗号分隔多个值，也支持 JSON 数组格式（如 ["id1","https://example.com/a.pdf"]）。',
       advancedSettings: '高级设置',
       addTools: '添加工具',
       sysPromptDefultValue: `
@@ -1627,6 +1691,9 @@ General：实体和关系提取提示来自 GitHub - microsoft/graphrag：基于
         '该组件通过您提供的 SearXNG 实例地址进行搜索。请设置 Top N 和实例 URL。',
       docGenerator: '文档生成器',
       docGeneratorDescription: `从 Markdown 内容生成文件。`,
+      browser: 'Browser',
+      browserDescription:
+        '使用 Browser 自动执行浏览器任务。支持模型与提示词配置，上传来源支持文件 ID 与 URL，并可将下载文件保存到指定目录。',
       subtitle: '副标题',
       logoImage: '标志图片',
       logoPosition: '标志位置',

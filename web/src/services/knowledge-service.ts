@@ -1,4 +1,3 @@
-import { Authorization } from '@/constants/authorization';
 import { IRenameTag } from '@/interfaces/database/dataset';
 import {
   IFetchDocumentListRequestBody,
@@ -6,21 +5,15 @@ import {
 } from '@/interfaces/request/knowledge';
 import { ProcessingType } from '@/pages/dataset/dataset-overview/dataset-common';
 import api from '@/utils/api';
-import { getAuthorization } from '@/utils/authorization-util';
 import registerServer from '@/utils/register-server';
 import request from '@/utils/request';
-import axios from 'axios';
 
 const {
   createKb,
   rmKb,
   kbList,
-  documentChangeStatus,
-  documentChangeParser,
   documentThumbnails,
   documentIngest,
-  documentUpload,
-  webCrawl,
   listTagByKnowledgeIds,
   setMeta,
   getMeta,
@@ -41,30 +34,13 @@ const methods = {
     url: kbList,
     method: 'get',
   },
-  // document manager
-  documentChangeStatus: {
-    url: documentChangeStatus,
-    method: 'post',
-  },
   documentIngest: {
     url: documentIngest,
-    method: 'post',
-  },
-  documentChangeParser: {
-    url: documentChangeParser,
     method: 'post',
   },
   documentThumbnails: {
     url: documentThumbnails,
     method: 'get',
-  },
-  documentUpload: {
-    url: documentUpload,
-    method: 'post',
-  },
-  webCrawl: {
-    url: webCrawl,
-    method: 'post',
   },
   setMeta: {
     url: setMeta,
@@ -72,10 +48,6 @@ const methods = {
   },
   listTagByKnowledgeIds: {
     url: listTagByKnowledgeIds,
-    method: 'get',
-  },
-  documentFilter: {
-    url: api.getDatasetFilter,
     method: 'get',
   },
   getMeta: {
@@ -121,6 +93,7 @@ const mapDocumentToLegacy = (doc: Record<string, any>) => ({
   ...doc,
   chunk_num: doc.chunk_num ?? doc.chunk_count,
   kb_id: doc.kb_id || doc.dataset_id,
+  parser_id: doc.parser_id || doc.chunk_method,
 });
 
 const mapChunkPayloadToRest = (payload: Record<string, any>) => ({
@@ -147,14 +120,19 @@ const getAvailableParam = (available?: number) => {
 
 const chunkService = {
   retrievalTest: async (params: Record<string, any>) => {
-    const datasetId = getDatasetId(params);
+    const datasetId = params.dataset_id || params.kb_id || params.knowledge_id;
     if (!datasetId) {
       throw new Error(
         'dataset_id (or kb_id/knowledge_id) is required for retrievalTest',
       );
     }
-    return request.post(api.retrievalTest(datasetId), {
-      data: params,
+    const datasetIds = Array.isArray(datasetId) ? datasetId : [datasetId];
+    const rest = { ...params };
+    delete rest.dataset_id;
+    delete rest.kb_id;
+    delete rest.knowledge_id;
+    return request.post(api.retrievalTest, {
+      data: { ...rest, dataset_ids: datasetIds },
     });
   },
   chunkList: async (params: Record<string, any>) => {
@@ -241,8 +219,21 @@ const kbService = {
   ...chunkService,
 };
 
-export const getKbDetail = (datasetId: string) =>
-  request.get(api.getKbDetail(datasetId));
+export const getKbDetail = async (datasetId: string) => {
+  const response = await request.get(api.getKbDetail(datasetId));
+  // The /api/v1/datasets/<id> endpoint returns chunk_count/document_count,
+  // but legacy consumers (e.g. the GraphRAG/Raptor "magic wand" enable check
+  // in dataset/index.tsx) read chunk_num/doc_num. Normalize both shapes.
+  if (response.data?.code === 0 && response.data.data) {
+    const d = response.data.data;
+    response.data.data = {
+      ...d,
+      chunk_num: d.chunk_num ?? d.chunk_count,
+      doc_num: d.doc_num ?? d.document_count,
+    };
+  }
+  return response;
+};
 
 export const listTag = (knowledgeId: string) =>
   request.get(api.listTag(knowledgeId));
@@ -298,32 +289,15 @@ export const listDocument = (
 export const documentFilter = (kb_id: string) =>
   request.get(api.getDatasetFilter(kb_id), { params: {} });
 
-// Custom upload function that handles dynamic URL using axios directly
 export const uploadDocument = async (datasetId: string, formData: FormData) => {
   const url = api.documentUpload(datasetId);
-  const response = await axios.post(url, formData, {
-    headers: {
-      [Authorization]: getAuthorization(),
-    },
-  });
+  const response = await request.post(url, { data: formData });
   return response.data;
 };
 
 export const createDocument = async (datasetId: string, name: string) => {
   const response = await request.post(api.documentCreate(datasetId), {
     data: { name },
-  });
-  return response.data;
-};
-
-export const webCrawlDocument = async (
-  datasetId: string,
-  formData: FormData,
-) => {
-  const response = await axios.post(api.webCrawl(datasetId), formData, {
-    headers: {
-      [Authorization]: getAuthorization(),
-    },
   });
   return response.data;
 };
@@ -422,11 +396,13 @@ export const kbUpdateMetaData = (
 export function deletePipelineTask({
   kb_id,
   type,
+  wipe,
 }: {
   kb_id: string;
   type: ProcessingType;
+  wipe?: boolean;
 }) {
-  return request.delete(api.unbindPipelineTask(kb_id, type));
+  return request.delete(api.unbindPipelineTask(kb_id, type, wipe));
 }
 
 export default kbService;
