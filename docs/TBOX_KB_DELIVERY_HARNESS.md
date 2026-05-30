@@ -277,7 +277,8 @@
 | **Phase 16** | **G3 Citation 侧栏联动** | `ChatMessageContent` + `ReferenceChunks` 双向高亮 — phase16 plan |
 | **Phase 17** | **S6 漂移例行 + 检索高亮** | Runbook §5 @ ahead 114；`SearchResultList` — phase17 plan |
 | **Phase 18** | **双账号 smoke env** | `tbox_smoke.env.example` + **`TBOX_SMOKE_ENV.md`** — phase18 plan |
-| **矩阵/里程碑** | **Phase 0–18** | 后续：5180 重建 console 手测 Phase 16–17 |
+| **Phase 19** | **ChunkListPanel 共用** | `chunkDisplay.ts` + 引用/检索薄包装 — phase19 plan |
+| **矩阵/里程碑** | **Phase 0–19** | 后续：5180 重建 console 手测 Phase 16–17 |
 
 ### 9.1 阶段总览
 

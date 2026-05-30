@@ -151,6 +151,7 @@
 | **16** | G3 Citation 侧栏联动 | 产品 | **`ChatMessageContent` / `ReferenceChunks`** — phase16 plan |
 | **17** | S6 漂移 + 检索高亮 | 运维/产品 | Runbook §5 **`--fetch`**；**`SearchResultList`** — phase17 plan |
 | **18** | 双账号 smoke env | 运维 | **`scripts/tbox_smoke.env.example`** + Walkthrough 16–17 — phase18 plan |
+| **19** | ChunkListPanel 共用 | 产品 | **`ChunkListPanel`** 统一引用/检索 UI — phase19 plan |
 
 详细 Task 见 implementation plan。
 
