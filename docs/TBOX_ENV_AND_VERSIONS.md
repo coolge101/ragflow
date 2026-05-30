@@ -15,7 +15,7 @@
 | 字段 | 值 |
 |------|-----|
 | 记录日期 | 2026-05-24 |
-| 本 fork 工作区 `HEAD`（文档更新时钉扎） | `ed0e8fff3a8c8c8c8c8c8c8c8c8c8c8c8c8c8c8c` |
+| 本 fork 工作区 `HEAD`（文档更新时钉扎） | `ed0e8fff32029e4f9404e1a495a45c6f949322af` |
 | 备注 | Phase 9 @ `ed0e8fff3`。相对 `origin/main`（2026-05-30 fetch）：**ahead 86 / behind 460** — 见 Runbook §5、`bash scripts/tbox_upstream_divergence.sh --fetch`。 |
 
 ## 3. 常用端口（默认本地开发）
