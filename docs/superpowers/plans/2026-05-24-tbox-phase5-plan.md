@@ -43,6 +43,8 @@
 
 - [x] `uv run python3 scripts/tbox_g3_deepseek_smoke.py`（无 Key 时 `skipped` 分支清晰）
 - [x] `npm run typecheck && npm run build`
-- [ ] Phase 4 + Phase 5 未提交改动一并 commit
+- [x] Phase 4 + Phase 5 未提交改动一并 commit
+
+**下一阶段：** [`2026-05-24-tbox-phase6-plan.md`](./2026-05-24-tbox-phase6-plan.md)
 
 **Plan saved to:** `docs/superpowers/plans/2026-05-24-tbox-phase5-plan.md`

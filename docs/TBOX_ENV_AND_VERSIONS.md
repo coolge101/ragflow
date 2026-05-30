@@ -14,9 +14,9 @@
 
 | 字段 | 值 |
 |------|-----|
-| 记录日期 | 2026-05-01 |
-| 本 fork 工作区 `HEAD`（文档更新时钉扎） | `9031c36206ef35039dd96b0c0c014681c18864a1` |
-| 备注 | 每 2～4 周合并 `infiniflow/ragflow` **main** 后更新本表；若仅文档变更可保留 commit 直至下次代码合并。 |
+| 记录日期 | 2026-05-24 |
+| 本 fork 工作区 `HEAD`（文档更新时钉扎） | `18ce70441eee3d63e631b01cef320e14521fe33b` |
+| 备注 | Phase 4–5 落地（G1 OCR 回退、S5 checklist、G3 smoke、S6/S7 文档）。下次合并 `infiniflow/ragflow` **main** 后更新本表。 |
 
 ## 3. 常用端口（默认本地开发）
 
@@ -33,7 +33,7 @@
 
 | 字段 | 当前值 | 说明 |
 |------|--------|------|
-| `TBOX_API_CONTRACT_VERSION`（后端常量） | **4** | `api/apps/tbox_app.py`；**`GET /v1/tbox/contract`** 与已鉴权 **`GET /v1/tbox/me`** 的 JSON 中 **`tbox_api_contract_version`** 与此一致。 |
+| `TBOX_API_CONTRACT_VERSION`（后端常量） | **5** | `api/apps/tbox_app.py`；**`GET /v1/tbox/contract`** 与已鉴权 **`GET /v1/tbox/me`** 的 JSON 中 **`tbox_api_contract_version`** 与此一致。 |
 | 客户端建议 | 读取 `tbox_api_contract_version`，**≥4** 时识别 **`crawl.manage`** 等扩展权限键 | 权限全集与语义见 **`docs/TBOX_API_BOUNDARY.md`**。 |
 | 采集任务表 | **`tbox_crawl_task`** | 由 `init_database_tables` 创建；HTTP 见 **`docs/TBOX_API_BOUNDARY.md`** §1.2。 |
 

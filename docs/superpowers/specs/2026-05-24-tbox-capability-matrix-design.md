@@ -138,6 +138,7 @@
 | **3** | P2 扩展 | P2 行 | Office 导出、爬取高级源、文档高级能力；矩阵复审 |
 | **4** | G1 闭环 + 交付硬化 | P1 缺口 | G1 冒烟修复、Harness 同步；S5 Docker 准备（见 phase4 plan） |
 | **5** | G3 + S6/S7 | P0/P1 | DeepSeek API 冒烟、上游合并 Runbook、发版对抗 checklist（见 phase5 plan） |
+| **6** | 发版门禁 + S0 | 运维 | `tbox_release_smoke.sh`、基线 commit、Excel UI 提示（见 phase6 plan） |
 
 详细 Task 见 implementation plan。
 

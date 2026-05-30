@@ -710,6 +710,7 @@ export function DocumentsPage() {
               {canUpload ? (
                 <p className="muted" style={{ fontSize: "0.85rem", marginTop: "-0.25rem", marginBottom: "0.65rem" }}>
                   可将文件<strong>拖入本卡片</strong>上传（与「上传文件」相同）。上传后默认为<strong>未开始</strong>，请点下方<strong>开始解析</strong>或「解析本页全部未开始」以触发切片（与本系统文档流程一致）。
+                  <strong>Excel（.xlsx）</strong>在默认分块下须含<strong>表头行 + 至少一行数据</strong>，否则可能 0 chunk（见 <code>TBOX_INGEST_FORMAT_SMOKE.md</code>）。
                   解析过程中列表会<strong>每约 2.5 秒自动刷新</strong>，「进度」列展示后端返回的完成比例与说明。
                 </p>
               ) : null}
