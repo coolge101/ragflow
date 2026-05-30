@@ -36,7 +36,10 @@ export async function loginWithEmailPassword(
     const authorization =
       res.headers.get("Authorization") || res.headers.get("authorization") || "";
 
-    if (data.code !== 0 || !data.data?.access_token || !authorization) {
+    // Post-S6 login returns JWT in Authorization header; access_token may be stripped from JSON.
+    const accessToken = data.data?.access_token || authorization;
+
+    if (data.code !== 0 || !authorization) {
       const base = data.message || "登录失败";
       const httpNote = !res.ok ? `（HTTP ${res.status}）` : "";
       return {
@@ -45,11 +48,11 @@ export async function loginWithEmailPassword(
       };
     }
 
-    const is_superuser = inferSuperuserFromLoginField(data.data.is_superuser, data.data.email);
+    const is_superuser = inferSuperuserFromLoginField(data.data?.is_superuser, data.data?.email);
 
     saveLoginSession({
       authorization,
-      accessToken: data.data.access_token,
+      accessToken,
       userInfo: {
         avatar: data.data.avatar,
         name: data.data.nickname,
