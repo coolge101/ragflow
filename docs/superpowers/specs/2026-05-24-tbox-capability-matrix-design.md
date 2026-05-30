@@ -140,6 +140,7 @@
 | **5** | G3 + S6/S7 | P0/P1 | DeepSeek API 冒烟、上游合并 Runbook、发版对抗 checklist（见 phase5 plan） |
 | **6** | 发版门禁 + S0 | 运维 | `tbox_release_smoke.sh`、基线 commit、Excel UI 提示（见 phase6 plan） |
 | **7** | S7 实测 + 部署闭环 | 运维 | S7 对抗记录、deploy 接入 release smoke、镜像重建说明（见 phase7 plan） |
+| **8** | S6 差异快照 | 运维 | `tbox_upstream_divergence.sh`、基线/里程碑更新（见 phase8 plan） |
 
 详细 Task 见 implementation plan。
 
@@ -172,3 +173,4 @@
 |------|------|
 | 2026-05-24 | 初版：G1–G5 矩阵、非目标、阶段 0–3 摘要；brainstorming 批准 |
 | 2026-05-24 | P1 行回写（G4/G3/G2）；§7 验收勾选；worker 策略见 `common/tbox_crawl_strategy.py` |
+| 2026-05-24 | Phase 0–7 里程碑完成（phase3–7 plan）；G3-MODEL-DEEPSEEK ✅；发版门禁 `tbox_release_smoke.sh` |

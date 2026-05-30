@@ -15,8 +15,8 @@
 | 字段 | 值 |
 |------|-----|
 | 记录日期 | 2026-05-24 |
-| 本 fork 工作区 `HEAD`（文档更新时钉扎） | `18ce70441eee3d63e631b01cef320e14521fe33b` |
-| 备注 | Phase 4–5 落地（G1 OCR 回退、S5 checklist、G3 smoke、S6/S7 文档）。下次合并 `infiniflow/ragflow` **main** 后更新本表。 |
+| 本 fork 工作区 `HEAD`（文档更新时钉扎） | `363d28341b660e68c7388fc54e9e9bf6080e850d` |
+| 备注 | Phase 7 落地（S7 对抗、deploy release smoke、G3 ✅）。相对 `origin/main`：**ahead 84 / behind 0**（见 **`scripts/tbox_upstream_divergence.sh`**）。 |
 
 ## 3. 常用端口（默认本地开发）
 

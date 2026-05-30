@@ -71,8 +71,29 @@ uv run python3 scripts/tbox_g3_deepseek_smoke.py
 
 ---
 
-## 5. 相关文档
+## 5. 差异快照（合并前例行）
+
+无需立即 merge 时，可先跑差异脚本确认 **behind/ahead**：
+
+```bash
+bash scripts/tbox_upstream_divergence.sh
+# 网络可用时刷新 upstream tip：
+bash scripts/tbox_upstream_divergence.sh --fetch
+```
+
+### 2026-05-24 快照（`tbox-deploy` @ `363d28341`）
+
+| 项 | 值 |
+|----|-----|
+| upstream | `origin/main` @ `24af0875e` |
+| behind | **0** |
+| ahead | **84** |
+| 结论 | 当前分支已含 upstream tip；暂无待合并 upstream commit |
+
+---
+
+## 6. 相关文档
 
 - Harness §5、§7.2、§9.1 S6：`docs/TBOX_KB_DELIVERY_HARNESS.md`
 - 环境与基线 commit：`docs/TBOX_ENV_AND_VERSIONS.md`
-- Phase 5 plan：`docs/superpowers/plans/2026-05-24-tbox-phase5-plan.md`
+- Phase 8 plan：`docs/superpowers/plans/2026-05-24-tbox-phase8-plan.md`

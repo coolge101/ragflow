@@ -262,8 +262,8 @@
 | **S2** | **已推进** | `web-tbox/`：**`/login` 邮箱密码登录**（RSA → `/api/v1/auth/login`）、**`/` 控制台**拉取 **`/v1/tbox/me`**（带 `Authorization`）、**退出** 调 **`POST /v1/tbox/logout`**。IA/权限/视觉以 **`docs/TBOX_UI_DESIGN_OVERVIEW.md`**、**`docs/TBOX_UI_DESIGN_DETAIL.md`** 为准；参考原型见 **§2.1**。 |
 | **S3** | **已启动** | **知识库 `/documents`**（含 **文档列表/上传/删除**）；**对话 `/`**；**检索 `/search`**；**用户 `/users`**；**审计 `/audit`**（ingestions）；**`permissions`**（**v4** 含 `crawl.manage`）。**整库 ZIP 导出** 仍视官方 REST 暴露情况。 |
 | **S4** | **已推进** | **`/crawl`** + worker tick；**`extra_config` 策略键**（`tbox_crawl_keywords` / `_max_depth` / `_allowed_domains`）UI + **`common/tbox_crawl_strategy.py`**；专项/定时任务类型。**Crawl-delay、登录/API 源等**见 **§9.4**。 |
-| **S5–S7** | **S5–S7 已推进** | **S5** checklist · **S6** **`TBOX_UPSTREAM_MERGE_RUNBOOK.md`** · **S7** 对抗记录 **`TBOX_S7_ADVERSARIAL_SMOKE.md`**（2026-05-24：4 passed） |
-| **矩阵/下阶段** | **Phase 6 已落地** | Phase 3–6 见各 **phase*-plan**；**Phase 7** 见 **[`2026-05-24-tbox-phase7-plan.md`](./superpowers/plans/2026-05-24-tbox-phase7-plan.md)**。 |
+| **S5–S7** | **S5–S7 已推进** | **S5** checklist · **S6** merge runbook + **`tbox_upstream_divergence.sh`** · **S7** **`TBOX_S7_ADVERSARIAL_SMOKE.md`** |
+| **矩阵/里程碑** | **Phase 0–7 ✅** | 见 **`phase3`–`phase7-plan`**；**Phase 8**（S6 快照）见 **[`2026-05-24-tbox-phase8-plan.md`](./superpowers/plans/2026-05-24-tbox-phase8-plan.md)**。后续：**S6 定期 merge** + **发版 smoke**。 |
 
 ### 9.1 阶段总览
 
