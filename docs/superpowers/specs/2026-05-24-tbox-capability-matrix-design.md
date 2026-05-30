@@ -101,7 +101,7 @@
 | G3-MODEL-KEY | 供应商 API Key、模型列表 | ✅ profile/model | ✅ `/kb` | `/v1/llm/*` | ✅ | |
 | G3-MODEL-DEEPSEEK | DeepSeek 对话 | ✅ conf/models | ✅ API 冒烟 + `/kb` Key | 官方 LLM | **P0** | **`scripts/tbox_g3_deepseek_smoke.py`**；新租户仍须在 `/kb` 配 Key |
 | G3-APP-CRUD | 对话应用完整配置 | ✅ next-chats | ✅ `/apps` | `/api/v1/chats` | P0 | Chat Apps 主体已完成 |
-| G3-CHAT-STREAM | 流式对话 + 引用 | ✅ | ✅ `/` | SSE completions | ✅ | `reference.chunks` |
+| G3-CHAT-STREAM | 流式对话 + 引用 | ✅ | ✅ `/` | SSE completions | ✅ | `reference.chunks` + **Citation 点击高亮**（Phase 16） |
 | G3-CHAT-SESSION | 会话列表/切换 | ✅ | ✅ `/` | chats sessions API | ✅ | |
 | G3-SCENARIO | **咨询/决策/辅导** 场景模板 | ❌ 无预设 | ✅ `/apps` 模板 | `/apps` 数据 | **P1** | 三套 Prompt/检索预设 |
 | G3-SEARCH | 知识库内检索试用 | ✅ next-search | ✅ `/search` | dataset search | ✅ | |
