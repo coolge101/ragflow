@@ -15,7 +15,7 @@
 | 字段 | 值 |
 |------|-----|
 | 记录日期 | 2026-05-30 |
-| 本 fork 工作区 `HEAD`（文档更新时钉扎） | `5befefa25`（完整 hash 见 git log） |
+| 本 fork 工作区 `HEAD`（文档更新时钉扎） | `5befefa256f70aaf6d48302f08c334ed4f574dd1` |
 | 备注 | **Phase 16** @ `5befefa25`。Citation 侧栏联动 ✅。S6 merge @ `f9bd37fdd`；**ahead 108 / behind 0**。 |
 
 ## 3. 常用端口（默认本地开发）
