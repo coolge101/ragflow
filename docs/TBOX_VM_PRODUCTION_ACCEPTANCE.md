@@ -79,14 +79,15 @@ LAN IP：`hostname -I | awk '{print $1}'`
 | 日期 | 2026-05-30 |
 | VM / LAN IP | 10.40.92.240 |
 | Console | http://10.40.92.240:5180/login |
-| Git HEAD | `705630f4e` |
+| Git HEAD | `e1efa0025` |
 | `tbox_vm_production_acceptance.sh` | ☑ pass |
 | `tbox_login_smoke.sh` | ☑ pass |
 | `tbox_p2_regression_smoke.sh` | ☑ pass |
 | `tbox_chat_apps_smoke.sh` | ☑ pass |
+| `tbox_permissions_smoke.sh` | ☑ pass（admin） |
 | §3 内网与双账号 A–D | ☑ 手测 2026-05-30 |
 | §4 产品动线 Walkthrough | ☑ 手测 2026-05-30 |
-| 备注 | Phase 13–14 手测 + 自动化归档 ✅；Phase 15 permissions smoke 开发中 |
+| 备注 | Phase 13–15 归档 ✅；双账号 API 回归可设 `TBOX_SMOKE_NORMAL_*` |
 
 ---
 

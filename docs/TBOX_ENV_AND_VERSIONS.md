@@ -15,8 +15,8 @@
 | 字段 | 值 |
 |------|-----|
 | 记录日期 | 2026-05-30 |
-| 本 fork 工作区 `HEAD`（文档更新时钉扎） | `6a93e01382ce15737083d97c1e4efad100b93893` |
-| 备注 | **Phase 15** @ `HEAD`。5180 手测 + chat apps smoke ✅；`tbox_permissions_smoke.sh` ✅。S6 merge @ `f9bd37fdd`；**ahead 106 / behind 0**。 |
+| 本 fork 工作区 `HEAD`（文档更新时钉扎） | `e1efa00257a1e2e536b26c9797e406e0cd59cd3b` |
+| 备注 | **Phase 15** @ `e1efa0025`。5180 手测 + chat apps + permissions smoke ✅。S6 merge @ `f9bd37fdd`；**ahead 106 / behind 0**。 |
 
 ## 3. 常用端口（默认本地开发）
 
