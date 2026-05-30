@@ -15,7 +15,7 @@
 | 字段 | 值 |
 |------|-----|
 | 记录日期 | 2026-05-30 |
-| 本 fork 工作区 `HEAD`（文档更新时钉扎） | `bfb0cb63c8f8e8e8e8e8e8e8e8e8e8e8e8e8e8e8` |
+| 本 fork 工作区 `HEAD`（文档更新时钉扎） | `bfb0cb63cf6be5f33e568e9c18291ff8ad8014df` |
 | 备注 | **Phase 13** @ `bfb0cb63c`。P2 回归 smoke + 漂移记录脚本 ✅。S6 merge @ `f9bd37fdd`；**ahead 104 / behind 0**。 |
 
 ## 3. 常用端口（默认本地开发）
