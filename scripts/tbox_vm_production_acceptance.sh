@@ -30,7 +30,7 @@ if command -v hostname >/dev/null 2>&1; then
 fi
 echo ""
 
-echo "==> [1/4] Docker stack"
+echo "==> [1/5] Docker stack"
 if ! bash scripts/tbox_verify_stack_image.sh; then
   if [[ "${TBOX_ALLOW_STOCK_IMAGE:-0}" == "1" ]]; then
     echo "WARN: stack image check failed (allowed by TBOX_ALLOW_STOCK_IMAGE=1)"
@@ -52,7 +52,7 @@ else
 fi
 echo ""
 
-echo "==> [2/4] Console HTTP"
+echo "==> [2/5] Console HTTP"
 if curl -sf -o /dev/null -m 10 "${CONSOLE_URL}/login"; then
   echo "OK: ${CONSOLE_URL}/login"
 else
@@ -61,7 +61,7 @@ else
 fi
 echo ""
 
-echo "==> [3/4] API health"
+echo "==> [3/5] API health"
 if curl -sf "${API}/v1/tbox/health" | python3 -m json.tool >/dev/null; then
   curl -sf "${API}/v1/tbox/health" | python3 -m json.tool | head -6
   echo "OK: tbox health"
@@ -71,7 +71,15 @@ else
 fi
 echo ""
 
-echo "==> [4/4] Release smoke (G1 + G3)"
+echo "==> [4/5] Console login (5180 proxy + /v1/tbox/me)"
+if bash scripts/tbox_login_smoke.sh; then
+  echo "OK: login smoke"
+else
+  fail=1
+fi
+echo ""
+
+echo "==> [5/5] Release smoke (G1 + G3) + P2 regression"
 export TBOX_SMOKE_BASE_URL="${API}"
 export TBOX_SMOKE_RUNNER="${TBOX_SMOKE_RUNNER:-docker}"
 if bash scripts/tbox_release_smoke.sh; then

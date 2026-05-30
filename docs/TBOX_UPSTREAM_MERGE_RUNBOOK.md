@@ -98,6 +98,19 @@ bash scripts/tbox_upstream_divergence.sh
 bash scripts/tbox_upstream_divergence.sh --fetch
 ```
 
+### 2026-05-30 快照（`--fetch` 后）（`tbox-deploy` @ `a461ea64d`）
+
+| 项 | 值 |
+|----|-----|
+| HEAD | `a461ea64d` — Phase 12/13 验收记录与登录 JWT 修复 |
+| upstream | `origin/main` @ `cd18cfab7` |
+| merge-base | `cd18cfab7` |
+| behind | **0** |
+| ahead | **103** |
+| 结论 | behind 0；无缺失 upstream commit；下次 merge 前再 `--fetch` |
+
+生成：`bash scripts/tbox_record_upstream_drift.sh --fetch`
+
 ### 2026-05-30 合并后（`tbox-deploy` @ `f9bd37fdd`）
 
 | 项 | 值 |

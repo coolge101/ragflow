@@ -33,6 +33,10 @@ bash scripts/tbox_vm_production_acceptance.sh
 bash scripts/tbox_record_vm_acceptance.sh
 # 含完整 smoke：
 bash scripts/tbox_record_vm_acceptance.sh --run-smoke
+# 上游漂移快照（Runbook §5）：
+bash scripts/tbox_record_upstream_drift.sh --fetch
+# P2 API 回归（crawl auth + audit ingestions）：
+bash scripts/tbox_p2_regression_smoke.sh
 ```
 
 **通过标准**：退出码 **0**（Docker 容器、5180/login、health、release smoke）。
