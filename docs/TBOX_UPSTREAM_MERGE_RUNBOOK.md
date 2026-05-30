@@ -54,20 +54,20 @@ uv run python3 scripts/tbox_g3_deepseek_smoke.py
 
 ---
 
-## 4. 合并记录模板
+## 4. 合并记录
+
+### 2026-05-30 — S6 首次大 merge（460 commits）
 
 | 字段 | 值 |
 |------|-----|
-| 日期 | |
-| 操作人 | |
-| upstream 范围 | `upstream/main` @ `<commit>` |
-| 本 fork 合并前 | `<commit>` |
-| 合并后 HEAD | `<commit>` |
-| 冲突文件 | |
-| 验证 | health / pytest / web-tbox build / G1 smoke |
-| 备注 | |
-
-归档：团队 Wiki 或本仓库 **`docs/TBOX_ENV_AND_VERSIONS.md`** §2 备注行。
+| 日期 | 2026-05-30 |
+| 操作人 | Cursor Agent |
+| upstream 范围 | `origin/main` @ `cd18cfab7` |
+| 本 fork 合并前 | `7f70d1244`（Phase 9） |
+| 合并后 HEAD | `f9bd37fdd` |
+| 冲突文件 | `api/apps/__init__.py`、`api/db/db_models.py`、`api/db/init_data.py`、`docker/README.md` |
+| 验证 | health ✅ · web-tbox typecheck/build ✅ · pytest/G1/G3 smoke ⚠️ 本地 `uv sync` 需 Python 3.13+ 且 spacy 模型下载（网络） |
+| 备注 | 保留 TBOX：`tbox_app` 注册日志、`fix_empty_tenant_model_id`、SDK url_prefix；采纳 upstream `get_secret_key()` 与 TenantModel* 表 |
 
 ---
 
@@ -80,6 +80,16 @@ bash scripts/tbox_upstream_divergence.sh
 # 网络可用时刷新 upstream tip：
 bash scripts/tbox_upstream_divergence.sh --fetch
 ```
+
+### 2026-05-30 合并后（`tbox-deploy` @ `f9bd37fdd`）
+
+| 项 | 值 |
+|----|-----|
+| upstream | `origin/main` @ `cd18cfab7` |
+| merge-base | `cd18cfab7`（与 upstream tip 一致） |
+| behind | **0** |
+| ahead | **90** |
+| 结论 | S6 merge 完成；下次 merge 前再 `--fetch` 查漂移 |
 
 ### 2026-05-30 快照（`tbox-deploy` @ `af77e6b85`，`--fetch` 后）
 

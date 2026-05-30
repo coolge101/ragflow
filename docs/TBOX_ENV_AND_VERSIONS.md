@@ -6,7 +6,7 @@
 
 | 组件 | 版本要求 | 来源 |
 |------|-----------|------|
-| Python | **3.12–3.14**（与 `pyproject.toml` 中 `requires-python` 一致） | 仓库根 `pyproject.toml` |
+| Python | **3.13–3.14**（与 `pyproject.toml` 中 `requires-python` 一致；S6 merge 后自 3.12 升级） | 仓库根 `pyproject.toml` |
 | Node（官方 `web/` 与 **web-tbox**） | **>= 18.20.4**（与 `web/package.json` engines 对齐；推荐 **20 LTS**） | `web/package.json` |
 | 操作系统（交付） | **Linux**，架构 **linux/amd64**（§7.2） | 交付约束 |
 
@@ -14,9 +14,9 @@
 
 | 字段 | 值 |
 |------|-----|
-| 记录日期 | 2026-05-24 |
-| 本 fork 工作区 `HEAD`（文档更新时钉扎） | `ed0e8fff32029e4f9404e1a495a45c6f949322af` |
-| 备注 | Phase 9 @ `ed0e8fff3`。相对 `origin/main`（2026-05-30 fetch）：**ahead 86 / behind 460** — 见 Runbook §5、`bash scripts/tbox_upstream_divergence.sh --fetch`。 |
+| 记录日期 | 2026-05-30 |
+| 本 fork 工作区 `HEAD`（文档更新时钉扎） | `f9bd37fdd285b0e130311c0c61c216008ac8faeb` |
+| 备注 | **S6 merge** @ `f9bd37fdd`（upstream `cd18cfab7`）。相对 `origin/main`：**ahead 90 / behind 0** — `bash scripts/tbox_upstream_divergence.sh`。 |
 
 ## 3. 常用端口（默认本地开发）
 
