@@ -50,7 +50,24 @@ bash docker/tbox-compose-up.sh
 
 **amd64**：目标平台 **linux/amd64**。显式构建：`docker build --platform linux/amd64 -f Dockerfile -t ragflow-tbox:local .`；验证：`docker inspect ragflow-tbox:local --format '{{.Architecture}}'`。
 
-**验收**：`curl -sf http://127.0.0.1:9380/v1/tbox/health`；可选 `uv run python3 scripts/tbox_g1_ingest_format_smoke.py`（G1 四格式）。详 **[`TBOX_DEPLOY_RUNBOOK.md`](./TBOX_DEPLOY_RUNBOOK.md)** §3.1–3.4。
+**验收**：`curl -sf http://127.0.0.1:9380/v1/tbox/health`；可选 `bash scripts/tbox_release_smoke.sh`（或 `TBOX_SMOKE_RUNNER=docker` 在容器内跑 G1/G3，绕过宿主机 `uv sync`）。详 **[`TBOX_DEPLOY_RUNBOOK.md`](./TBOX_DEPLOY_RUNBOOK.md)** §3.1–3.4。
+
+### 1.2 S6 上游 merge 后（必做）
+
+合并 `origin/main` 后须 **重建 API 镜像**（容器内代码不会自动更新）：
+
+```bash
+# 一键：重建 + typecheck/build + release smoke
+bash scripts/tbox_post_upstream_merge.sh
+# 国内网络可加：TBOX_CHINA_DOWNLOAD=1
+# 镜像已重建仅验 smoke：TBOX_SKIP_BUILD=1 bash scripts/tbox_post_upstream_merge.sh
+```
+
+| 项 | 说明 |
+|----|------|
+| Python | merge 后 **`>=3.13`**（`pyproject.toml`）；宿主机 `uv sync` 若 GitHub spacy 超时，用 **`TBOX_SMOKE_RUNNER=docker`** |
+| 记录 | [`TBOX_UPSTREAM_MERGE_RUNBOOK.md`](./TBOX_UPSTREAM_MERGE_RUNBOOK.md) §4 |
+| 差异 | `bash scripts/tbox_upstream_divergence.sh --fetch` |
 
 ## 2. 启动 RAGFlow API
 

@@ -15,6 +15,20 @@ export PYTHONPATH="$ROOT"
 BASE="${TBOX_SMOKE_BASE_URL:-http://127.0.0.1:9380}"
 fail=0
 
+_run_python() {
+  local script="$1"
+  if [[ "${TBOX_SMOKE_RUNNER:-}" == "docker" ]]; then
+    local c="${TBOX_SMOKE_CONTAINER:-docker-ragflow-cpu-1}"
+    local base="${TBOX_SMOKE_DOCKER_BASE_URL:-http://127.0.0.1:9380}"
+    local name
+    name="$(basename "$script")"
+    docker cp "$script" "${c}:/tmp/tbox-smoke-${name}"
+    docker exec -e PYTHONPATH=/ragflow -e TBOX_SMOKE_BASE_URL="$base" "$c" python3 "/tmp/tbox-smoke-${name}"
+  else
+    uv run python3 "$script"
+  fi
+}
+
 echo "==> TBOX release smoke @ ${BASE}"
 echo ""
 
@@ -29,7 +43,7 @@ fi
 echo ""
 
 echo "==> [2/3] G1 ingest format smoke"
-if ! uv run python3 scripts/tbox_g1_ingest_format_smoke.py | tee /tmp/tbox-g1-smoke.json | python3 -c "
+if ! _run_python scripts/tbox_g1_ingest_format_smoke.py | tee /tmp/tbox-g1-smoke.json | python3 -c "
 import json, sys
 d = json.load(sys.stdin)
 for r in d.get('results', []):
@@ -43,7 +57,7 @@ fi
 echo ""
 
 echo "==> [3/3] G3 DeepSeek smoke"
-g3_out="$(uv run python3 scripts/tbox_g3_deepseek_smoke.py)"
+g3_out="$(_run_python scripts/tbox_g3_deepseek_smoke.py)"
 echo "$g3_out" | python3 -m json.tool
 if ! echo "$g3_out" | python3 -c "
 import json, sys

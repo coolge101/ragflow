@@ -39,17 +39,20 @@ git merge upstream/main              # 或：git rebase upstream/main（团队�
 ## 3. 合并后验证
 
 ```bash
-# Python 单测（节选）
-uv run pytest test/unit_test/common/test_tbox_crawl_strategy.py -q
-uv run pytest test/unit_test/api/apps/tbox_app_isolated -m tbox_app_isolated -q
-
-# 前端
+# 推荐：重建镜像 + smoke（见 scripts/tbox_post_upstream_merge.sh）
+TBOX_BUILD_RAGFLOW=1 TBOX_CONSOLE=1 bash docker/tbox-compose-up.sh
 cd web-tbox && npm run typecheck && npm run build
 
 # API 冒烟（Docker 栈运行中）
 curl -sf http://127.0.0.1:9380/v1/tbox/health
-uv run python3 scripts/tbox_g1_ingest_format_smoke.py
-uv run python3 scripts/tbox_g3_deepseek_smoke.py
+# 宿主机 uv 因 spacy/GitHub 超时时：
+TBOX_SMOKE_RUNNER=docker bash scripts/tbox_release_smoke.sh
+# 或完整 post-merge：
+bash scripts/tbox_post_upstream_merge.sh
+
+# Python 单测（需 Python 3.13+ 且 uv sync 成功）
+uv run pytest test/unit_test/common/test_tbox_crawl_strategy.py -q
+uv run pytest test/unit_test/api/apps/tbox_app_isolated -m tbox_app_isolated -q
 ```
 
 ---
