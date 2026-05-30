@@ -81,14 +81,24 @@ bash scripts/tbox_upstream_divergence.sh
 bash scripts/tbox_upstream_divergence.sh --fetch
 ```
 
-### 2026-05-24 快照（`tbox-deploy` @ `363d28341`）
+### 2026-05-30 快照（`tbox-deploy` @ `af77e6b85`，`--fetch` 后）
 
 | 项 | 值 |
 |----|-----|
-| upstream | `origin/main` @ `24af0875e` |
+| upstream | `origin/main` @ `cd18cfab7` |
+| merge-base | `24af0875e` |
+| behind | **460** |
+| ahead | **85** |
+| 结论 | upstream 已前进；须按 §2 规划 merge/rebase（勿长期漂移） |
+
+### 2026-05-24 快照（`tbox-deploy` @ `363d28341`，未 fetch）
+
+| 项 | 值 |
+|----|-----|
+| upstream | `origin/main` @ `24af0875e`（本地缓存） |
 | behind | **0** |
 | ahead | **84** |
-| 结论 | 当前分支已含 upstream tip；暂无待合并 upstream commit |
+| 结论 | 本地 `origin/main` 过期；须 `bash scripts/tbox_upstream_divergence.sh --fetch` 再决策 |
 
 ---
 

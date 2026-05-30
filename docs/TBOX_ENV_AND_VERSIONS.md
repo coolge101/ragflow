@@ -15,8 +15,8 @@
 | 字段 | 值 |
 |------|-----|
 | 记录日期 | 2026-05-24 |
-| 本 fork 工作区 `HEAD`（文档更新时钉扎） | `363d28341b660e68c7388fc54e9e9bf6080e850d` |
-| 备注 | Phase 7 落地（S7 对抗、deploy release smoke、G3 ✅）。相对 `origin/main`：**ahead 84 / behind 0**（见 **`scripts/tbox_upstream_divergence.sh`**）。 |
+| 本 fork 工作区 `HEAD`（文档更新时钉扎） | `af77e6b855a6435900532250f1d3c4cd5441a553` |
+| 备注 | Phase 8 @ `af77e6b85`。相对 `origin/main`（2026-05-30 fetch）：**ahead 85 / behind 460** — 见 Runbook §5、`bash scripts/tbox_upstream_divergence.sh --fetch`。 |
 
 ## 3. 常用端口（默认本地开发）
 
