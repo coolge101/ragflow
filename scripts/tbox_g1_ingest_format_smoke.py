@@ -28,6 +28,14 @@ PASSWORD = os.environ.get("TBOX_SMOKE_PASSWORD", "admin")
 DATE_TAG = os.environ.get("TBOX_SMOKE_DATE", "20260524")
 PARSE_TIMEOUT_SEC = int(os.environ.get("TBOX_SMOKE_PARSE_TIMEOUT", "180"))
 
+# 与 web-tbox G1 向导一致：图片须 picture 分块，naive 不解析独立 PNG。
+CHUNK_METHOD_BY_LABEL = {
+    "PDF": "naive",
+    "Word": "naive",
+    "Excel": "naive",
+    "图片": "picture",
+}
+
 
 @dataclass
 class FormatResult:
@@ -60,11 +68,11 @@ def headers(auth: str) -> dict[str, str]:
     return {"Authorization": auth, "Content-Type": "application/json"}
 
 
-def create_dataset(auth: str, name: str) -> str:
+def create_dataset(auth: str, name: str, chunk_method: str = "naive") -> str:
     r = requests.post(
         f"{BASE}/api/v1/datasets",
         headers=headers(auth),
-        json={"name": name, "permission": "me", "chunk_method": "naive"},
+        json={"name": name, "permission": "me", "chunk_method": chunk_method},
         timeout=30,
     )
     body = r.json()
@@ -186,14 +194,19 @@ def search_hit(auth: str, dataset_id: str, keyword: str) -> bool:
 
 def run_smoke() -> dict:
     auth = login()
-    ds_name = f"TBOX-G1-SMOKE-{DATE_TAG}"
-    dataset_id = create_dataset(auth, ds_name)
     sample_dir = Path(os.environ.get("TBOX_SMOKE_TMP", "/tmp/tbox-g1-smoke")) / DATE_TAG
     samples = make_samples(sample_dir)
     results: list[FormatResult] = []
+    dataset_ids: dict[str, str] = {}
 
     for label, (path, kw) in samples.items():
         note_parts: list[str] = []
+        chunk_method = CHUNK_METHOD_BY_LABEL.get(label, "naive")
+        if chunk_method not in dataset_ids:
+            ds_name = f"TBOX-G1-SMOKE-{DATE_TAG}-{chunk_method}"
+            dataset_ids[chunk_method] = create_dataset(auth, ds_name, chunk_method)
+        dataset_id = dataset_ids[chunk_method]
+
         doc_id = upload_file(auth, dataset_id, path)
         upload_ok = bool(doc_id)
         if not upload_ok:
@@ -230,8 +243,7 @@ def run_smoke() -> dict:
 
     return {
         "base_url": BASE,
-        "dataset_id": dataset_id,
-        "dataset_name": ds_name,
+        "dataset_ids": dataset_ids,
         "email": EMAIL,
         "date": DATE_TAG,
         "results": [asdict(r) for r in results],

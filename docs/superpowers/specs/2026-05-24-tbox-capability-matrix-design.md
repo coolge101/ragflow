@@ -75,7 +75,7 @@
 | G1-KB-CREATE | 新建空知识库 | ✅ | ✅ `/documents` | 官方 REST | ✅ | 需 `doc.upload` 或 `kb.configure` |
 | G1-KB-DELETE | 删除整库 | ✅ | ✅ `/documents`、`/kb` | 官方 REST | ✅ | 需 `kb.dangerous` |
 | G1-DOC-DELETE | 删除单文档 | ✅ | ✅ `/documents` | 官方 REST | ✅ | 需 `doc.delete` |
-| G1-OCR-IMAGE | 图片/OCR 深度理解 | ✅ deepdoc | ⚠️ 随 parser，无单独向导 | deepdoc | P1 | 2026-05-24 冒烟四格式 ✅；PNG 无 image2text 时 OCR 回退（`picture.py`）；Excel 须表头+数据行，见 smoke §5 |
+| G1-OCR-IMAGE | 图片/OCR 深度理解 | ✅ deepdoc | ✅ **`/documents` G1 向导** | deepdoc | P1 | 格式表 + 分块提示；PNG `picture` + OCR 回退；Excel 表头+数据行 |
 | G1-DOC-REPARSE | 文档重解析 | ✅ | ✅ **`/documents`** ingest | 官方 REST | P2 | `doc.reparse` + `POST /documents/ingest` |
 | G1-DOC-VERSION | 文档版本管理 | ⚠️ 视版本 | ❌ | 官方 REST | P2 | 非目标可延后 |
 | G1-KB-ZIP | 整库 ZIP 导入/导出 | ⚠️ 无专用 REST | ✅ 浏览器 ZIP | `GET /v1/document/get` + upload | P2 | `export.data` / `doc.upload` |
@@ -141,6 +141,7 @@
 | **6** | 发版门禁 + S0 | 运维 | `tbox_release_smoke.sh`、基线 commit、Excel UI 提示（见 phase6 plan） |
 | **7** | S7 实测 + 部署闭环 | 运维 | S7 对抗记录、deploy 接入 release smoke、镜像重建说明（见 phase7 plan） |
 | **8** | S6 差异快照 | 运维 | `tbox_upstream_divergence.sh`、基线/里程碑更新（见 phase8 plan） |
+| **9** | VM 验收 + G1 向导 | 产品/运维 | **`TBOX_VM_PRODUCTION_ACCEPTANCE.md`**、`G1IngestFormatGuide`（见 phase9 plan） |
 
 详细 Task 见 implementation plan。
 

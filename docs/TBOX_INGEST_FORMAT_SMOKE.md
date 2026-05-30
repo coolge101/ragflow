@@ -59,18 +59,18 @@
 | PDF | ✅ | ✅（1 chunk） | ✅ | ☐ 未测 | keyword `TBOX-SMOKE-20260524-PDF` |
 | Word | ✅ | ✅（1 chunk） | ✅ | ☐ 未测 | keyword `TBOX-SMOKE-20260524-DOCX` |
 | Excel | ✅ | ✅（1 chunk） | ✅ | ☐ 未测 | 样本须 **表头行 + 数据行**（见脚本） |
-| 图片 | ✅ | ✅（1 chunk） | ✅ | ☐ 未测 | OCR 回退：`picture.py` 在无 image2text 时仍用 OCR 文本 |
+| 图片 | ✅ | ✅（1 chunk） | ✅ | ☐ 未测 | 知识库须 **`picture`** 分块；OCR 回退见 `picture.py` |
 
 **测试人 / 日期 / 环境**：
 
 - **测试人**：Cursor Agent（API 冒烟脚本，替代 UI 手测 §2–3）
 - **日期**：2026-05-24（Phase 4 Task 16 复测通过）
 - **环境**：`http://127.0.0.1:9380` · Docker CPU 栈 · 账号 `admin@ragflow.io`
-- **知识库**：`TBOX-G1-SMOKE-20260524`（`chunk_method=naive`）
+- **知识库**：`TBOX-G1-SMOKE-20260524-naive`（PDF/Word/Excel）+ `...-picture`（PNG）
 - **脚本**：`scripts/tbox_g1_ingest_format_smoke.py`
 - **§4 对话引用**：未执行
 
-**结论**：四种格式上传 → 解析 → 检索链路均通过。Excel 单行单元格在 `ExcelParser` 下仍为 0 chunk（须表头+数据行或使用 `table` 分块）；PNG 在未配置 image2text 时依赖 **`rag/app/picture.py` OCR 回退**（Phase 4 修复）。
+**结论**：四种格式上传 → 解析 → 检索链路均通过。Excel 单行单元格在 `ExcelParser` 下仍为 0 chunk（须表头+数据行或使用 `table` 分块）；**独立 PNG 须 `picture` 分块**（与 G1 向导 UI 一致）；未配 image2text 时依赖 **`rag/app/picture.py` OCR 回退**。
 
 ---
 

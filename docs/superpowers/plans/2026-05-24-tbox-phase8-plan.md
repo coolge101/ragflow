@@ -42,3 +42,5 @@
 - [x] `bash scripts/tbox_release_smoke.sh`
 
 **Plan saved to:** `docs/superpowers/plans/2026-05-24-tbox-phase8-plan.md`
+
+**后续：** [`2026-05-24-tbox-phase9-plan.md`](./2026-05-24-tbox-phase9-plan.md)（VM 验收 + G1-OCR 向导 UI）

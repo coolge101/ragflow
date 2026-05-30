@@ -1,8 +1,10 @@
 import { type FormEvent, useCallback, useEffect, useRef, useState } from "react";
 import { ApiErrorBanner } from "../components/ApiErrorBanner";
-import { createDataset, deleteDatasets, listDatasets, type DatasetRow } from "../api/datasets";
+import { G1IngestFormatGuide } from "../components/G1IngestFormatGuide";
+import { createDataset, deleteDatasets, getDataset, listDatasets, type DatasetRow } from "../api/datasets";
 import { deleteDocuments, listDocuments, parseDocuments, reparseDocuments, uploadDocuments, type DocRow } from "../api/datasetDocuments";
 import { exportDatasetZip, importDatasetZipFile } from "../utils/datasetZipTransfer";
+import { g1CreateModalHint, g1UploadChunkMethodWarning } from "../utils/g1IngestFormatGuide";
 import { hasPermission } from "../constants/permissions";
 import { useAuth } from "../context/AuthContext";
 
@@ -150,6 +152,8 @@ export function DocumentsPage() {
   const [createChunkMethod, setCreateChunkMethod] = useState<string>("naive");
   const [createBusy, setCreateBusy] = useState(false);
   const [createError, setCreateError] = useState<string | null>(null);
+  const [activeKbChunkMethod, setActiveKbChunkMethod] = useState<string>("naive");
+  const [uploadFormatWarning, setUploadFormatWarning] = useState<string | null>(null);
 
   const kbTotalPages = Math.max(1, Math.ceil(total / KB_PAGE_SIZE));
   const docsTotalPages = Math.max(1, Math.ceil(docsTotal / DOCS_PAGE_SIZE));
@@ -229,6 +233,32 @@ export function DocumentsPage() {
   useEffect(() => {
     void load();
   }, [load]);
+
+  useEffect(() => {
+    if (!activeKb) {
+      setActiveKbChunkMethod("naive");
+      setUploadFormatWarning(null);
+      return;
+    }
+    let cancelled = false;
+    void (async () => {
+      try {
+        const { body } = await getDataset(activeKb);
+        if (cancelled || body.code !== 0) {
+          return;
+        }
+        const cm = String(body.data?.chunk_method || "naive");
+        setActiveKbChunkMethod(cm);
+      } catch {
+        if (!cancelled) {
+          setActiveKbChunkMethod("naive");
+        }
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [activeKb]);
 
   useEffect(() => {
     if (!activeKb) {
@@ -507,6 +537,16 @@ export function DocumentsPage() {
     }
   }
 
+  function onFilesIntent(files: FileList | File[] | null) {
+    if (!files?.length) {
+      setUploadFormatWarning(null);
+      return;
+    }
+    const arr = Array.from(files as ArrayLike<File>);
+    setUploadFormatWarning(g1UploadChunkMethodWarning(arr, activeKbChunkMethod));
+    void onFilesSelected(files);
+  }
+
   async function onFilesSelected(files: FileList | File[] | null) {
     if (!activeKb || !files?.length) {
       return;
@@ -552,6 +592,8 @@ export function DocumentsPage() {
         <strong>整库 ZIP</strong>：无专用 REST；导出通过 <code>GET /v1/document/get/&lt;doc_id&gt;</code> 拉取原文件并在浏览器打包（需{" "}
         <code>export.data</code>）；导入解压后走 multipart 上传（需 <code>doc.upload</code>）。大库导出前会确认。
       </p>
+
+      <G1IngestFormatGuide />
 
       {error ? (
         <ApiErrorBanner
@@ -693,7 +735,7 @@ export function DocumentsPage() {
                 }
                 e.preventDefault();
                 e.stopPropagation();
-                void onFilesSelected(e.dataTransfer.files);
+                void onFilesIntent(e.dataTransfer.files);
               }}
               style={{
                 marginTop: "1.25rem",
@@ -712,6 +754,27 @@ export function DocumentsPage() {
                   可将文件<strong>拖入本卡片</strong>上传（与「上传文件」相同）。上传后默认为<strong>未开始</strong>，请点下方<strong>开始解析</strong>或「解析本页全部未开始」以触发切片（与本系统文档流程一致）。
                   <strong>Excel（.xlsx）</strong>在默认分块下须含<strong>表头行 + 至少一行数据</strong>，否则可能 0 chunk（见 <code>TBOX_INGEST_FORMAT_SMOKE.md</code>）。
                   解析过程中列表会<strong>每约 2.5 秒自动刷新</strong>，「进度」列展示后端返回的完成比例与说明。
+                </p>
+              ) : null}
+              {uploadFormatWarning ? (
+                <p
+                  style={{
+                    fontSize: "0.85rem",
+                    marginBottom: "0.65rem",
+                    padding: "0.5rem 0.65rem",
+                    background: "#fffbeb",
+                    border: "1px solid #fcd34d",
+                    borderRadius: 6,
+                    color: "#92400e",
+                  }}
+                >
+                  {uploadFormatWarning}
+                  {canConfigureKb ? (
+                    <>
+                      {" "}
+                      <a href="/kb">去知识库配置</a> 修改分块方式（当前：<code>{activeKbChunkMethod}</code>）。
+                    </>
+                  ) : null}
                 </p>
               ) : null}
               <p className="muted" style={{ fontSize: "0.82rem", marginBottom: "0.65rem", maxWidth: 920 }}>
@@ -737,7 +800,7 @@ export function DocumentsPage() {
                       multiple
                       style={{ display: "none" }}
                       accept=".pdf,.doc,.docx,.txt,.md,.html,.ppt,.pptx,.xls,.xlsx,.csv,.json"
-                      onChange={(ev) => void onFilesSelected(ev.target.files)}
+                      onChange={(ev) => onFilesIntent(ev.target.files)}
                     />
                     <button
                       type="button"
@@ -1056,6 +1119,12 @@ export function DocumentsPage() {
                   </option>
                 ))}
               </select>
+              {g1CreateModalHint(createChunkMethod) ? (
+                <p className="muted" style={{ fontSize: "0.82rem", marginTop: "0.35rem", marginBottom: 0 }}>
+                  {g1CreateModalHint(createChunkMethod)}
+                </p>
+              ) : null}
+              <G1IngestFormatGuide compact />
               {createError ? (
                 <p style={{ color: "#b91c1c", fontSize: "0.9rem", marginTop: "0.75rem", marginBottom: 0 }}>{createError}</p>
               ) : null}

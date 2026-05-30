@@ -245,7 +245,7 @@
 | 2026-05-02 | **§9.4.2**：**`effective_retry_statuses`** — 环境变量 **`TBOX_CRAWL_RETRY_STATUSES`** / **`TBOX_CRAWL_RETRY_EXTRA_STATUSES`** 与 **`extra_config.tbox_crawl_retry_extra_statuses`** 配置白名单；**`DEFAULT_RETRY_STATUS_CODES`**；**`TBOX_API_BOUNDARY` §1.2–1.3** 同步 |
 | 2026-05-02 | **§9.4.2**：**`extra_config.tbox_crawl_retry_statuses`** 任务级全量白名单（**`effective_retry_statuses`** 第二优先级） | **`TBOX_API_BOUNDARY` §1.2** 同步 |
 | 2026-05-24 | **§1** 升级为 G1–G5「咨询/决策/辅导」产品目标；新增能力矩阵 spec 与下一阶段 plan；§7.5 DeepSeek 手测仅 `web-tbox` |
-| 2026-05-24 | **P1 落地**：G4 导出、G3 场景模板、G2 爬取策略 UI+worker、G1 手测清单；验收/`journeySteps`/phase3 plan 同步 |
+| 2026-05-24 | **Phase 9**：**`TBOX_VM_PRODUCTION_ACCEPTANCE.md`** + **`tbox_vm_production_acceptance.sh`**；**`G1IngestFormatGuide`**（`/documents`）；G1 冒烟 PNG 改用 **`picture`** 分块 |
 
 ---
 
@@ -263,7 +263,7 @@
 | **S3** | **已启动** | **知识库 `/documents`**（含 **文档列表/上传/删除**）；**对话 `/`**；**检索 `/search`**；**用户 `/users`**；**审计 `/audit`**（ingestions）；**`permissions`**（**v4** 含 `crawl.manage`）。**整库 ZIP 导出** 仍视官方 REST 暴露情况。 |
 | **S4** | **已推进** | **`/crawl`** + worker tick；**`extra_config` 策略键**（`tbox_crawl_keywords` / `_max_depth` / `_allowed_domains`）UI + **`common/tbox_crawl_strategy.py`**；专项/定时任务类型。**Crawl-delay、登录/API 源等**见 **§9.4**。 |
 | **S5–S7** | **S5–S7 已推进** | **S5** checklist · **S6** merge runbook + **`tbox_upstream_divergence.sh`** · **S7** **`TBOX_S7_ADVERSARIAL_SMOKE.md`** |
-| **矩阵/里程碑** | **Phase 0–7 ✅** | 见 **`phase3`–`phase7-plan`**；**Phase 8**（S6 快照）见 **[`2026-05-24-tbox-phase8-plan.md`](./superpowers/plans/2026-05-24-tbox-phase8-plan.md)**。后续：**S6 定期 merge** + **发版 smoke**。 |
+| **矩阵/里程碑** | **Phase 0–8 ✅** | 见 **`phase3`–`phase8-plan`**；**Phase 9**（VM 验收 + G1 向导）见 **[`2026-05-24-tbox-phase9-plan.md`](./superpowers/plans/2026-05-24-tbox-phase9-plan.md)**。后续：**S6 定期 merge** + **发版 smoke**。 |
 
 ### 9.1 阶段总览
 

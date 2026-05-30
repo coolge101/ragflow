@@ -217,9 +217,19 @@
 | **M 爬取高级源** | `/crawl` | 可选 **HTTP API 种子**、**认证 Header 配置名**；任务可创建并执行一次 |
 | **N 文档高级** | `/documents` | 有 `doc.reparse` 时 **重新解析**；有 `export.data` / `doc.upload` 时 **导出/导入 ZIP** |
 | **O 审计筛选** | `/audit` | 时间/类型/状态/关键词筛选；**导出 CSV/Excel**（需 `export.data`） |
-| **P 多格式入库** | `/documents`、`/search` | 见 [`TBOX_INGEST_FORMAT_SMOKE.md`](./TBOX_INGEST_FORMAT_SMOKE.md)；或跑 `scripts/tbox_g1_ingest_format_smoke.py` |
+| **P 多格式入库** | `/documents`、`/search` | 展开 **G1 多格式入库向导**；上传图片/Excel 时有分块提示；或跑 `scripts/tbox_g1_ingest_format_smoke.py` |
 
-**通过标准**：各步无 5xx；导出文件可打开；G1 冒烟至少 PDF/Word 检索命中（Excel/图片限制见 smoke 文档 §5）。
+**通过标准**：各步无 5xx；导出文件可打开；G1 四格式检索命中（见 smoke §5）。
+
+---
+
+### 步骤 Q：准生产 VM（5180，可选）
+
+> 见 [`TBOX_VM_PRODUCTION_ACCEPTANCE.md`](./TBOX_VM_PRODUCTION_ACCEPTANCE.md)。浏览器基址 **`http://<VM-IP>:5180`**（非 5174 dev）。
+
+1. `bash scripts/tbox_vm_production_acceptance.sh` 退出码 0
+2. 内网设备登录 5180；admin + 普通用户侧栏差异
+3. `/documents` 确认 **G1 向导** 与 Excel/图片上传提示
 
 ---
 

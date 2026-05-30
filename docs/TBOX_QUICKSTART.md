@@ -11,14 +11,15 @@
 | 目录 | 用途 |
 |------|------|
 | `~/ragflow` | 开发、改代码、push |
-| **`/data/tbox/ragflow`** | **正式运行**（Docker data-root 同在 `/data/docker`） |
+| **`/srv/tbox/ragflow`** | **正式运行**（Docker data-root 同在 `/data/docker`） |
 
 ```bash
-cd /data/tbox/ragflow
+cd /srv/tbox/ragflow   # 或 ~/ragflow 联调
 bash scripts/start-tbox-ragflow.sh --console
+bash scripts/tbox_vm_production_acceptance.sh
 ```
 
-详见仓库根 **`DEPLOY_ROOT.md`**（仅存在于部署目录）。
+验收清单：**[`TBOX_VM_PRODUCTION_ACCEPTANCE.md`](./TBOX_VM_PRODUCTION_ACCEPTANCE.md)**（5180 + 内网双账号 + Walkthrough）。
 
 ## 1. 前置
 
