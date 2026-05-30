@@ -21,6 +21,14 @@ if [[ "${TBOX_SKIP_BUILD:-0}" != "1" ]]; then
   echo "==> Rebuild ragflow + tbox-console (TBOX_BUILD_RAGFLOW=1 TBOX_CONSOLE=1)"
   export TBOX_BUILD_RAGFLOW=1
   export TBOX_CONSOLE=1
+  # Shell RAGFLOW_IMAGE overrides docker/.env — force local TBOX image unless stock explicitly requested.
+  if [[ "${TBOX_USE_STOCK_RAGFLOW_IMAGE:-0}" != "1" ]]; then
+    export RAGFLOW_IMAGE="${RAGFLOW_IMAGE:-ragflow-tbox:local}"
+    if [[ "$RAGFLOW_IMAGE" == *infiniflow/ragflow* ]]; then
+      export RAGFLOW_IMAGE=ragflow-tbox:local
+      echo "    (overrode stock RAGFLOW_IMAGE → ragflow-tbox:local; set TBOX_USE_STOCK_RAGFLOW_IMAGE=1 to keep Hub image)"
+    fi
+  fi
   bash docker/tbox-compose-up.sh
   echo ""
 fi

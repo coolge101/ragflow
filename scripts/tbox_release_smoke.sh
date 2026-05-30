@@ -15,6 +15,10 @@ export PYTHONPATH="$ROOT"
 BASE="${TBOX_SMOKE_BASE_URL:-http://127.0.0.1:9380}"
 fail=0
 
+if [[ -z "${TBOX_SMOKE_RUNNER:-}" ]] && docker ps --format '{{.Names}}' 2>/dev/null | grep -q 'ragflow-cpu'; then
+  export TBOX_SMOKE_RUNNER=docker
+fi
+
 _run_python() {
   local script="$1"
   if [[ "${TBOX_SMOKE_RUNNER:-}" == "docker" ]]; then

@@ -66,6 +66,7 @@ echo ""
 
 echo "==> [4/4] Release smoke (G1 + G3)"
 export TBOX_SMOKE_BASE_URL="${API}"
+export TBOX_SMOKE_RUNNER="${TBOX_SMOKE_RUNNER:-docker}"
 if bash scripts/tbox_release_smoke.sh; then
   echo "OK: release smoke"
 else
