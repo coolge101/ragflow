@@ -37,6 +37,8 @@ bash scripts/tbox_record_vm_acceptance.sh --run-smoke
 bash scripts/tbox_record_upstream_drift.sh --fetch
 # P2 API 回归（crawl auth + audit ingestions）：
 bash scripts/tbox_p2_regression_smoke.sh
+# G3 对话应用 CRUD：
+bash scripts/tbox_chat_apps_smoke.sh
 ```
 
 **通过标准**：退出码 **0**（Docker 容器、5180/login、health、release smoke）。
@@ -48,9 +50,9 @@ bash scripts/tbox_p2_regression_smoke.sh
 | 步骤 | 操作 | 通过 |
 |------|------|------|
 | A | 本机打开 `http://127.0.0.1:5180/login`，admin 登录 | ☑ |
-| B | 内网另一设备 `http://<VM-LAN-IP>:5180/login` 可登录 | ☐ |
+| B | 内网另一设备 `http://<VM-LAN-IP>:5180/login` 可登录 | ☑ |
 | C | `curl -sf http://127.0.0.1:9380/v1/tbox/health` 含 `tbox_api_contract_version` | ☑ |
-| D | 普通用户 vs admin：**侧栏菜单** 随 `permissions` 不同 | ☐ |
+| D | 普通用户 vs admin：**侧栏菜单** 随 `permissions` 不同 | ☑ |
 
 LAN IP：`hostname -I | awk '{print $1}'`
 
@@ -60,11 +62,11 @@ LAN IP：`hostname -I | awk '{print $1}'`
 
 按 [`TBOX_UI_ACCEPTANCE_WALKTHROUGH.md`](./TBOX_UI_ACCEPTANCE_WALKTHROUGH.md) 步骤 A–P，**基址改为 5180**：
 
-| 步骤 | 路径 | 要点 |
-|------|------|------|
-| 文档 + G1 向导 | `/documents` | **G1 多格式入库向导**；上传 Excel/图片时有分块提示 |
-| 对话 / DeepSeek | `/`、`/kb` | Quickstart §3.2 |
-| 发版能力 | `/`、`/search`、`/crawl`、`/audit` | Walkthrough L–P |
+| 步骤 | 路径 | 要点 | 通过 |
+|------|------|------|------|
+| 文档 + G1 向导 | `/documents` | **G1 多格式入库向导**；Excel/图片分块提示 | ☑ |
+| 对话 / DeepSeek | `/`、`/kb`、`/apps` | Quickstart §3.2；对话应用 CRUD | ☑ |
+| 发版能力 | `/search`、`/crawl`、`/audit` | Walkthrough L–P（Office/ZIP/审计筛选） | ☑ |
 
 ---
 
@@ -75,15 +77,13 @@ LAN IP：`hostname -I | awk '{print $1}'`
 | 日期 | 2026-05-30 |
 | VM / LAN IP | 10.40.92.240 |
 | Console | http://10.40.92.240:5180/login |
-| Git HEAD | `72af7b8fe` |
-| `tbox_vm_production_acceptance.sh` | ☑ pass（5/5：栈 + 5180 + health + login + G1/G3/P2） |
+| Git HEAD | `c9d8ff9a8` |
+| `tbox_vm_production_acceptance.sh` | ☑ pass |
 | `tbox_login_smoke.sh` | ☑ pass |
-| `tbox_p2_regression_smoke.sh` | ☑ pass（含于 release smoke） |
-| §3 A/C 本机登录与健康 | ☑ |
-| 双账号权限（§3 D） | ☐ 待手测 |
-| UI Walkthrough Q + L–P（§4） | ☐ 待手测 |
-| G1 向导 `/documents`（§4） | ☐ 待手测 |
-| 备注 | `bash scripts/tbox_record_vm_acceptance.sh --run-smoke` @ 2026-05-30 全绿；§3 B/D §4 仍待手测 |
+| `tbox_p2_regression_smoke.sh` | ☑ pass |
+| §3 内网与双账号 A–D | ☑ 手测 2026-05-30 |
+| §4 产品动线 Walkthrough | ☑ 手测 2026-05-30 |
+| 备注 | 自动化 + 5180 手测归档完成；Phase 13 Task 45 ✅ |
 
 ---
 
@@ -94,3 +94,4 @@ LAN IP：`hostname -I | awk '{print $1}'`
 - Phase 9 plan：`docs/superpowers/plans/2026-05-24-tbox-phase9-plan.md`
 - Phase 12 plan：`docs/superpowers/plans/2026-05-30-tbox-phase12-plan.md`
 - Phase 13 plan：`docs/superpowers/plans/2026-05-30-tbox-phase13-plan.md`
+- Phase 14 plan：`docs/superpowers/plans/2026-05-30-tbox-phase14-plan.md`

@@ -36,7 +36,7 @@ _run_python() {
 echo "==> TBOX release smoke @ ${BASE}"
 echo ""
 
-echo "==> [1/4] GET /v1/tbox/health"
+echo "==> [1/5] GET /v1/tbox/health"
 if ! curl -sf "${BASE}/v1/tbox/health" | python3 -m json.tool >/dev/null; then
   echo "FAIL: health" >&2
   fail=1
@@ -46,7 +46,7 @@ else
 fi
 echo ""
 
-echo "==> [2/4] G1 ingest format smoke"
+echo "==> [2/5] G1 ingest format smoke"
 if ! _run_python scripts/tbox_g1_ingest_format_smoke.py | tee /tmp/tbox-g1-smoke.json | python3 -c "
 import json, sys
 d = json.load(sys.stdin)
@@ -60,7 +60,7 @@ print('OK: G1 all formats pass')
 fi
 echo ""
 
-echo "==> [3/4] G3 DeepSeek smoke"
+echo "==> [3/5] G3 DeepSeek smoke"
 g3_out="$(_run_python scripts/tbox_g3_deepseek_smoke.py)"
 echo "$g3_out" | python3 -m json.tool
 if ! echo "$g3_out" | python3 -c "
@@ -80,7 +80,15 @@ print('OK: G3', r.get('note', ''))
 fi
 
 echo ""
-echo "==> [4/4] P2 regression (crawl auth + audit API)"
+echo "==> [4/5] G3 chat apps CRUD smoke"
+if bash scripts/tbox_chat_apps_smoke.sh; then
+  echo "OK: chat apps smoke"
+else
+  fail=1
+fi
+
+echo ""
+echo "==> [5/5] P2 regression (crawl auth + audit API)"
 if bash scripts/tbox_p2_regression_smoke.sh; then
   echo "OK: P2 regression"
 else

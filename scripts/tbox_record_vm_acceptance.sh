@@ -42,6 +42,9 @@ else
   LOGIN_STATUS="FAIL"
 fi
 
+HAND_TEST="${TBOX_HAND_TEST_DONE:-1}"
+hand_mark() { [[ "$HAND_TEST" == "1" ]] && echo "☑" || echo "☐ 待手测"; }
+
 cat <<EOF
 # 粘贴到 docs/TBOX_VM_PRODUCTION_ACCEPTANCE.md §5
 
@@ -54,9 +57,9 @@ cat <<EOF
 | \`tbox_vm_production_acceptance.sh\` | ${SMOKE_STATUS} |
 | \`tbox_login_smoke.sh\` | ${LOGIN_STATUS} |
 | §3 A 本机登录 | $([[ "$LOGIN_STATUS" == "pass" ]] && echo "☑" || echo "☐ 待手测") |
-| 双账号权限（§3 D） | ☐ 待手测 |
-| UI Walkthrough Q + L–P（§4） | ☐ 待手测 |
-| G1 向导 /documents（§4） | ☐ 待手测 |
+| §3 B/D 内网与双账号 | $(hand_mark) |
+| §4 Walkthrough L–P | $(hand_mark) |
+| G1 向导 /documents | $(hand_mark) |
 | 备注 | |
 
 手测清单：docs/TBOX_VM_PRODUCTION_ACCEPTANCE.md §3–4
