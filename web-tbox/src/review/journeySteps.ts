@@ -81,6 +81,7 @@ export const JOURNEY_STEPS: JourneyStep[] = [
       "可从咨询/决策/辅导模板预填（/apps/new?template=…）",
       "保存后在对话页可选该应用",
       "发送消息后引用侧栏有 chunks（库内已有内容）",
+      "点击回答中的引用编号，侧栏对应片段高亮并滚动可见",
       "用户可见文案无 RAGFlow",
     ],
   },

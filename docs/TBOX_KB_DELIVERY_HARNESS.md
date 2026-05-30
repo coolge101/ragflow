@@ -274,7 +274,8 @@
 | **Phase 13** | **收尾与例行运维 ✅** | 漂移记录、P2 smoke、5180 手测归档 — phase13 plan |
 | **Phase 14** | **G3 对话应用 API 回归** | `tbox_chat_apps_smoke.sh` 纳入 release — phase14 plan |
 | **Phase 15** | **G5 权限 API 回归** | `tbox_permissions_smoke.sh`（admin 必测；`TBOX_SMOKE_NORMAL_*` 双账号）— phase15 plan |
-| **矩阵/里程碑** | **Phase 0–15** | 后续：**S6 例行 `--fetch`** + **Citation 侧栏** 等 P2 深化 |
+| **Phase 16** | **G3 Citation 侧栏联动** | `ChatMessageContent` + `ReferenceChunks` 双向高亮 — phase16 plan |
+| **矩阵/里程碑** | **Phase 0–16** | 后续：**S6 例行 `--fetch`** 等运维 |
 
 ### 9.1 阶段总览
 

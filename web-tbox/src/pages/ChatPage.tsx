@@ -11,6 +11,7 @@ import {
   type SessionSummary,
 } from "../api/chats";
 import { ApiErrorBanner } from "../components/ApiErrorBanner";
+import { ChatMessageContent } from "../components/ChatMessageContent";
 import { ReferenceChunks } from "../components/ReferenceChunks";
 import { hasPermission } from "../constants/permissions";
 import { CHAT_APP_SCENARIOS } from "../utils/chatAppScenarioTemplates";
@@ -30,7 +31,7 @@ import {
   LARGE_EXPORT_CHAT_THRESHOLD,
 } from "../utils/exportOffice";
 
-type ChatMessage = { role: "user" | "assistant"; content: string };
+type ChatMessage = { role: "user" | "assistant"; content: string; reference?: unknown };
 
 function mapSessionMessages(raw: SessionMessage[] | undefined): ChatMessage[] {
   if (!raw?.length) {
@@ -68,11 +69,20 @@ export function ChatPage() {
   const [input, setInput] = useState("");
   const [streaming, setStreaming] = useState<string | null>(null);
   const [liveReference, setLiveReference] = useState<unknown>(null);
+  const [activeCitationIndex, setActiveCitationIndex] = useState<number | null>(null);
+  const liveReferenceRef = useRef<unknown>(null);
   const [error, setError] = useState<string | null>(null);
   const [chatsError, setChatsError] = useState<string | null>(null);
   const [sessionsError, setSessionsError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
+
+  const onCitation = useCallback((chunkIndex: number, reference?: unknown) => {
+    if (reference !== undefined && reference !== null) {
+      setLiveReference(reference);
+    }
+    setActiveCitationIndex(chunkIndex);
+  }, []);
 
   const loadChats = useCallback(async () => {
     setChatsLoading(true);
@@ -145,6 +155,8 @@ export function ChatPage() {
     setMessages([]);
     setSessions([]);
     setLiveReference(null);
+    liveReferenceRef.current = null;
+    setActiveCitationIndex(null);
     setError(null);
     setChatsError(null);
     setSessionsError(null);
@@ -174,6 +186,8 @@ export function ChatPage() {
       setSessionId(nextSessionId);
       setMessages(mapSessionMessages(body.data?.messages));
       setLiveReference(null);
+      liveReferenceRef.current = null;
+      setActiveCitationIndex(null);
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
     } finally {
@@ -205,6 +219,8 @@ export function ChatPage() {
       setSessionId(sid);
       setMessages(mapSessionMessages(body.data?.messages));
       setLiveReference(null);
+      liveReferenceRef.current = null;
+      setActiveCitationIndex(null);
       await reloadSessions();
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
@@ -223,6 +239,8 @@ export function ChatPage() {
       setInput("");
       setError(null);
       setLiveReference(null);
+      liveReferenceRef.current = null;
+      setActiveCitationIndex(null);
 
       let baseMessages = messages;
       let sid = sessionId;
@@ -293,12 +311,17 @@ export function ChatPage() {
               if (ev.reference !== undefined && ev.reference !== null) {
                 const ref = ev.reference as Record<string, unknown>;
                 if (Object.keys(ref).length > 0) {
+                  liveReferenceRef.current = ev.reference;
                   setLiveReference(ev.reference);
                 }
               }
             } else if (ev.type === "done") {
               if (acc.trim()) {
-                setMessages((prev) => [...prev, { role: "assistant", content: acc }]);
+                const ref = liveReferenceRef.current;
+                setMessages((prev) => [
+                  ...prev,
+                  { role: "assistant", content: acc, reference: ref ?? undefined },
+                ]);
               }
               setStreaming(null);
             } else if (ev.type === "error") {
@@ -306,7 +329,11 @@ export function ChatPage() {
                 setStreaming(null);
                 setError(null);
                 if (acc.trim()) {
-                  setMessages((prev) => [...prev, { role: "assistant", content: acc }]);
+                  const ref = liveReferenceRef.current;
+                  setMessages((prev) => [
+                    ...prev,
+                    { role: "assistant", content: acc, reference: ref ?? undefined },
+                  ]);
                 }
                 return;
               }
@@ -315,7 +342,11 @@ export function ChatPage() {
               if (!acc.trim()) {
                 setMessages((prev) => prev.slice(0, -1));
               } else {
-                setMessages((prev) => [...prev, { role: "assistant", content: acc }]);
+                const ref = liveReferenceRef.current;
+                setMessages((prev) => [
+                  ...prev,
+                  { role: "assistant", content: acc, reference: ref ?? undefined },
+                ]);
               }
             }
           },
@@ -613,14 +644,22 @@ export function ChatPage() {
                 borderRadius: 10,
                 background: m.role === "user" ? "rgba(37, 99, 235, 0.12)" : "#fff",
                 border: "1px solid var(--border-subtle)",
-                whiteSpace: "pre-wrap",
                 wordBreak: "break-word",
               }}
             >
               <div className="muted" style={{ fontSize: "0.75rem", marginBottom: 4 }}>
                 {m.role === "user" ? "你" : "助手"}
               </div>
-              {m.content}
+              {m.role === "assistant" ? (
+                <ChatMessageContent
+                  content={m.content}
+                  reference={m.reference ?? liveReference}
+                  activeCitationIndex={activeCitationIndex}
+                  onCitation={(idx) => onCitation(idx, m.reference ?? liveReference)}
+                />
+              ) : (
+                <span style={{ whiteSpace: "pre-wrap" }}>{m.content}</span>
+              )}
             </div>
           ))}
           {streaming !== null ? (
@@ -632,14 +671,18 @@ export function ChatPage() {
                 borderRadius: 10,
                 background: "#fff",
                 border: "1px dashed var(--color-primary)",
-                whiteSpace: "pre-wrap",
                 wordBreak: "break-word",
               }}
             >
               <div className="muted" style={{ fontSize: "0.75rem", marginBottom: 4 }}>
                 助手（生成中…）
               </div>
-              {streaming || "…"}
+              <ChatMessageContent
+                content={streaming || "…"}
+                reference={liveReference}
+                activeCitationIndex={activeCitationIndex}
+                onCitation={(idx) => onCitation(idx, liveReference)}
+              />
             </div>
           ) : null}
           <div ref={messagesEndRef} aria-hidden />
@@ -690,9 +733,13 @@ export function ChatPage() {
       >
         <h2 style={{ margin: "0 0 0.5rem", fontSize: "1rem" }}>本轮引用</h2>
         <p className="muted" style={{ fontSize: "0.8rem", margin: "0 0 0.75rem" }}>
-          流式片段中含 <code>reference</code> 时更新；新发送会清空。
+          点击回答中的引用编号或下方片段可联动高亮；新发送会清空。
         </p>
-        <ReferenceChunks reference={liveReference} />
+        <ReferenceChunks
+          reference={liveReference}
+          activeChunkIndex={activeCitationIndex}
+          onSelectChunk={(idx) => onCitation(idx, liveReference)}
+        />
       </aside>
     </div>
   );

@@ -120,7 +120,7 @@
 |----|------|
 | 布局 | 标题 + 简短说明；**多行输入** + **发送**；**卡片**展示流式输出。 |
 | 流式 | 使用 **`fetch` 解析 SSE**（`lib/sseChat.ts`），非 `EventSource`。 |
-| P0 增强 | **`onCitation` 回调**：侧栏或折叠面板展示引用片段与高亮（当前 TODO，主 fork 排期实现）。 |
+| P0 增强 | **`onCitation` 回调**：侧栏展示引用片段；回答中 `[ID:n]` 可点击，与侧栏双向高亮（**Phase 16** @ `web-tbox`）。 |
 | 会话 | 参考使用 `devSessionId` 占位；生产对接 **session / chat id** API。 |
 
 ### 3.3 检索页（`views/SearchView.vue`）
