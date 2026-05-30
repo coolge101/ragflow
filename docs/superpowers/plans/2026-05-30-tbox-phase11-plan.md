@@ -38,3 +38,5 @@
 - [x] `bash scripts/tbox_vm_production_acceptance.sh`
 
 **Plan saved to:** `docs/superpowers/plans/2026-05-30-tbox-phase11-plan.md`
+
+**后续：** [`2026-05-30-tbox-phase12-plan.md`](./2026-05-30-tbox-phase12-plan.md)（5180 产品验收闭环）

@@ -162,8 +162,22 @@ export const JOURNEY_STEPS: JourneyStep[] = [
     ],
   },
   {
+    id: "vm-5180",
+    order: 10.5,
+    title: "准生产 5180",
+    targetPath: "/documents",
+    summary: "Docker tbox-console（5180）；自动化 smoke + VM 手测 §3–4。",
+    acceptance: [
+      "bash scripts/tbox_vm_production_acceptance.sh 退出码 0",
+      "http://<LAN-IP>:5180/login 可登录（非 5174 dev）",
+      "admin 与普通用户侧栏随 permissions 不同",
+      "/documents 可见 G1 多格式入库向导与 Excel/图片分块提示",
+      "bash scripts/tbox_record_vm_acceptance.sh 生成 §5 记录草稿",
+    ],
+  },
+  {
     id: "errors",
-    order: 10,
+    order: 11,
     title: "无权限与 404",
     targetPath: "/no-permission",
     summary: "异常出口与回退路径。",

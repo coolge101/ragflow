@@ -28,8 +28,11 @@ bash scripts/start-tbox-ragflow.sh --console
 
 ```bash
 cd <REPO>
-export PYTHONPATH=$(pwd)
 bash scripts/tbox_vm_production_acceptance.sh
+# 生成 §5 记录草稿（含 HEAD / LAN IP）：
+bash scripts/tbox_record_vm_acceptance.sh
+# 含完整 smoke：
+bash scripts/tbox_record_vm_acceptance.sh --run-smoke
 ```
 
 **通过标准**：退出码 **0**（Docker 容器、5180/login、health、release smoke）。
@@ -80,3 +83,4 @@ LAN IP：`hostname -I | awk '{print $1}'`
 - Runbook：`docs/TBOX_DEPLOY_RUNBOOK.md`
 - 从 GitHub 部署：`docs/TBOX_DEPLOY_FROM_GITHUB.md`
 - Phase 9 plan：`docs/superpowers/plans/2026-05-24-tbox-phase9-plan.md`
+- Phase 12 plan：`docs/superpowers/plans/2026-05-30-tbox-phase12-plan.md`

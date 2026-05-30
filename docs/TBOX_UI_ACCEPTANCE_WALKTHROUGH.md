@@ -228,8 +228,10 @@
 > 见 [`TBOX_VM_PRODUCTION_ACCEPTANCE.md`](./TBOX_VM_PRODUCTION_ACCEPTANCE.md)。浏览器基址 **`http://<VM-IP>:5180`**（非 5174 dev）。
 
 1. `bash scripts/tbox_vm_production_acceptance.sh` 退出码 0
-2. 内网设备登录 5180；admin + 普通用户侧栏差异
-3. `/documents` 确认 **G1 向导** 与 Excel/图片上传提示
+2. `bash scripts/tbox_record_vm_acceptance.sh` 生成 §5 草稿
+3. 内网设备登录 5180；admin + 普通用户侧栏差异
+4. `/documents` 确认 **G1 向导** 与 Excel/图片上传提示
+5. 可选 Walkthrough **L–P** 抽样（Office 导出、爬取、审计等）
 
 ---
 
