@@ -165,6 +165,8 @@ Docker：在 **`docker/.env`** 中设置 **`ENABLE_TBOX_CRAWL_WORKER=1`**，或�
 - **Phase 4（G1 闭环 + S5 Docker）**：`docs/superpowers/plans/2026-05-24-tbox-phase4-plan.md`
 - **Phase 5（G3 DeepSeek + S6/S7）**：`docs/superpowers/plans/2026-05-24-tbox-phase5-plan.md`
 - **Phase 6（发版冒烟 + S0 基线）**：`docs/superpowers/plans/2026-05-24-tbox-phase6-plan.md`
+- **Phase 7（S7 + 部署闭环）**：`docs/superpowers/plans/2026-05-24-tbox-phase7-plan.md`
+- **S7 对抗冒烟记录**：`docs/TBOX_S7_ADVERSARIAL_SMOKE.md`
 - **G1 多格式入库手测清单**：`docs/TBOX_INGEST_FORMAT_SMOKE.md`
 - **G3 DeepSeek 冒烟**：`docs/TBOX_DEEPSEEK_SMOKE.md`
 - **S6 上游合并**：`docs/TBOX_UPSTREAM_MERGE_RUNBOOK.md`

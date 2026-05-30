@@ -101,10 +101,22 @@ echo "==> Starting Docker stack"
 export TBOX_BUILD_RAGFLOW=0
 bash docker/tbox-compose-up.sh
 
+if [[ "${TBOX_SKIP_RELEASE_SMOKE:-0}" != "1" ]]; then
+  echo ""
+  echo "==> Release smoke (health + G1 + G3). Skip with TBOX_SKIP_RELEASE_SMOKE=1"
+  export PYTHONPATH="$ROOT"
+  if bash scripts/tbox_release_smoke.sh; then
+    echo "==> Release smoke: PASSED"
+  else
+    echo "WARN: Release smoke failed — stack is up; check logs and re-run: bash scripts/tbox_release_smoke.sh" >&2
+    exit 1
+  fi
+fi
+
 echo ""
-echo "==> Deploy complete. Smoke tests:"
-echo "    curl -sf http://127.0.0.1:\${SVR_HTTP_PORT:-9380}/api/v1/auth/login/channels"
+echo "==> Deploy complete. Quick checks:"
 echo "    curl -sf http://127.0.0.1:\${SVR_HTTP_PORT:-9380}/v1/tbox/health"
+echo "    bash scripts/tbox_release_smoke.sh   # or skipped above if TBOX_SKIP_RELEASE_SMOKE=1"
 echo ""
 echo "==> Frontend (optional):"
 echo "    cd web-tbox && cp -n .env.example .env && npm ci && npm run dev"

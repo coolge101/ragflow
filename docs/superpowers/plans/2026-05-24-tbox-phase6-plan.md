@@ -43,3 +43,5 @@
 - [x] `cd web-tbox && npm run typecheck`
 
 **Plan saved to:** `docs/superpowers/plans/2026-05-24-tbox-phase6-plan.md`
+
+**下一阶段：** [`2026-05-24-tbox-phase7-plan.md`](./2026-05-24-tbox-phase7-plan.md)

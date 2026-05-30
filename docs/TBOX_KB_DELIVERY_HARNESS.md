@@ -171,7 +171,7 @@
 | 5 产品冒烟 | G1 + G3 脚本 | `tbox_g1_ingest_format_smoke.py`、`tbox_g3_deepseek_smoke.py` |
 | 5b 一键冒烟 | **`bash scripts/tbox_release_smoke.sh`** | health + G1 + G3，退出码 0 |
 
-发版记录须含：日期、Git **HEAD**、对抗/pytest 摘要、操作人。
+发版记录须含：日期、Git **HEAD**、对抗/pytest 摘要、操作人。实测模板见 **`docs/TBOX_S7_ADVERSARIAL_SMOKE.md`**。
 
 ---
 
@@ -262,8 +262,8 @@
 | **S2** | **已推进** | `web-tbox/`：**`/login` 邮箱密码登录**（RSA → `/api/v1/auth/login`）、**`/` 控制台**拉取 **`/v1/tbox/me`**（带 `Authorization`）、**退出** 调 **`POST /v1/tbox/logout`**。IA/权限/视觉以 **`docs/TBOX_UI_DESIGN_OVERVIEW.md`**、**`docs/TBOX_UI_DESIGN_DETAIL.md`** 为准；参考原型见 **§2.1**。 |
 | **S3** | **已启动** | **知识库 `/documents`**（含 **文档列表/上传/删除**）；**对话 `/`**；**检索 `/search`**；**用户 `/users`**；**审计 `/audit`**（ingestions）；**`permissions`**（**v4** 含 `crawl.manage`）。**整库 ZIP 导出** 仍视官方 REST 暴露情况。 |
 | **S4** | **已推进** | **`/crawl`** + worker tick；**`extra_config` 策略键**（`tbox_crawl_keywords` / `_max_depth` / `_allowed_domains`）UI + **`common/tbox_crawl_strategy.py`**；专项/定时任务类型。**Crawl-delay、登录/API 源等**见 **§9.4**。 |
-| **S5–S7** | **S5/S6 已推进** | **S5** checklist：**`docker/README.md`**、Quickstart §1.1；**S6** 合并流程：**`docs/TBOX_UPSTREAM_MERGE_RUNBOOK.md`**；**S7** 发版对抗：**Harness §7.6**。 |
-| **矩阵/下阶段** | **Phase 5 已落地** | Phase 3–5 见 **`phase3/4/5-plan`**；**Phase 6**（发版冒烟 + S0 基线）见 **[`2026-05-24-tbox-phase6-plan.md`](./superpowers/plans/2026-05-24-tbox-phase6-plan.md)**。 |
+| **S5–S7** | **S5–S7 已推进** | **S5** checklist · **S6** **`TBOX_UPSTREAM_MERGE_RUNBOOK.md`** · **S7** 对抗记录 **`TBOX_S7_ADVERSARIAL_SMOKE.md`**（2026-05-24：4 passed） |
+| **矩阵/下阶段** | **Phase 6 已落地** | Phase 3–6 见各 **phase*-plan**；**Phase 7** 见 **[`2026-05-24-tbox-phase7-plan.md`](./superpowers/plans/2026-05-24-tbox-phase7-plan.md)**。 |
 
 ### 9.1 阶段总览
 

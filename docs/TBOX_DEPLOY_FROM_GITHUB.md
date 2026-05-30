@@ -215,6 +215,8 @@ curl -sf "$API/v1/tbox/health" | python3 -m json.tool
 - `login/channels` → `"code":0`
 - `tbox/health` → `"status":"ok"` 且含 `tbox_api_contract_version`
 
+**发版冒烟（Phase 6+）**：`bash scripts/deploy-on-new-server.sh` 在栈启动后会自动执行 **`bash scripts/tbox_release_smoke.sh`**（health + G1 + G3）。跳过：`TBOX_SKIP_RELEASE_SMOKE=1 bash scripts/deploy-on-new-server.sh`。单独复跑：`bash scripts/tbox_release_smoke.sh`。
+
 ---
 
 ## 7. web-tbox 前端

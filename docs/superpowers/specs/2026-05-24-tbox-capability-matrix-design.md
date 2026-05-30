@@ -99,7 +99,7 @@
 | ID | 能力 | 官方 | web-tbox | 后端 | 优先级 | 备注 |
 |----|------|------|----------|------|--------|------|
 | G3-MODEL-KEY | 供应商 API Key、模型列表 | ✅ profile/model | ✅ `/kb` | `/v1/llm/*` | ✅ | |
-| G3-MODEL-DEEPSEEK | DeepSeek 对话 | ✅ conf/models | ⚠️ 需 API Key | 官方 LLM | **P0** | API 冒烟 **`scripts/tbox_g3_deepseek_smoke.py`** + **`docs/TBOX_DEEPSEEK_SMOKE.md`**；UI 见 Quickstart §3.2 |
+| G3-MODEL-DEEPSEEK | DeepSeek 对话 | ✅ conf/models | ✅ API 冒烟 + `/kb` Key | 官方 LLM | **P0** | **`scripts/tbox_g3_deepseek_smoke.py`**；新租户仍须在 `/kb` 配 Key |
 | G3-APP-CRUD | 对话应用完整配置 | ✅ next-chats | ✅ `/apps` | `/api/v1/chats` | P0 | Chat Apps 主体已完成 |
 | G3-CHAT-STREAM | 流式对话 + 引用 | ✅ | ✅ `/` | SSE completions | ✅ | `reference.chunks` |
 | G3-CHAT-SESSION | 会话列表/切换 | ✅ | ✅ `/` | chats sessions API | ✅ | |
@@ -139,6 +139,7 @@
 | **4** | G1 闭环 + 交付硬化 | P1 缺口 | G1 冒烟修复、Harness 同步；S5 Docker 准备（见 phase4 plan） |
 | **5** | G3 + S6/S7 | P0/P1 | DeepSeek API 冒烟、上游合并 Runbook、发版对抗 checklist（见 phase5 plan） |
 | **6** | 发版门禁 + S0 | 运维 | `tbox_release_smoke.sh`、基线 commit、Excel UI 提示（见 phase6 plan） |
+| **7** | S7 实测 + 部署闭环 | 运维 | S7 对抗记录、deploy 接入 release smoke、镜像重建说明（见 phase7 plan） |
 
 详细 Task 见 implementation plan。
 

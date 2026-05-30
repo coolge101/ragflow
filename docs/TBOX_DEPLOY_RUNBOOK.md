@@ -171,6 +171,8 @@ RAGFLOW_IMAGE=ragflow-tbox:local
 
 再执行 `docker compose -f docker-compose.yml … up -d` 使新镜像生效。
 
+**Fork 补丁（如 `rag/app/picture.py` OCR 回退）**：`docker cp` 进运行容器**仅用于临时验证**；准生产/发版必须 **重建镜像**（`bash docker/tbox-compose-up.sh` 或 `bash scripts/deploy-on-new-server.sh`），否则容器重建后补丁丢失。
+
 开发阶段也可用 **`docker-compose.yml` 里已有 volume** 挂载本仓库的 `entrypoint.sh` / `service_conf.yaml.template`；**是否挂载整份源码**取决于你的镜像入口与团队约定，不在此强制一种做法。
 
 ### 3.5（可选）TBOX 采集 Worker
