@@ -44,4 +44,15 @@ export TBOX_SMOKE_BASE_URL="http://127.0.0.1:${API_PORT}"
 bash scripts/tbox_release_smoke.sh
 
 echo ""
+echo "==> Verify API image + bundled scripts"
+bash scripts/tbox_verify_stack_image.sh
+docker exec "$CONTAINER" test -f /ragflow/scripts/tbox_release_smoke.sh
+echo "OK: /ragflow/scripts in container"
+
+echo ""
+echo "==> VM production acceptance"
+bash scripts/tbox_vm_production_acceptance.sh
+
+echo ""
 echo "==> POST-MERGE OK — see docs/TBOX_UPSTREAM_MERGE_RUNBOOK.md §3–4"
+echo "    Optional UI checklist: docs/TBOX_VM_PRODUCTION_ACCEPTANCE.md §3–4 (5180)"

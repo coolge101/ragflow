@@ -55,6 +55,18 @@ uv run pytest test/unit_test/common/test_tbox_crawl_strategy.py -q
 uv run pytest test/unit_test/api/apps/tbox_app_isolated -m tbox_app_isolated -q
 ```
 
+### 3.1 Docker build 后磁盘不足
+
+大镜像 `docker compose build ragflow-cpu` 可能在 **export/unpack 已成功** 后，因 `/` 空间不足导致 compose 元数据写入失败（exit 1）。Recovery：
+
+```bash
+docker run --rm --entrypoint test ragflow-tbox:local -f /ragflow/scripts/tbox_release_smoke.sh && echo image_ok
+docker builder prune -af
+cd docker && export RAGFLOW_IMAGE=ragflow-tbox:local
+docker compose -f docker-compose.yml --profile cpu up -d --force-recreate ragflow-cpu
+bash ../scripts/tbox_verify_stack_image.sh
+```
+
 ---
 
 ## 4. 合并记录

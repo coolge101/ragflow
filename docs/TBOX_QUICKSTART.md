@@ -68,6 +68,7 @@ bash scripts/tbox_post_upstream_merge.sh
 | Python | merge 后 **`>=3.13`**（`pyproject.toml`）；宿主机 `uv sync` 若 GitHub spacy 超时，用 **`TBOX_SMOKE_RUNNER=docker`** |
 | 记录 | [`TBOX_UPSTREAM_MERGE_RUNBOOK.md`](./TBOX_UPSTREAM_MERGE_RUNBOOK.md) §4 |
 | 差异 | `bash scripts/tbox_upstream_divergence.sh --fetch` |
+| 磁盘 | build 后 **no space left on device**：镜像可能已成功 → `docker builder prune -af` 再 `--force-recreate ragflow-cpu`（Runbook §3.1） |
 
 ## 2. 启动 RAGFlow API
 

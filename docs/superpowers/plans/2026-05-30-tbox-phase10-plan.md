@@ -39,6 +39,8 @@
 
 - [x] `bash scripts/tbox_verify_stack_image.sh`
 - [x] `bash scripts/tbox_vm_production_acceptance.sh`
-- [ ] `docker exec docker-ragflow-cpu-1 test -f /ragflow/scripts/tbox_release_smoke.sh`（下次 `TBOX_BUILD_RAGFLOW=1` 重建后）
+- [x] `docker exec docker-ragflow-cpu-1 test -f /ragflow/scripts/tbox_release_smoke.sh`（`TBOX_BUILD_RAGFLOW=1` 重建后，2026-05-30 验证）
 
 **Plan saved to:** `docs/superpowers/plans/2026-05-30-tbox-phase10-plan.md`
+
+**后续：** [`2026-05-30-tbox-phase11-plan.md`](./2026-05-30-tbox-phase11-plan.md)
