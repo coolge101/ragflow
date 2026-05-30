@@ -34,12 +34,15 @@ export async function loginWithEmailPassword(
       return { ok: false, message: data.message || "服务器返回了无效响应（非 JSON）" };
     }
     const authorization =
-      res.headers.get("Authorization") || res.headers.get("authorization") || "";
+      res.headers.get("X-Ragflow-Authorization") ||
+      res.headers.get("Authorization") ||
+      res.headers.get("authorization") ||
+      "";
 
-    // Post-S6 login returns JWT in Authorization header; access_token may be stripped from JSON.
-    const accessToken = data.data?.access_token || authorization;
+    // JWT lives in response headers; JSON access_token is a fallback when headers are hidden.
+    const accessToken = authorization || data.data?.access_token || "";
 
-    if (data.code !== 0 || !authorization) {
+    if (data.code !== 0 || !accessToken) {
       const base = data.message || "登录失败";
       const httpNote = !res.ok ? `（HTTP ${res.status}）` : "";
       return {
@@ -51,12 +54,12 @@ export async function loginWithEmailPassword(
     const is_superuser = inferSuperuserFromLoginField(data.data?.is_superuser, data.data?.email);
 
     saveLoginSession({
-      authorization,
+      authorization: authorization || accessToken,
       accessToken,
       userInfo: {
-        avatar: data.data.avatar,
-        name: data.data.nickname,
-        email: data.data.email,
+        avatar: data.data?.avatar,
+        name: data.data?.nickname,
+        email: data.data?.email,
         is_superuser,
       },
     });

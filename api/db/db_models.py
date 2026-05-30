@@ -713,6 +713,8 @@ class User(DataBaseModel, AuthUser):
         result = {k: v for k, v in self.to_dict().items() if k not in self.SENSITIVE_FIELDS}
         if for_self:
             result["email"] = self.email
+            # Login/profile for the authenticated user: clients need the JWT (same as Authorization header).
+            result["access_token"] = self.get_id()
         logging.debug("User %s serialized safely, filtered fields: %s", self.id, self.SENSITIVE_FIELDS)
         return result
 

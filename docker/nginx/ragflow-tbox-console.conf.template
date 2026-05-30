@@ -12,6 +12,9 @@ server {
     location ~ ^/(v1|api) {
         proxy_pass http://${RAGFLOW_UPSTREAM};
         include /etc/nginx/proxy.conf;
+        # Browser fetch often cannot read Authorization; mirror for web-tbox login.
+        add_header X-Ragflow-Authorization $upstream_http_authorization always;
+        add_header Access-Control-Expose-Headers "Authorization, X-Ragflow-Authorization" always;
     }
 
     location / {
