@@ -25,6 +25,32 @@ bash scripts/start-tbox-ragflow.sh --console
 - 已按官方文档启动依赖（MySQL、ES/Infinity、Redis、MinIO 等），或直接使用 **`docker compose`** 起全栈（见仓库 `docker/README.md`）。
 - Node **>= 18.20.4**（推荐 20）、npm 或 pnpm。
 
+### 1.1 Docker 全栈冷启动（S5 checklist）
+
+在**第三方新机器**上从零部署 TBOX（Harness §9.1 **S5**），推荐路径：
+
+```bash
+cd <REPO>/docker
+cp .env.example .env    # 对照模板修改变量（见 docker/README.md「S5 冷启动 checklist」）
+cd <REPO>
+bash docker/tbox-compose-up.sh
+# 含生产 web-tbox：TBOX_CONSOLE=1 bash docker/tbox-compose-up.sh
+```
+
+**`.env` 关键项**（完整表见 **`docker/.env.example`** 注释）：
+
+| 变量 | TBOX 说明 |
+|------|-----------|
+| `RAGFLOW_IMAGE=ragflow-tbox:local` | 须含本仓库 `tbox_app.py`；`tbox-compose-up.sh` 默认本地构建 |
+| `DOC_ENGINE` / `DEVICE` | 与 `COMPOSE_PROFILES` 一致（默认 elasticsearch + cpu） |
+| `SVR_HTTP_PORT` | 默认 **9380** |
+| `ENABLE_TBOX_CRAWL_WORKER=1` | 需要 **`/crawl`** 定时入库时启用 |
+| `TBOX_CONSOLE=1` | 生产 **`web-tbox`** 于 **5180**（Nginx 静态 + API 反代） |
+
+**amd64**：目标平台 **linux/amd64**。显式构建：`docker build --platform linux/amd64 -f Dockerfile -t ragflow-tbox:local .`；验证：`docker inspect ragflow-tbox:local --format '{{.Architecture}}'`。
+
+**验收**：`curl -sf http://127.0.0.1:9380/v1/tbox/health`；可选 `uv run python3 scripts/tbox_g1_ingest_format_smoke.py`（G1 四格式）。详 **[`TBOX_DEPLOY_RUNBOOK.md`](./TBOX_DEPLOY_RUNBOOK.md)** §3.1–3.4。
+
 ## 2. 启动 RAGFlow API
 
 确保宿主可访问 **`http://127.0.0.1:9380`**（或你在 `.env` 中配置的 `SVR_HTTP_PORT`）。
@@ -136,7 +162,11 @@ Docker：在 **`docker/.env`** 中设置 **`ENABLE_TBOX_CRAWL_WORKER=1`**，或�
 - **能力矩阵（G1–G5）**：`docs/superpowers/specs/2026-05-24-tbox-capability-matrix-design.md`
 - **下一阶段开发计划**：`docs/superpowers/plans/2026-05-24-tbox-next-phase.md`
 - **P2 阶段计划（Office 导出等）**：`docs/superpowers/plans/2026-05-24-tbox-phase3-plan.md`
+- **Phase 4（G1 闭环 + S5 Docker）**：`docs/superpowers/plans/2026-05-24-tbox-phase4-plan.md`
+- **Phase 5（G3 DeepSeek + S6/S7）**：`docs/superpowers/plans/2026-05-24-tbox-phase5-plan.md`
 - **G1 多格式入库手测清单**：`docs/TBOX_INGEST_FORMAT_SMOKE.md`
+- **G3 DeepSeek 冒烟**：`docs/TBOX_DEEPSEEK_SMOKE.md`
+- **S6 上游合并**：`docs/TBOX_UPSTREAM_MERGE_RUNBOOK.md`
 - UI 概要/详细设计：`docs/TBOX_UI_DESIGN_OVERVIEW.md`、`docs/TBOX_UI_DESIGN_DETAIL.md`（参考原型：`tbox-ragflow-platform/others/apps/web/`，见总纲 §2.1）
 - 二期能力备忘：`docs/TBOX_PHASE2_PAGE_REQUIREMENTS_MEMO.md`
 
@@ -173,6 +203,14 @@ uv run pytest test/unit_test/api/apps/tbox_app_isolated -m tbox_app_isolated -v 
 
 # 仅 crawl 相关用例（子 marker：`tbox_app_crawl`，在 `conftest.py` 按文件名自动附加）
 uv run pytest test/unit_test/api/apps/tbox_app_isolated -m "tbox_app_isolated and tbox_app_crawl" -v --tb=short
+
+# G1 / G3 API 冒烟（需 Docker 栈 @ 9380）
+uv run python3 scripts/tbox_g1_ingest_format_smoke.py
+uv run python3 scripts/tbox_g3_deepseek_smoke.py
+
+# 发版前对抗（S7，非 PR 门禁 — 见 Harness §7.6）
+# export RAGFLOW_ADVERSARIAL_TESTS=1
+# uv run pytest test/adversarial_tests.py -v --tb=short
 ```
 
 **说明**：重型 **`harness_engineering`**（对抗 + Docker 等）**不**随 PR 触发，见 **`docs/TBOX_KB_DELIVERY_HARNESS.md`** §7.3；发版前仍按该 workflow 或运维流程执行。

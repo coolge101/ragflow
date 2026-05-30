@@ -99,7 +99,9 @@ def make_samples(out_dir: Path) -> dict[str, tuple[Path, str]]:
         elif label == "Excel":
             wb = Workbook()
             ws = wb.active
-            ws["A1"] = f"Keyword: {kw}"
+            # ExcelParser treats row 1 as header and row 2+ as data rows.
+            ws["A1"] = "Keyword"
+            ws["A2"] = kw
             wb.save(path)
         else:
             img = Image.new("RGB", (480, 120), color=(240, 248, 255))

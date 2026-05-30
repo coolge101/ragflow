@@ -14,7 +14,7 @@
 |------|----------|------|
 | PDF | `.pdf` | 含可复制文本；扫描件可测 OCR |
 | Word | `.docx` | |
-| Excel | `.xlsx` | 含至少一个可读单元格 |
+| Excel | `.xlsx` | 含 **表头行 + 至少一行数据**（`ExcelParser` 约定） |
 | 图片 | `.png` / `.jpg` | 含可见文字（测 OCR） |
 
 ---
@@ -58,19 +58,19 @@
 |------|------|------|----------|----------|------|
 | PDF | ✅ | ✅（1 chunk） | ✅ | ☐ 未测 | keyword `TBOX-SMOKE-20260524-PDF` |
 | Word | ✅ | ✅（1 chunk） | ✅ | ☐ 未测 | keyword `TBOX-SMOKE-20260524-DOCX` |
-| Excel | ✅ | ⚠️ DONE 但 0 chunk | ❌ | ☐ 未测 | naive 与 `table` 分块均 0 chunk |
-| 图片 | ✅ | ⚠️ DONE 但 0 chunk | ❌ | ☐ 未测 | `picture` parser 复测仍 0 chunk |
+| Excel | ✅ | ✅（1 chunk） | ✅ | ☐ 未测 | 样本须 **表头行 + 数据行**（见脚本） |
+| 图片 | ✅ | ✅（1 chunk） | ✅ | ☐ 未测 | OCR 回退：`picture.py` 在无 image2text 时仍用 OCR 文本 |
 
 **测试人 / 日期 / 环境**：
 
 - **测试人**：Cursor Agent（API 冒烟脚本，替代 UI 手测 §2–3）
-- **日期**：2026-05-24
+- **日期**：2026-05-24（Phase 4 Task 16 复测通过）
 - **环境**：`http://127.0.0.1:9380` · Docker CPU 栈 · 账号 `admin@ragflow.io`
-- **知识库**：`TBOX-G1-SMOKE-20260524`（`chunk_method=naive`，dataset id 每次运行不同）
-- **脚本**：`scripts/tbox_g1_ingest_format_smoke.py`（`uv run python3 scripts/tbox_g1_ingest_format_smoke.py`）
-- **§4 对话引用**：未执行（需 `/apps` 绑定库后手测）
+- **知识库**：`TBOX-G1-SMOKE-20260524`（`chunk_method=naive`）
+- **脚本**：`scripts/tbox_g1_ingest_format_smoke.py`
+- **§4 对话引用**：未执行
 
-**结论**：PDF / Word 上传 → 解析 → 检索链路通过；Excel 与 PNG 在本环境可上传且 `run=DONE`，但未产生 chunk、检索未命中——矩阵 `G1-OCR-IMAGE` 备注已同步。
+**结论**：四种格式上传 → 解析 → 检索链路均通过。Excel 单行单元格在 `ExcelParser` 下仍为 0 chunk（须表头+数据行或使用 `table` 分块）；PNG 在未配置 image2text 时依赖 **`rag/app/picture.py` OCR 回退**（Phase 4 修复）。
 
 ---
 

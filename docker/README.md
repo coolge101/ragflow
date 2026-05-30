@@ -19,6 +19,48 @@
 
 **TBOX / local smoke (from repo root):** `bash docker/tbox-compose-up.sh` — uses `--pull missing` by default and probes the HTTP API. See **[`docs/TBOX_DEPLOY_RUNBOOK.md`](../docs/TBOX_DEPLOY_RUNBOOK.md)** §3.1.1.
 
+### TBOX S5 冷启动 checklist（第三方新机器）
+
+对应 Harness **§9.1 S5**：在全新 **Linux / amd64** 主机上用 **仅 Compose** 冷启动 TBOX 全栈。
+
+**前置**：Docker Engine 24+、Compose v2；**16 GB+ RAM**、**50 GB+ 磁盘**（见 [`TBOX_KB_DELIVERY_HARNESS.md`](../docs/TBOX_KB_DELIVERY_HARNESS.md) §7）。
+
+| 步骤 | 命令 / 动作 | 通过标准 |
+|------|-------------|----------|
+| 1 环境文件 | `cd docker && cp .env.example .env` | 对照下表修改变量 |
+| 2 必改变量 | 见 **`.env.example`** 与下表 | 非本机部署须改默认密码 |
+| 3 构建依赖（推荐） | `bash scripts/pull-local-deps-for-docker.sh` | 离线/换机见 Runbook §3.1.2 |
+| 4 一键拉起 | `bash docker/tbox-compose-up.sh` | 依赖 + API healthy |
+| 5 可选 Console | `TBOX_CONSOLE=1 bash docker/tbox-compose-up.sh` | `http://127.0.0.1:5180/login` 可开 |
+| 6 冒烟 | 见下方命令 | health OK |
+
+**`.env` 与 TBOX 对照（生成后必查）**：
+
+| 变量 | 说明 |
+|------|------|
+| `DOC_ENGINE` / `DEVICE` | 文档引擎 + CPU/GPU；驱动 `COMPOSE_PROFILES` |
+| `RAGFLOW_IMAGE` | **须为本仓库构建**（默认 `ragflow-tbox:local`）；上游 Hub 镜像**无** `/v1/tbox/*` |
+| `MYSQL_PASSWORD` / `REDIS_PASSWORD` / `MINIO_*` | 生产须改为强密码 |
+| `SVR_HTTP_PORT` | 宿主 API 端口（默认 **9380**） |
+| `ENABLE_TBOX_CRAWL_WORKER` | `1` 时在容器内启 crawl worker |
+| `TBOX_CONSOLE` / `TBOX_CONSOLE_PORT` | `1` + **5180** 起生产 `web-tbox` Nginx |
+
+**amd64 验证**（目标平台 **linux/amd64**，与 Runbook §3.4 一致）：
+
+```bash
+docker build --platform linux/amd64 -f Dockerfile -t ragflow-tbox:local .
+docker inspect ragflow-tbox:local --format '{{.Architecture}}'   # 期望 amd64
+```
+
+**冒烟**：
+
+```bash
+curl -sf http://127.0.0.1:9380/v1/tbox/health | python3 -m json.tool
+# 可选 G1：uv run python3 scripts/tbox_g1_ingest_format_smoke.py
+```
+
+详见 **[`docs/TBOX_QUICKSTART.md`](../docs/TBOX_QUICKSTART.md) §1.1**、**[`docs/TBOX_DEPLOY_RUNBOOK.md`](../docs/TBOX_DEPLOY_RUNBOOK.md)** §3.1–3.4。
+
 > [!CAUTION]
 > We do not actively maintain **docker-compose-CN-oc9.yml**, **docker-compose-macos.yml**, so use them at your own risk. However, you are welcome to file a pull request to improve any of them.
 

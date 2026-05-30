@@ -54,8 +54,7 @@ def chunk(filename, binary, tenant_id, lang, callback=None, **kwargs):
             cv_model_config = get_tenant_default_model_by_type(tenant_id, LLMType.IMAGE2TEXT)
             cv_mdl = LLMBundle(tenant_id, model_config=cv_model_config, lang=lang)
             video_prompt = str(parser_config.get("video_prompt", "") or "")
-            ans = asyncio.run(
-                cv_mdl.async_chat(system="", history=[], gen_conf={}, video_bytes=binary, filename=filename, video_prompt=video_prompt))
+            ans = asyncio.run(cv_mdl.async_chat(system="", history=[], gen_conf={}, video_bytes=binary, filename=filename, video_prompt=video_prompt))
             callback(0.8, "CV LLM respond: %s ..." % ans[:32])
             ans += "\n" + ans
             tokenize(doc, ans, eng)
@@ -78,20 +77,21 @@ def chunk(filename, binary, tenant_id, lang, callback=None, **kwargs):
             callback(0.8, "OCR results is too long to use CV LLM.")
             return attach_media_context([doc], 0, image_ctx)
 
-        try:
-            callback(0.4, "Use CV LLM to describe the picture.")
-            cv_model_config = get_tenant_default_model_by_type(tenant_id, LLMType.IMAGE2TEXT)
-            cv_mdl = LLMBundle(tenant_id, model_config=cv_model_config, lang=lang)
-            with io.BytesIO() as img_binary:
-                img.save(img_binary, format="JPEG")
-                img_binary.seek(0)
-                ans = cv_mdl.describe(img_binary.read())
-            callback(0.8, "CV LLM respond: %s ..." % ans[:32])
-            txt += "\n" + ans
+        if txt.strip():
+            try:
+                callback(0.4, "Use CV LLM to describe the picture.")
+                cv_model_config = get_tenant_default_model_by_type(tenant_id, LLMType.IMAGE2TEXT)
+                cv_mdl = LLMBundle(tenant_id, model_config=cv_model_config, lang=lang)
+                with io.BytesIO() as img_binary:
+                    img.save(img_binary, format="JPEG")
+                    img_binary.seek(0)
+                    ans = cv_mdl.describe(img_binary.read())
+                callback(0.8, "CV LLM respond: %s ..." % ans[:32])
+                txt += "\n" + ans
+            except Exception as e:
+                callback(prog=-1, msg=str(e))
             tokenize(doc, txt, eng)
             return attach_media_context([doc], 0, image_ctx)
-        except Exception as e:
-            callback(prog=-1, msg=str(e))
 
     return []
 

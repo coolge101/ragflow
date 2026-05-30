@@ -156,7 +156,21 @@
   1. **`/kb`**：选知识库 → **供应商 API Key** 配置 DeepSeek → **空间默认模型** 或表单中选 `模型名@DeepSeek`。
   2. **`/apps`** 或 **`/`**：选绑定知识库的应用（或「仅模型」+ DeepSeek）→ 发送一条消息。
   3. **通过**：流式输出正常；`GET /v1/tbox/health` 为 200；无 502/HTML 当 JSON。
-- 详细命令与环境见 **`docs/TBOX_QUICKSTART.md` §3.2**。
+- 详细命令与环境见 **`docs/TBOX_QUICKSTART.md` §3.2**、API 冒烟 **`docs/TBOX_DEEPSEEK_SMOKE.md`**（`scripts/tbox_g3_deepseek_smoke.py`）。
+
+### 7.6 发版前对抗 checklist（S7）
+
+**非 PR 门禁**（与 §7.3 一致）；在 **tag / 准生产发布前** 或 **`workflow_dispatch`** 执行并归档结果。
+
+| 步骤 | 命令 / 动作 | 通过标准 |
+|------|-------------|----------|
+| 1 栈就绪 | Docker 或目标环境 API **9380** healthy | `curl -sf …/v1/tbox/health` |
+| 2 启用 live 对抗 | `export RAGFLOW_ADVERSARIAL_TESTS=1` | 见 **`docs/TBOX_ENV_AND_VERSIONS.md`** §5 |
+| 3 运行 | `uv run pytest test/adversarial_tests.py -v --tb=short` | 无 unexpected fail（允许 skip 的用例保持 skip） |
+| 4 重型 workflow | GitHub **`harness_engineering`** 手动触发 | 日志归档至发版记录 |
+| 5 产品冒烟 | G1 + G3 脚本 | `tbox_g1_ingest_format_smoke.py`、`tbox_g3_deepseek_smoke.py` |
+
+发版记录须含：日期、Git **HEAD**、对抗/pytest 摘要、操作人。
 
 ---
 
@@ -247,8 +261,8 @@
 | **S2** | **已推进** | `web-tbox/`：**`/login` 邮箱密码登录**（RSA → `/api/v1/auth/login`）、**`/` 控制台**拉取 **`/v1/tbox/me`**（带 `Authorization`）、**退出** 调 **`POST /v1/tbox/logout`**。IA/权限/视觉以 **`docs/TBOX_UI_DESIGN_OVERVIEW.md`**、**`docs/TBOX_UI_DESIGN_DETAIL.md`** 为准；参考原型见 **§2.1**。 |
 | **S3** | **已启动** | **知识库 `/documents`**（含 **文档列表/上传/删除**）；**对话 `/`**；**检索 `/search`**；**用户 `/users`**；**审计 `/audit`**（ingestions）；**`permissions`**（**v4** 含 `crawl.manage`）。**整库 ZIP 导出** 仍视官方 REST 暴露情况。 |
 | **S4** | **已推进** | **`/crawl`** + worker tick；**`extra_config` 策略键**（`tbox_crawl_keywords` / `_max_depth` / `_allowed_domains`）UI + **`common/tbox_crawl_strategy.py`**；专项/定时任务类型。**Crawl-delay、登录/API 源等**见 **§9.4**。 |
-| **S5–S7** | 未开始 | 按 §9.1 继续排期。 |
-| **矩阵/下阶段** | **P1 已落地** | 阶段 0–2 见 **[`2026-05-24-tbox-next-phase.md`](./superpowers/plans/2026-05-24-tbox-next-phase.md)**；**P2** 见 **[`2026-05-24-tbox-phase3-plan.md`](./superpowers/plans/2026-05-24-tbox-phase3-plan.md)**。 |
+| **S5–S7** | **S5/S6 已推进** | **S5** checklist：**`docker/README.md`**、Quickstart §1.1；**S6** 合并流程：**`docs/TBOX_UPSTREAM_MERGE_RUNBOOK.md`**；**S7** 发版对抗：**Harness §7.6**。 |
+| **矩阵/下阶段** | **P2 + Phase4 已落地** | Phase 3–4 见 **`phase3-plan`** / **`phase4-plan`**；**Phase 5**（G3/S6/S7）见 **[`2026-05-24-tbox-phase5-plan.md`](./superpowers/plans/2026-05-24-tbox-phase5-plan.md)**。 |
 
 ### 9.1 阶段总览
 

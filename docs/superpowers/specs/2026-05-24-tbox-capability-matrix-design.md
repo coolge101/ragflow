@@ -75,7 +75,7 @@
 | G1-KB-CREATE | 新建空知识库 | ✅ | ✅ `/documents` | 官方 REST | ✅ | 需 `doc.upload` 或 `kb.configure` |
 | G1-KB-DELETE | 删除整库 | ✅ | ✅ `/documents`、`/kb` | 官方 REST | ✅ | 需 `kb.dangerous` |
 | G1-DOC-DELETE | 删除单文档 | ✅ | ✅ `/documents` | 官方 REST | ✅ | 需 `doc.delete` |
-| G1-OCR-IMAGE | 图片/OCR 深度理解 | ✅ deepdoc | ⚠️ 随 parser，无单独向导 | deepdoc | P1 | 2026-05-24 API 冒烟：PDF/Word ✅；Excel/PNG 上传 OK 但 naive+`table`/`picture` 均为 0 chunk、检索未命中（见 `docs/TBOX_INGEST_FORMAT_SMOKE.md` §5） |
+| G1-OCR-IMAGE | 图片/OCR 深度理解 | ✅ deepdoc | ⚠️ 随 parser，无单独向导 | deepdoc | P1 | 2026-05-24 冒烟四格式 ✅；PNG 无 image2text 时 OCR 回退（`picture.py`）；Excel 须表头+数据行，见 smoke §5 |
 | G1-DOC-REPARSE | 文档重解析 | ✅ | ✅ **`/documents`** ingest | 官方 REST | P2 | `doc.reparse` + `POST /documents/ingest` |
 | G1-DOC-VERSION | 文档版本管理 | ⚠️ 视版本 | ❌ | 官方 REST | P2 | 非目标可延后 |
 | G1-KB-ZIP | 整库 ZIP 导入/导出 | ⚠️ 无专用 REST | ✅ 浏览器 ZIP | `GET /v1/document/get` + upload | P2 | `export.data` / `doc.upload` |
@@ -99,7 +99,7 @@
 | ID | 能力 | 官方 | web-tbox | 后端 | 优先级 | 备注 |
 |----|------|------|----------|------|--------|------|
 | G3-MODEL-KEY | 供应商 API Key、模型列表 | ✅ profile/model | ✅ `/kb` | `/v1/llm/*` | ✅ | |
-| G3-MODEL-DEEPSEEK | DeepSeek 对话 | ✅ conf/models | ⚠️ 需环境配置 | 官方 LLM | **P0** | Runbook 手测 |
+| G3-MODEL-DEEPSEEK | DeepSeek 对话 | ✅ conf/models | ⚠️ 需 API Key | 官方 LLM | **P0** | API 冒烟 **`scripts/tbox_g3_deepseek_smoke.py`** + **`docs/TBOX_DEEPSEEK_SMOKE.md`**；UI 见 Quickstart §3.2 |
 | G3-APP-CRUD | 对话应用完整配置 | ✅ next-chats | ✅ `/apps` | `/api/v1/chats` | P0 | Chat Apps 主体已完成 |
 | G3-CHAT-STREAM | 流式对话 + 引用 | ✅ | ✅ `/` | SSE completions | ✅ | `reference.chunks` |
 | G3-CHAT-SESSION | 会话列表/切换 | ✅ | ✅ `/` | chats sessions API | ✅ | |
@@ -136,6 +136,8 @@
 | **1** | P0 收尾 | P0 行 | 去品牌、Chat Apps 文档、镜像含 TBOX 后端、验收对齐 |
 | **2** | P1 补齐 | P1 行 | MD/PDF 导出 → 三类场景模板 → 爬取关键词 UI → G1 手测 |
 | **3** | P2 扩展 | P2 行 | Office 导出、爬取高级源、文档高级能力；矩阵复审 |
+| **4** | G1 闭环 + 交付硬化 | P1 缺口 | G1 冒烟修复、Harness 同步；S5 Docker 准备（见 phase4 plan） |
+| **5** | G3 + S6/S7 | P0/P1 | DeepSeek API 冒烟、上游合并 Runbook、发版对抗 checklist（见 phase5 plan） |
 
 详细 Task 见 implementation plan。
 
