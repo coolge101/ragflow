@@ -75,14 +75,15 @@ LAN IP：`hostname -I | awk '{print $1}'`
 | 日期 | 2026-05-30 |
 | VM / LAN IP | 10.40.92.240 |
 | Console | http://10.40.92.240:5180/login |
-| Git HEAD | `94afbe047` |
-| `tbox_vm_production_acceptance.sh` | ☑ pass（G1 + G3 smoke） |
-| `tbox_login_smoke.sh` | ☑ pass（5180 登录 + `/v1/tbox/me`） |
+| Git HEAD | `72af7b8fe` |
+| `tbox_vm_production_acceptance.sh` | ☑ pass（5/5：栈 + 5180 + health + login + G1/G3/P2） |
+| `tbox_login_smoke.sh` | ☑ pass |
+| `tbox_p2_regression_smoke.sh` | ☑ pass（含于 release smoke） |
 | §3 A/C 本机登录与健康 | ☑ |
 | 双账号权限（§3 D） | ☐ 待手测 |
 | UI Walkthrough Q + L–P（§4） | ☐ 待手测 |
 | G1 向导 `/documents`（§4） | ☐ 待手测 |
-| 备注 | 2026-05-30 修复 S6 登录 JWT；`admin@ragflow.io` / `admin` 已验证 |
+| 备注 | `bash scripts/tbox_record_vm_acceptance.sh --run-smoke` @ 2026-05-30 全绿；§3 B/D §4 仍待手测 |
 
 ---
 
