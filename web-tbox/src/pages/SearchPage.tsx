@@ -2,6 +2,20 @@ import { FormEvent, useCallback, useEffect, useState } from "react";
 import { ApiErrorBanner } from "../components/ApiErrorBanner";
 import { listDatasets, type DatasetRow } from "../api/datasets";
 import { searchDataset, type ChunkRow } from "../api/datasetSearch";
+import {
+  buildSearchPrintHtml,
+  downloadUtf8File,
+  exportFilenameDatePrefix,
+  formatSearchMarkdown,
+  printHtmlDocument,
+} from "../utils/exportConsultationResult";
+import {
+  confirmLargeExport,
+  exportSearchToXlsx,
+  exportSearchToPptx,
+  LARGE_EXPORT_SEARCH_THRESHOLD,
+  parseSearchChunkRow,
+} from "../utils/exportOffice";
 
 function chunkSnippet(c: ChunkRow): string {
   const doc = (c.document_keyword as string) || (c.docnm_kwd as string) || "";
@@ -128,6 +142,95 @@ export function SearchPage() {
     setLastSuccessSearchKey(null);
   }
 
+  const datasetLabel =
+    datasets.find((d) => String(d.id) === datasetId)?.name != null
+      ? String(datasets.find((d) => String(d.id) === datasetId)?.name)
+      : datasetId || "—";
+
+  const canExport =
+    lastSuccessSearchKey !== null &&
+    lastSuccessSearchKey === currentSearchKey &&
+    !loadingSearch &&
+    !searchError;
+
+  function buildExportChunks() {
+    return chunks.map((c, i) => ({ index: i + 1, snippet: chunkSnippet(c) }));
+  }
+
+  function onExportMarkdown() {
+    if (!canExport) {
+      return;
+    }
+    const md = formatSearchMarkdown({
+      title: "TBOX 检索结果",
+      datasetLabel,
+      question: question.trim(),
+      total,
+      chunks: buildExportChunks(),
+    });
+    downloadUtf8File(`tbox-search-${exportFilenameDatePrefix()}.md`, md);
+  }
+
+  function onExportPdf() {
+    if (!canExport) {
+      return;
+    }
+    try {
+      const html = buildSearchPrintHtml({
+        title: "TBOX 检索结果",
+        datasetLabel,
+        question: question.trim(),
+        total,
+        chunks: buildExportChunks(),
+      });
+      printHtmlDocument(html, "TBOX 检索结果");
+    } catch (e) {
+      setSearchError(e instanceof Error ? e.message : "无法打开打印窗口");
+    }
+  }
+
+  async function onExportExcel() {
+    if (!canExport) {
+      return;
+    }
+    const rows = chunks.map((c, i) => parseSearchChunkRow(c, i + 1));
+    if (!confirmLargeExport(rows.length, "检索片段", LARGE_EXPORT_SEARCH_THRESHOLD)) {
+      return;
+    }
+    try {
+      await exportSearchToXlsx({
+        title: "TBOX 检索结果",
+        datasetLabel,
+        question: question.trim(),
+        total,
+        rows,
+      });
+    } catch (e) {
+      setSearchError(e instanceof Error ? e.message : "Excel 导出失败");
+    }
+  }
+
+  async function onExportPptx() {
+    if (!canExport) {
+      return;
+    }
+    const rows = chunks.map((c, i) => parseSearchChunkRow(c, i + 1));
+    if (!confirmLargeExport(rows.length, "检索片段（幻灯片）", LARGE_EXPORT_SEARCH_THRESHOLD)) {
+      return;
+    }
+    try {
+      await exportSearchToPptx({
+        title: "TBOX 检索结果",
+        datasetLabel,
+        question: question.trim(),
+        total,
+        rows,
+      });
+    } catch (e) {
+      setSearchError(e instanceof Error ? e.message : "PPT 导出失败");
+    }
+  }
+
   return (
     <div style={{ maxWidth: 880 }}>
       <h1 style={{ marginTop: 0 }}>检索</h1>
@@ -171,7 +274,7 @@ export function SearchPage() {
             fontSize: "0.92rem",
           }}
         >
-          当前<strong>没有可用知识库</strong>。请先在 RAGFlow 中创建知识库并入库后，点下方「重试加载知识库」或刷新页面。
+          当前<strong>没有可用知识库</strong>。请先在「文档 / 知识库」中创建知识库并入库后，点下方「重试加载知识库」或刷新页面。
         </div>
       ) : null}
 
@@ -257,7 +360,21 @@ export function SearchPage() {
         </section>
       ) : chunks.length > 0 ? (
         <section style={{ marginTop: "1.5rem" }}>
-          <h2 style={{ fontSize: "1.1rem" }}>结果（{total}）</h2>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: "0.75rem", alignItems: "center", marginBottom: "0.75rem" }}>
+            <h2 style={{ fontSize: "1.1rem", margin: 0 }}>结果（{total}）</h2>
+            <button type="button" disabled={!canExport} onClick={onExportMarkdown} title="下载当前检索结果为 Markdown">
+              导出 Markdown
+            </button>
+            <button type="button" disabled={!canExport} onClick={onExportPdf} title="在新窗口打印，可选择另存为 PDF">
+              导出 PDF…
+            </button>
+            <button type="button" disabled={!canExport} onClick={() => void onExportExcel()} title="下载当前检索结果为 Excel (.xlsx)">
+              导出 Excel
+            </button>
+            <button type="button" disabled={!canExport} onClick={() => void onExportPptx()} title="下载当前检索结果为 PowerPoint (.pptx)">
+              导出 PPT
+            </button>
+          </div>
           <ol style={{ paddingLeft: "1.2rem", display: "flex", flexDirection: "column", gap: "0.75rem" }}>
             {chunks.map((c, i) => (
               <li

@@ -131,7 +131,7 @@ export function ModelIdSelect({
       {otherMode ? (
         <label style={{ display: "flex", flexDirection: "column", gap: 4 }}>
           <span className="muted" style={{ fontSize: "0.82rem" }}>
-            手动输入完整 ID（<code>模型名@厂商</code>，与 RAGFlow 一致；含 DeepSeek、智谱、SiliconFlow 等）
+            手动输入完整 ID（<code>模型名@厂商</code>，与后端约定一致；含 DeepSeek、智谱、SiliconFlow 等）
           </span>
           <input
             value={otherDraft}

@@ -28,9 +28,11 @@ from api.db.services import duplicate_name
 from api.db.services.document_service import DocumentService
 from api.db.services.file_service import FileService
 from common.data_source.rss_connector import RSSConnector
+from common.tbox_crawl_api import api_item_to_document, extract_api_items, parse_api_config
 from common.tbox_crawl_origin_throttle import OriginFetchThrottler
 from common.tbox_crawl_robots import RobotsOriginCache
 from common.tbox_crawl_ssrf_fetch import fetch_url_body_capped, suggested_filename_from_url
+from common.tbox_crawl_strategy import content_matches_keywords, parse_strategy
 
 _LOG = logging.getLogger(__name__)
 
@@ -85,6 +87,8 @@ def ingest_static_web_seeds_into_kb(
     kb_table_num_map: dict = {}
     robots_cache = None if skip_robots else RobotsOriginCache()
     throttle = OriginFetchThrottler(robots_cache)
+    strategy = parse_strategy(extra_config)
+    skipped_kw = 0
 
     for url in seed_urls[:lim]:
         try:
@@ -96,6 +100,10 @@ def ingest_static_web_seeds_into_kb(
                 origin_throttle=throttle,
                 extra_config=extra_config,
             )
+            if not content_matches_keywords(body, strategy.keywords):
+                skipped_kw += 1
+                _LOG.info("tbox_crawl_ingest: keyword filter skip url=%s", url)
+                continue
             raw_name = suggested_filename_from_url(url, ctype)
             filename = duplicate_name(DocumentService.query, name=raw_name, kb_id=kb.id)
             fobj = _BytesUploadFile(filename, body)
@@ -112,6 +120,8 @@ def ingest_static_web_seeds_into_kb(
 
     if errs:
         return False, "; ".join(errs)[:65000]
+    if skipped_kw and skipped_kw >= min(lim, len(seed_urls)):
+        return False, f"all {skipped_kw} page(s) skipped by keyword filter"
     return True, ""
 
 
@@ -150,6 +160,8 @@ def ingest_rss_seeds_into_kb(
     name_budget = max(32, FILE_NAME_LEN_LIMIT - 8)
     robots_cache = None if skip_robots else RobotsOriginCache()
     throttle = OriginFetchThrottler(robots_cache)
+    strategy = parse_strategy(extra_config)
+    skipped_kw = 0
 
     for feed_url in feed_urls[:max_f]:
         fu = (feed_url or "").strip()
@@ -178,6 +190,10 @@ def ingest_rss_seeds_into_kb(
                     blob = doc.blob if isinstance(doc.blob, (bytes, bytearray)) else bytes(doc.blob or b"")
                     if not blob:
                         continue
+                    label = doc.semantic_identifier or ""
+                    if not content_matches_keywords(label + "\n" + blob.decode("utf-8", errors="ignore"), strategy.keywords):
+                        skipped_kw += 1
+                        continue
                     base = _safe_base_name(doc.semantic_identifier, name_budget)
                     raw_name = f"{base}.txt"
                     filename = duplicate_name(DocumentService.query, name=raw_name, kb_id=kb.id)
@@ -199,4 +215,92 @@ def ingest_rss_seeds_into_kb(
 
     if errs:
         return False, "; ".join(errs)[:65000]
+    if n_done == 0 and skipped_kw > 0:
+        return False, f"all {skipped_kw} RSS entr(y/ies) skipped by keyword filter"
+    return True, ""
+
+
+def ingest_http_api_seeds_into_kb(
+    kb: Any,
+    tenant_id: str,
+    api_urls: list[str],
+    *,
+    max_endpoints: int | None = None,
+    max_items: int | None = None,
+    max_bytes: int | None = None,
+    timeout_sec: float | None = None,
+    skip_robots: bool = False,
+    extra_config: dict[str, Any] | None = None,
+) -> tuple[bool, str]:
+    """
+    GET each seed as a JSON API (SSRF-safe), expand items per ``extra_config`` API keys,
+    upload each item as ``.txt`` under *kb*, then queue parse tasks.
+
+    Caps: ``TBOX_CRAWL_API_MAX_ENDPOINTS`` (default **3**), ``TBOX_CRAWL_API_MAX_ITEMS`` (default **30**) per tick.
+    Auth headers: ``extra_config.tbox_crawl_auth_profile`` → env ``TBOX_CRAWL_AUTH_<PROFILE>_HEADERS``.
+    """
+    if kb is None or not getattr(kb, "id", None):
+        return False, "invalid knowledge base"
+
+    me_raw = max_endpoints if max_endpoints is not None else os.environ.get("TBOX_CRAWL_API_MAX_ENDPOINTS", "3")
+    mi_raw = max_items if max_items is not None else os.environ.get("TBOX_CRAWL_API_MAX_ITEMS", "30")
+    max_e = max(1, min(int(me_raw), len(api_urls)))
+    cap = max(1, int(mi_raw))
+    max_b = int(max_bytes if max_bytes is not None else os.environ.get("TBOX_CRAWL_INGEST_MAX_BYTES", str(8 * 1024 * 1024)))
+    timeout = float(timeout_sec if timeout_sec is not None else os.environ.get("TBOX_CRAWL_INGEST_TIMEOUT", os.environ.get("TBOX_CRAWL_FETCH_TIMEOUT", "60")))
+
+    api_cfg = parse_api_config(extra_config)
+    strategy = parse_strategy(extra_config)
+    errs: list[str] = []
+    kb_table_num_map: dict = {}
+    n_done = 0
+    skipped_kw = 0
+    name_budget = max(32, FILE_NAME_LEN_LIMIT - 8)
+    robots_cache = None if skip_robots else RobotsOriginCache()
+    throttle = OriginFetchThrottler(robots_cache)
+
+    for api_url in api_urls[:max_e]:
+        url = (api_url or "").strip()
+        if not url:
+            continue
+        try:
+            body, _ctype = fetch_url_body_capped(
+                url,
+                max_bytes=max_b,
+                timeout=timeout,
+                robots_preflight=robots_cache,
+                origin_throttle=throttle,
+                extra_config=extra_config,
+            )
+            items = extract_api_items(body, api_cfg)
+            for item in items:
+                if n_done >= cap:
+                    break
+                text, base = api_item_to_document(item, api_cfg)
+                if not text.strip():
+                    continue
+                if not content_matches_keywords(text, strategy.keywords):
+                    skipped_kw += 1
+                    continue
+                raw_name = f"{_safe_base_name(base, name_budget)}.txt"
+                filename = duplicate_name(DocumentService.query, name=raw_name, kb_id=kb.id)
+                fobj = _BytesUploadFile(filename, text.encode("utf-8"))
+                err, pairs = FileService.upload_document(kb, [fobj], tenant_id, src="web")
+                if err:
+                    errs.append(f"{url} item {filename!r}: {'; '.join(err)}")
+                    continue
+                for drow, _blob in pairs:
+                    DocumentService.run(tenant_id, drow, kb_table_num_map)
+                n_done += 1
+                _LOG.info("tbox_crawl_api_ingest: queued doc name=%s kb_id=%s api=%s", filename, kb.id, url)
+        except Exception as exc:
+            _LOG.warning("tbox_crawl_api_ingest failed url=%s err=%s", url, exc)
+            errs.append(f"{url}: {exc}")
+
+    if errs:
+        return False, "; ".join(errs)[:65000]
+    if n_done == 0 and skipped_kw > 0:
+        return False, f"all {skipped_kw} API item(s) skipped by keyword filter"
+    if n_done == 0:
+        return False, "no API items ingested"
     return True, ""

@@ -1,32 +1,75 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { ApiErrorBanner } from "../components/ApiErrorBanner";
 import { listDatasets, type DatasetRow } from "../api/datasets";
-import { listIngestionLogs, type IngestionLogRow } from "../api/ingestionLogs";
+import { listIngestionLogs, type IngestionLogQuery, type IngestionLogRow } from "../api/ingestionLogs";
+import { hasPermission } from "../constants/permissions";
+import { useAuth } from "../context/AuthContext";
+import {
+  AUDIT_OPERATION_STATUS_OPTIONS,
+  auditRowTime,
+  auditRowTitle,
+  datetimeLocalToApi,
+  operationStatusLabel,
+} from "../utils/auditLogFilters";
+import {
+  confirmLargeAuditExport,
+  exportAuditLogsCsv,
+  exportAuditLogsExcel,
+  fetchAuditLogsForExport,
+} from "../utils/exportAuditLogs";
+import { exportFilenameDatePrefix } from "../utils/exportConsultationResult";
 
-function fmtTime(v: unknown): string {
-  if (v == null || v === "") {
-    return "—";
-  }
-  const s = String(v);
-  if (/^\d+$/.test(s)) {
-    const n = Number(s);
-    if (n > 1e12) {
-      return new Date(n).toLocaleString();
-    }
-  }
-  return s;
+const LOGS_PAGE_SIZE = 50;
+
+function toggleStatus(list: string[], value: string): string[] {
+  return list.includes(value) ? list.filter((v) => v !== value) : [...list, value];
 }
 
 export function AuditPage() {
+  const { permissions } = useAuth();
+  const canExport = hasPermission(permissions, "export.data");
+
   const [datasets, setDatasets] = useState<DatasetRow[]>([]);
   const [kbLoading, setKbLoading] = useState(true);
   const [datasetId, setDatasetId] = useState("");
   const [logs, setLogs] = useState<IngestionLogRow[]>([]);
   const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(1);
   const [logType, setLogType] = useState<"dataset" | "file">("dataset");
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
+  const [statusFilter, setStatusFilter] = useState<string[]>([]);
+  const [keywords, setKeywords] = useState("");
   const [logsLoading, setLogsLoading] = useState(false);
+  const [exportBusy, setExportBusy] = useState(false);
   const [kbError, setKbError] = useState<string | null>(null);
   const [logsError, setLogsError] = useState<string | null>(null);
+  const [exportMsg, setExportMsg] = useState<string | null>(null);
+
+  const totalPages = Math.max(1, Math.ceil(total / LOGS_PAGE_SIZE));
+
+  const queryBase = useMemo((): IngestionLogQuery => {
+    const q: IngestionLogQuery = {
+      log_type: logType,
+      orderby: "create_time",
+      desc: true,
+    };
+    const from = datetimeLocalToApi(dateFrom);
+    const to = datetimeLocalToApi(dateTo);
+    if (from) {
+      q.create_date_from = from;
+    }
+    if (to) {
+      q.create_date_to = to;
+    }
+    if (statusFilter.length) {
+      q.operation_status = [...statusFilter];
+    }
+    if (keywords.trim()) {
+      q.keywords = keywords.trim();
+    }
+    return q;
+  }, [logType, dateFrom, dateTo, statusFilter, keywords]);
 
   const reloadKbs = useCallback(async () => {
     setKbLoading(true);
@@ -64,9 +107,9 @@ export function AuditPage() {
     setLogsError(null);
     try {
       const { res, body } = await listIngestionLogs(datasetId, {
-        page: 1,
-        page_size: 50,
-        log_type: logType,
+        ...queryBase,
+        page,
+        page_size: LOGS_PAGE_SIZE,
       });
       if (res.status === 401 || body.code === 401) {
         setLogsError("未授权");
@@ -87,7 +130,7 @@ export function AuditPage() {
     } finally {
       setLogsLoading(false);
     }
-  }, [datasetId, logType]);
+  }, [datasetId, page, queryBase]);
 
   useEffect(() => {
     void reloadKbs();
@@ -97,12 +140,58 @@ export function AuditPage() {
     void loadLogs();
   }, [loadLogs]);
 
+  function resetFilters() {
+    setDateFrom("");
+    setDateTo("");
+    setStatusFilter([]);
+    setKeywords("");
+    setPage(1);
+  }
+
+  async function onExport(format: "csv" | "xlsx") {
+    if (!datasetId || !canExport) {
+      return;
+    }
+    setExportBusy(true);
+    setExportMsg(null);
+    setLogsError(null);
+    try {
+      const { rows, total: t, error, truncated } = await fetchAuditLogsForExport(datasetId, queryBase);
+      if (error && rows.length === 0) {
+        setLogsError(error);
+        return;
+      }
+      if (rows.length === 0) {
+        setLogsError("当前筛选无数据可导出");
+        return;
+      }
+      if (!confirmLargeAuditExport(t || rows.length)) {
+        return;
+      }
+      const kbName =
+        (datasets.find((d) => String(d.id) === datasetId)?.name as string | undefined) || datasetId;
+      const stem = `audit-${exportFilenameDatePrefix()}-${String(kbName).replace(/[^\w\u4e00-\u9fff.-]+/g, "_").slice(0, 40)}`;
+      if (format === "csv") {
+        exportAuditLogsCsv(rows, stem);
+      } else {
+        await exportAuditLogsExcel(rows, stem);
+      }
+      const truncNote = truncated ? "（已截断至 2000 条）" : "";
+      setExportMsg(`已导出 ${rows.length} 条${truncNote}`);
+    } catch (e) {
+      setLogsError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setExportBusy(false);
+    }
+  }
+
   return (
     <div style={{ maxWidth: 1100 }}>
       <h1 style={{ marginTop: 0 }}>审计</h1>
       <p className="muted">
-        下列为官方 <strong>知识库流水线/入库日志</strong>：<code>GET /api/v1/datasets/&lt;id&gt;/ingestions</code>（
-        <code>log_type=dataset|file</code>）。完整安全审计与 TBOX 扩展见后续迭代。
+        知识库<strong>流水线/入库日志</strong>：<code>GET /api/v1/datasets/&lt;id&gt;/ingestions</code>。支持{" "}
+        <code>log_type</code>、<code>operation_status</code>、<code>create_date_from/to</code>、
+        <code>keywords</code>（文件级日志）。导出需 <code>export.data</code>。
       </p>
 
       {kbError ? (
@@ -125,15 +214,30 @@ export function AuditPage() {
           入库日志：{logsError}
         </ApiErrorBanner>
       ) : null}
+      {exportMsg ? <p style={{ color: "#15803d", fontSize: "0.9rem" }}>{exportMsg}</p> : null}
 
-      <div style={{ display: "flex", flexWrap: "wrap", gap: "1rem", alignItems: "center", marginBottom: "1rem" }}>
+      <div
+        style={{
+          display: "flex",
+          flexWrap: "wrap",
+          gap: "1rem",
+          alignItems: "flex-end",
+          marginBottom: "1rem",
+          padding: "0.75rem",
+          border: "1px solid var(--border-subtle, #e5e7eb)",
+          borderRadius: 8,
+        }}
+      >
         <label>
-          <span className="muted" style={{ marginRight: 8 }}>
+          <span className="muted" style={{ display: "block", marginBottom: 4, fontSize: "0.85rem" }}>
             知识库
           </span>
           <select
             value={datasetId}
-            onChange={(ev) => setDatasetId(ev.target.value)}
+            onChange={(ev) => {
+              setDatasetId(ev.target.value);
+              setPage(1);
+            }}
             disabled={kbLoading}
             style={{ minWidth: 220, padding: "0.35rem" }}
           >
@@ -149,12 +253,15 @@ export function AuditPage() {
           </select>
         </label>
         <label>
-          <span className="muted" style={{ marginRight: 8 }}>
+          <span className="muted" style={{ display: "block", marginBottom: 4, fontSize: "0.85rem" }}>
             日志类型
           </span>
           <select
             value={logType}
-            onChange={(ev) => setLogType(ev.target.value as "dataset" | "file")}
+            onChange={(ev) => {
+              setLogType(ev.target.value as "dataset" | "file");
+              setPage(1);
+            }}
             disabled={logsLoading}
             style={{ padding: "0.35rem" }}
           >
@@ -162,12 +269,118 @@ export function AuditPage() {
             <option value="file">file（文件级）</option>
           </select>
         </label>
+        <label>
+          <span className="muted" style={{ display: "block", marginBottom: 4, fontSize: "0.85rem" }}>
+            开始时间 ≥
+          </span>
+          <input
+            type="datetime-local"
+            value={dateFrom}
+            onChange={(ev) => {
+              setDateFrom(ev.target.value);
+              setPage(1);
+            }}
+            disabled={logsLoading}
+          />
+        </label>
+        <label>
+          <span className="muted" style={{ display: "block", marginBottom: 4, fontSize: "0.85rem" }}>
+            结束时间 ≤
+          </span>
+          <input
+            type="datetime-local"
+            value={dateTo}
+            onChange={(ev) => {
+              setDateTo(ev.target.value);
+              setPage(1);
+            }}
+            disabled={logsLoading}
+          />
+        </label>
+        <label style={{ minWidth: 200 }}>
+          <span className="muted" style={{ display: "block", marginBottom: 4, fontSize: "0.85rem" }}>
+            关键词（文件名）
+          </span>
+          <input
+            type="search"
+            value={keywords}
+            onChange={(ev) => setKeywords(ev.target.value)}
+            onKeyDown={(ev) => {
+              if (ev.key === "Enter") {
+                setPage(1);
+                void loadLogs();
+              }
+            }}
+            placeholder="回车查询"
+            disabled={logsLoading}
+            style={{ width: "100%", boxSizing: "border-box" }}
+          />
+        </label>
+      </div>
+
+      <div style={{ marginBottom: "1rem" }}>
+        <div className="muted" style={{ marginBottom: 6, fontSize: "0.85rem" }}>
+          状态筛选（operation_status，可多选）
+        </div>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: "0.65rem 1rem" }}>
+          {AUDIT_OPERATION_STATUS_OPTIONS.map((opt) => (
+            <label key={opt.value} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: "0.88rem" }}>
+              <input
+                type="checkbox"
+                checked={statusFilter.includes(opt.value)}
+                onChange={() => {
+                  setStatusFilter((prev) => toggleStatus(prev, opt.value));
+                  setPage(1);
+                }}
+                disabled={logsLoading}
+              />
+              {opt.label}
+            </label>
+          ))}
+        </div>
+      </div>
+
+      <div style={{ display: "flex", flexWrap: "wrap", gap: "0.75rem", alignItems: "center", marginBottom: "1rem" }}>
         <button type="button" disabled={kbLoading} onClick={() => void reloadKbs()}>
           {kbLoading ? "…" : "刷新知识库"}
         </button>
         <button type="button" disabled={logsLoading || !datasetId} onClick={() => void loadLogs()}>
-          {logsLoading ? "加载中…" : "刷新日志"}
+          {logsLoading ? "加载中…" : "应用筛选"}
         </button>
+        <button type="button" disabled={logsLoading} onClick={resetFilters}>
+          清除筛选
+        </button>
+        {canExport ? (
+          <>
+            <button type="button" disabled={exportBusy || !datasetId || logsLoading} onClick={() => void onExport("csv")}>
+              {exportBusy ? "导出中…" : "导出 CSV"}
+            </button>
+            <button type="button" disabled={exportBusy || !datasetId || logsLoading} onClick={() => void onExport("xlsx")}>
+              {exportBusy ? "导出中…" : "导出 Excel"}
+            </button>
+          </>
+        ) : (
+          <span className="muted" style={{ fontSize: "0.85rem" }}>
+            无导出权限（export.data）
+          </span>
+        )}
+        <span className="muted" style={{ fontSize: "0.85rem" }}>
+          共 <strong>{total}</strong> 条 · 第 {page}/{totalPages} 页
+        </span>
+        {totalPages > 1 ? (
+          <>
+            <button type="button" disabled={logsLoading || page <= 1} onClick={() => setPage((p) => Math.max(1, p - 1))}>
+              上一页
+            </button>
+            <button
+              type="button"
+              disabled={logsLoading || page >= totalPages}
+              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+            >
+              下一页
+            </button>
+          </>
+        ) : null}
       </div>
 
       {logsLoading && !logs.length ? (
@@ -186,7 +399,7 @@ export function AuditPage() {
             <thead>
               <tr style={{ borderBottom: "2px solid var(--border-subtle)", textAlign: "left" }}>
                 <th style={{ padding: "0.45rem" }}>文档/任务</th>
-                <th style={{ padding: "0.45rem" }}>类型</th>
+                <th style={{ padding: "0.45rem" }}>任务类型</th>
                 <th style={{ padding: "0.45rem" }}>状态</th>
                 <th style={{ padding: "0.45rem" }}>进度说明</th>
                 <th style={{ padding: "0.45rem" }}>开始时间</th>
@@ -196,17 +409,17 @@ export function AuditPage() {
               {logs.length === 0 ? (
                 <tr>
                   <td colSpan={5} className="muted" style={{ padding: "1rem" }}>
-                    暂无日志（共 {total} 条）。
+                    暂无日志（筛选后共 {total} 条）。
                   </td>
                 </tr>
               ) : (
                 logs.map((row, i) => (
                   <tr key={String(row.id ?? i)} style={{ borderBottom: "1px solid #eee" }}>
-                    <td style={{ padding: "0.45rem" }}>
-                      {(row.document_name as string) || (row.pipeline_title as string) || String(row.id ?? "—")}
-                    </td>
+                    <td style={{ padding: "0.45rem" }}>{auditRowTitle(row)}</td>
                     <td style={{ padding: "0.45rem" }}>{String(row.task_type ?? "—")}</td>
-                    <td style={{ padding: "0.45rem" }}>{String(row.operation_status ?? "—")}</td>
+                    <td style={{ padding: "0.45rem" }} title={String(row.operation_status ?? "")}>
+                      {operationStatusLabel(row.operation_status)}
+                    </td>
                     <td
                       style={{
                         padding: "0.45rem",
@@ -218,7 +431,7 @@ export function AuditPage() {
                       {String(row.progress_msg ?? "").slice(0, 200)}
                     </td>
                     <td style={{ padding: "0.45rem", whiteSpace: "nowrap" }} className="muted">
-                      {fmtTime(row.process_begin_at ?? row.create_time)}
+                      {auditRowTime(row) || "—"}
                     </td>
                   </tr>
                 ))
@@ -227,9 +440,6 @@ export function AuditPage() {
           </table>
         </div>
       )}
-      <p className="muted" style={{ marginTop: "1rem", fontSize: "0.85rem" }}>
-        共 <strong>{total}</strong> 条（本页最多请求 50 条）。
-      </p>
     </div>
   );
 }

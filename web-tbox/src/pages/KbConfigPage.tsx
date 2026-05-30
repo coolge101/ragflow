@@ -432,7 +432,7 @@ export function KbConfigPage() {
 
   const chunkHint =
     typeof detail?.chunk_count === "number" && detail.chunk_count > 0
-      ? "当前库已有分块数据时，后端会拒绝更换嵌入模型；请先了解官方限制再修改。"
+      ? "当前库已有分块数据时，后端会拒绝更换嵌入模型；请先了解后端限制再修改。"
       : null;
 
   const embeddingUnset =
@@ -444,7 +444,7 @@ export function KbConfigPage() {
     <div style={{ maxWidth: 960 }}>
       <h1 style={{ marginTop: 0 }}>知识库配置</h1>
       <p className="muted">
-        对接官方 <code>GET/PUT /api/v1/datasets/&lt;id&gt;</code>：名称、描述、嵌入模型、分块方法、可见范围与{" "}
+        通过 <code>GET/PUT /api/v1/datasets/&lt;id&gt;</code> 配置：名称、描述、嵌入模型、分块方法、可见范围与{" "}
         <code>parser_config</code>。整库删除需 <code>kb.dangerous</code> 权限（二次确认）。
       </p>
 
@@ -543,7 +543,7 @@ export function KbConfigPage() {
 
             <h3 style={{ fontSize: "0.98rem", margin: "0 0 0.35rem" }}>供应商 API Key</h3>
             <p className="muted" style={{ fontSize: "0.82rem", marginTop: 0 }}>
-              与官方 <code>web/</code>「模型提供商」一致：写入后 Key 保存在服务端。复杂厂商（如火山、Bedrock）请在官方界面配置。
+              与「模型与 API Key 配置」一致：写入后 Key 保存在服务端。复杂厂商（如火山、Bedrock）请在本页按厂商说明填写。
             </p>
             {factoriesErr ? (
               <p style={{ color: "#b91c1c", fontSize: "0.85rem" }}>{factoriesErr}</p>
@@ -657,7 +657,7 @@ export function KbConfigPage() {
 
       {!datasetId ? (
         <p className="muted">
-          请先在「文档 / 知识库」页使用「新建知识库」，或通过官方 <code>web/</code> / API 创建数据集，再于此处编辑配置。
+          请先在「文档 / 知识库」页使用「新建知识库」，或通过 API 创建数据集，再于此处编辑配置。
         </p>
       ) : detailLoading && !detail ? (
         <p className="muted">加载配置…</p>

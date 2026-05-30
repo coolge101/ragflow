@@ -6,6 +6,20 @@
 **在新服务器上从 GitHub 克隆并一键部署**见 **[`TBOX_DEPLOY_FROM_GITHUB.md`](./TBOX_DEPLOY_FROM_GITHUB.md)**（推荐 `bash scripts/deploy-on-new-server.sh`）。
 **部署后的使用说明、菜单与权限**见 **[`TBOX_SYSTEM_USER_MANUAL.md`](./TBOX_SYSTEM_USER_MANUAL.md)**；**按界面逐步验收**见 **[`TBOX_UI_ACCEPTANCE_WALKTHROUGH.md`](./TBOX_UI_ACCEPTANCE_WALKTHROUGH.md)**。
 
+### 本机准生产路径（VM）
+
+| 目录 | 用途 |
+|------|------|
+| `~/ragflow` | 开发、改代码、push |
+| **`/data/tbox/ragflow`** | **正式运行**（Docker data-root 同在 `/data/docker`） |
+
+```bash
+cd /data/tbox/ragflow
+bash scripts/start-tbox-ragflow.sh --console
+```
+
+详见仓库根 **`DEPLOY_ROOT.md`**（仅存在于部署目录）。
+
 ## 1. 前置
 
 - 已按官方文档启动依赖（MySQL、ES/Infinity、Redis、MinIO 等），或直接使用 **`docker compose`** 起全栈（见仓库 `docker/README.md`）。
@@ -35,7 +49,24 @@ npm run dev
 
 浏览器打开终端提示的地址（默认 **http://127.0.0.1:5174**）。开发模式下 Vite 将 **`/v1` 与 `/api`** 代理到 `VITE_RAGFLOW_API_ORIGIN`，避免 CORS。
 
-提交或发版前建议在 `web-tbox/` 下执行 **`npm run typecheck`** 与 **`npm run build`**（与 GitHub Actions **`.github/workflows/web-tbox.yml`** 一致）；路由与权限说明见同目录 **`README.md`**。
+### 3.2 DeepSeek 手测（G3-MODEL-DEEPSEEK）
+
+1. 登录 **`web-tbox`**，打开 **`/kb`**，选择已有知识库（或先在 **`/documents`** 新建）。
+2. 在 **供应商 API Key** 区域配置 **DeepSeek**（`POST /v1/llm/set_api_key`）；在 **空间默认模型** 或表单 **Chat 模型** 中选择 `…@DeepSeek`（见 **`/v1/llm/list`** 与预设下拉）。
+3. 打开 **`/apps`** 新建或编辑对话应用（可用 **咨询/决策/辅导** 模板），绑定该知识库并选 DeepSeek 模型；或于 **`/`** 选该应用 / 「仅模型」。
+4. 发送一条测试问题；**通过**：流式回复正常，无「响应不是有效 JSON」；`curl -sf http://127.0.0.1:9380/v1/tbox/health` 返回 `code:0`。
+
+### 3.3 P1 能力速查（矩阵阶段 2）
+
+| 能力 | 路径 | 说明 |
+|------|------|------|
+| 对话/检索导出 MD/PDF | **`/`**、**`/search`** | 「导出 Markdown / 导出 PDF…」 |
+| Word / Excel / PPT | **`/`** Word+PPT；**`/search`** Excel+PPT | `exportOffice.ts` |
+| 场景模板 | **`/apps`** | 「从模板：咨询/决策/辅导」 |
+| 爬取策略 + worker | **`/crawl`** | 关键词/深度/域名 → `extra_config` |
+| 多格式入库手测 | — | **`TBOX_INGEST_FORMAT_SMOKE.md`** |
+
+提交或发版前建议在 `web-tbox/` 下执行 **`npm run typecheck`** 与 **`npm run build`**。
 
 ### 3.0 没有邮箱/密码（首次账号）
 
@@ -80,7 +111,7 @@ command:
 7. **检索**：**`/search`** 使用 **`POST /api/v1/datasets/<id>/search`**；**用户**：**`/users`** 使用 **`GET /api/v1/tenants/<当前用户 id>/users`**。
 8. **审计**：**`/audit`** 使用 **`GET /api/v1/datasets/<id>/ingestions`**；**采集**：**`/crawl`** 需 **`crawl.manage`**；任务 CRUD 走 **`/v1/tbox/crawl/tasks`**，手动执行一次 tick 走 **`POST /v1/tbox/crawl/tasks/<id>/run`**（**`robots.txt` 预检** + 探测 + 已绑定 **`dataset_id`** 时 **`static_web`/`rss`** 入库；**`tbox_skip_robots_check`** 等见 **`docs/TBOX_API_BOUNDARY.md`** §1.2–1.3；**`/me`** 契约 **v4+**）。
 
-### 3.2 采集 Worker（可选，骨架）
+### 3.4 采集 Worker（可选）
 
 独立进程轮询 **`run_state=ready`** 且 **`enabled`** 的任务并更新 **`last_run_at`**（与 **`POST .../run`** 相同：默认轻量 HTTP 种子探测，可调 **`TBOX_CRAWL_FETCH_PROBE_MAX`**、**`TBOX_CRAWL_MIN_ORIGIN_INTERVAL`** / **`TBOX_CRAWL_MAX_CRAWL_DELAY_SEC`**（**Crawl-delay** 节流）等，见 **`docs/TBOX_API_BOUNDARY.md`** §1.3）。仓库根执行：
 
@@ -102,6 +133,10 @@ Docker：在 **`docker/.env`** 中设置 **`ENABLE_TBOX_CRAWL_WORKER=1`**，或�
 - 环境与版本：`docs/TBOX_ENV_AND_VERSIONS.md`
 - API 边界：`docs/TBOX_API_BOUNDARY.md`
 - 总纲：`docs/TBOX_KB_DELIVERY_HARNESS.md`
+- **能力矩阵（G1–G5）**：`docs/superpowers/specs/2026-05-24-tbox-capability-matrix-design.md`
+- **下一阶段开发计划**：`docs/superpowers/plans/2026-05-24-tbox-next-phase.md`
+- **P2 阶段计划（Office 导出等）**：`docs/superpowers/plans/2026-05-24-tbox-phase3-plan.md`
+- **G1 多格式入库手测清单**：`docs/TBOX_INGEST_FORMAT_SMOKE.md`
 - UI 概要/详细设计：`docs/TBOX_UI_DESIGN_OVERVIEW.md`、`docs/TBOX_UI_DESIGN_DETAIL.md`（参考原型：`tbox-ragflow-platform/others/apps/web/`，见总纲 §2.1）
 - 二期能力备忘：`docs/TBOX_PHASE2_PAGE_REQUIREMENTS_MEMO.md`
 

@@ -11,6 +11,25 @@ import {
 import { listDatasets, type DatasetRow } from "../api/datasets";
 import { useAuth } from "../context/AuthContext";
 import { formatCrawlLastErrorDisplay } from "../utils/crawlLastError";
+import {
+  applyCrawlTaskMode,
+  crawlTaskModeFromFields,
+  formatStrategySummary,
+  mergeStrategyIntoExtra,
+  strategyFieldsFromExtra,
+  stripStrategyKeys,
+  type CrawlStrategyFields,
+  type CrawlTaskMode,
+} from "../utils/crawlExtraStrategy";
+import {
+  advancedFieldsFromExtra,
+  formatAdvancedSummary,
+  mergeAdvancedIntoExtra,
+  parseCrawlSourceType,
+  stripAdvancedKeys,
+  type CrawlAdvancedFields,
+  type CrawlSourceType,
+} from "../utils/crawlExtraAdvanced";
 
 const CRAWL_ROLES = new Set(["owner", "admin", "normal"]);
 
@@ -32,7 +51,7 @@ function stripManagedExtraKeys(ex: Record<string, unknown>): Record<string, unkn
   for (const k of MANAGED_EXTRA_KEYS) {
     delete out[k];
   }
-  return out;
+  return stripAdvancedKeys(stripStrategyKeys(out));
 }
 
 function stringifyExtraConfigSubset(ex: Record<string, unknown> | undefined): string {
@@ -118,9 +137,17 @@ function formatCrawlExtraSummary(extra: Record<string, unknown> | undefined): st
   if (configFlagOn(extra, EXTRA_WORKER_STUB_FAIL)) {
     parts.push("stub 失败联调");
   }
-  const customN = Object.keys(extra || {}).filter((k) => !MANAGED_EXTRA_KEYS.has(k)).length;
+  const customN = Object.keys(stripManagedExtraKeys(extra || {})).length;
   if (customN > 0) {
     parts.push(`其它键×${customN}`);
+  }
+  const strat = formatStrategySummary(extra);
+  if (strat) {
+    parts.unshift(strat);
+  }
+  const adv = formatAdvancedSummary(extra);
+  if (adv) {
+    parts.unshift(adv);
   }
   return parts.length ? parts.join("、") : "—";
 }
@@ -137,6 +164,43 @@ function parseSeedUrls(text: string): string[] {
     .split(/\r?\n/)
     .map((s) => s.trim())
     .filter(Boolean);
+}
+
+const EMPTY_CRAWL_STRATEGY: CrawlStrategyFields = { keywords: "", maxDepth: "", allowedDomains: "" };
+const EMPTY_CRAWL_ADVANCED: CrawlAdvancedFields = {
+  authProfile: "",
+  apiItemsPath: "",
+  apiContentFields: "",
+  apiIdField: "",
+};
+
+function mergeCrawlFormExtra(
+  parsed: Record<string, unknown>,
+  strategy: CrawlStrategyFields,
+  advanced: CrawlAdvancedFields,
+  sourceType: CrawlSourceType,
+  flags: CrawlExtraFlags,
+): Record<string, unknown> {
+  return mergeCrawlExtraConfig(
+    mergeAdvancedIntoExtra(mergeStrategyIntoExtra(parsed, strategy), advanced, sourceType),
+    flags,
+  );
+}
+
+function onCrawlTaskModeChange(
+  mode: CrawlTaskMode,
+  setMode: (m: CrawlTaskMode) => void,
+  setCron: (v: string) => void,
+  setEnabled: (v: boolean) => void,
+  setRunState: (v: "draft" | "ready" | "paused") => void,
+) {
+  setMode(mode);
+  if (mode === "special") {
+    const applied = applyCrawlTaskMode("special");
+    setCron(applied.cron);
+    setEnabled(applied.enabled);
+    setRunState(applied.runState);
+  }
 }
 
 function fmtTime(v: unknown): string {
@@ -178,7 +242,7 @@ export function CrawlPage() {
 
   const [createName, setCreateName] = useState("");
   const [createSeeds, setCreateSeeds] = useState("");
-  const [createSource, setCreateSource] = useState<"static_web" | "rss">("static_web");
+  const [createSource, setCreateSource] = useState<CrawlSourceType>("static_web");
   const [createRunState, setCreateRunState] = useState<"draft" | "ready" | "paused">("draft");
   const [createCron, setCreateCron] = useState("");
   const [createEnabled, setCreateEnabled] = useState(false);
@@ -189,11 +253,14 @@ export function CrawlPage() {
   const [createWorkerStubFail, setCreateWorkerStubFail] = useState(false);
   const [createExtraJson, setCreateExtraJson] = useState("{}");
   const [createExtraJsonFull, setCreateExtraJsonFull] = useState(false);
+  const [createTaskMode, setCreateTaskMode] = useState<CrawlTaskMode>("special");
+  const [createStrategy, setCreateStrategy] = useState<CrawlStrategyFields>(EMPTY_CRAWL_STRATEGY);
+  const [createAdvanced, setCreateAdvanced] = useState<CrawlAdvancedFields>(EMPTY_CRAWL_ADVANCED);
 
   const [editing, setEditing] = useState<CrawlTaskRow | null>(null);
   const [editName, setEditName] = useState("");
   const [editSeeds, setEditSeeds] = useState("");
-  const [editSource, setEditSource] = useState<"static_web" | "rss">("static_web");
+  const [editSource, setEditSource] = useState<CrawlSourceType>("static_web");
   const [editRunState, setEditRunState] = useState<"draft" | "ready" | "paused">("draft");
   const [editCron, setEditCron] = useState("");
   const [editEnabled, setEditEnabled] = useState(false);
@@ -204,6 +271,9 @@ export function CrawlPage() {
   const [editWorkerStubFail, setEditWorkerStubFail] = useState(false);
   const [editExtraJson, setEditExtraJson] = useState("{}");
   const [editExtraJsonFull, setEditExtraJsonFull] = useState(false);
+  const [editTaskMode, setEditTaskMode] = useState<CrawlTaskMode>("special");
+  const [editStrategy, setEditStrategy] = useState<CrawlStrategyFields>(EMPTY_CRAWL_STRATEGY);
+  const [editAdvanced, setEditAdvanced] = useState<CrawlAdvancedFields>(EMPTY_CRAWL_ADVANCED);
 
   const mustPickTenant = !isSuper && eligible.length > 1;
 
@@ -351,7 +421,7 @@ export function CrawlPage() {
     setEditing(t);
     setEditName(t.name);
     setEditSeeds((t.seed_urls || []).join("\n"));
-    setEditSource(t.source_type === "rss" ? "rss" : "static_web");
+    setEditSource(parseCrawlSourceType(t.source_type));
     setEditRunState(
       t.run_state === "ready" || t.run_state === "paused" ? (t.run_state as "ready" | "paused") : "draft",
     );
@@ -364,6 +434,9 @@ export function CrawlPage() {
     setEditWorkerStubFail(configFlagOn(ex, EXTRA_WORKER_STUB_FAIL));
     setEditExtraJsonFull(false);
     setEditExtraJson(stringifyExtraConfigSubset(ex));
+    setEditTaskMode(crawlTaskModeFromFields(t.schedule_cron || "", Boolean(t.enabled)));
+    setEditStrategy(strategyFieldsFromExtra(ex));
+    setEditAdvanced(advancedFieldsFromExtra(ex));
   };
 
   const closeEdit = () => {
@@ -406,7 +479,7 @@ export function CrawlPage() {
         schedule_cron: createCron.trim(),
         enabled: createEnabled,
         dataset_id: createDatasetId.trim() || undefined,
-        extra_config: mergeCrawlExtraConfig(parsed.value, {
+        extra_config: mergeCrawlFormExtra(parsed.value, createStrategy, createAdvanced, createSource, {
           skipHttpProbe: createSkipHttpProbe,
           skipIngest: createSkipIngest,
           skipRobots: createSkipRobots,
@@ -439,6 +512,10 @@ export function CrawlPage() {
     setCreateWorkerStubFail(false);
     setCreateExtraJsonFull(false);
     setCreateExtraJson("{}");
+    setCreateTaskMode("special");
+    setCreateStrategy(EMPTY_CRAWL_STRATEGY);
+    setCreateAdvanced(EMPTY_CRAWL_ADVANCED);
+    setCreateRunState("ready");
     void loadTasks();
   };
 
@@ -468,7 +545,7 @@ export function CrawlPage() {
       run_state: editRunState,
       schedule_cron: editCron.trim(),
       enabled: editEnabled,
-      extra_config: mergeCrawlExtraConfig(parsed.value, {
+      extra_config: mergeCrawlFormExtra(parsed.value, editStrategy, editAdvanced, editSource, {
         skipHttpProbe: editSkipHttpProbe,
         skipIngest: editSkipIngest,
         skipRobots: editSkipRobots,
@@ -559,14 +636,15 @@ export function CrawlPage() {
       <p className="muted">
         任务数据来自 <code>GET/POST /v1/tbox/crawl/tasks</code>、<code>PATCH/DELETE .../tasks/&lt;id&gt;</code>、
         <code>POST .../tasks/&lt;id&gt;/run</code>（与 worker 相同 tick：HTTP 探测 + 已选知识库时 <code>static_web</code> 拉页 /{" "}
-        <code>rss</code> 拉 Feed 条目入库，需 <code>crawl.manage</code>）。详见 <code>docs/TBOX_API_BOUNDARY.md</code> §1.3。
+        <code>rss</code> 拉 Feed / <code>http_api</code> 拉 JSON 条目入库，需 <code>crawl.manage</code>）。详见{" "}
+        <code>docs/TBOX_API_BOUNDARY.md</code> §1.3。
       </p>
       <ul className="muted" style={{ lineHeight: 1.6, marginBottom: "1.25rem" }}>
         <li>
           默认按 <code>robots.txt</code> 预检（与 <code>TBOX_CRAWL_HTTP_USER_AGENT</code> 一致；手动重定向的每一跳均校验）。
           任务 <code>extra_config.tbox_skip_robots_check</code> 可关闭。默认定时 + 可手动触发。
         </li>
-        <li>站点凭据走环境变量 / 密钥卷，不入库。</li>
+        <li>站点凭据：任务只存 <code>tbox_crawl_auth_profile</code>；实际 Header 在 worker 环境变量 <code>TBOX_CRAWL_AUTH_&lt;PROFILE&gt;_HEADERS</code>（JSON 对象，不入库）。</li>
       </ul>
 
       {error ? (
@@ -753,14 +831,40 @@ export function CrawlPage() {
             placeholder={"https://example.com/page\nhttps://example.com/feed.xml"}
           />
         </label>
+        <div style={{ marginBottom: 12, padding: "0.75rem", background: "#f8fafc", borderRadius: 8 }}>
+          <div style={{ marginBottom: 8, fontWeight: 600, color: "var(--fg, #111827)" }}>任务类型</div>
+          <label style={{ display: "block", marginBottom: 8 }}>
+            <select
+              value={createTaskMode}
+              onChange={(e) =>
+                onCrawlTaskModeChange(
+                  e.target.value as CrawlTaskMode,
+                  setCreateTaskMode,
+                  setCreateCron,
+                  setCreateEnabled,
+                  setCreateRunState,
+                )
+              }
+            >
+              <option value="special">专项爬取（无 Cron，手动「执行一次」）</option>
+              <option value="scheduled">定时爬取（Cron + 启用调度）</option>
+            </select>
+          </label>
+          <p className="muted" style={{ margin: 0, fontSize: "0.88rem" }}>
+            {createTaskMode === "special"
+              ? "专项任务默认 run_state=ready、不启用 Cron；创建后点「执行一次」触发。"
+              : "请填写下方 Cron 并勾选「启用调度」；worker 就绪后按分钟匹配执行。"}
+          </p>
+        </div>
         <div style={{ display: "flex", flexWrap: "wrap", gap: "1rem", marginBottom: 8 }}>
           <label>
             <span className="muted" style={{ marginRight: 8 }}>
               来源类型
             </span>
-            <select value={createSource} onChange={(e) => setCreateSource(e.target.value as "static_web" | "rss")}>
-              <option value="static_web">static_web</option>
-              <option value="rss">rss</option>
+            <select value={createSource} onChange={(e) => setCreateSource(parseCrawlSourceType(e.target.value))}>
+              <option value="static_web">static_web（静态页）</option>
+              <option value="rss">rss（Feed）</option>
+              <option value="http_api">http_api（JSON API）</option>
             </select>
           </label>
           <label>
@@ -784,12 +888,73 @@ export function CrawlPage() {
               value={createCron}
               onChange={(e) => setCreateCron(e.target.value)}
               placeholder="留空 = 仅手动；5 段 cron，如 */10 * * * *"
+              disabled={createTaskMode === "special"}
             />
           </label>
           <label style={{ display: "flex", alignItems: "center", gap: 6 }}>
-            <input type="checkbox" checked={createEnabled} onChange={(e) => setCreateEnabled(e.target.checked)} />
+            <input
+              type="checkbox"
+              checked={createEnabled}
+              onChange={(e) => setCreateEnabled(e.target.checked)}
+              disabled={createTaskMode === "special"}
+            />
             <span className="muted">启用调度（执行器就绪后）</span>
           </label>
+        </div>
+        <div style={{ marginBottom: 12, padding: "0.75rem", border: "1px dashed #cbd5e1", borderRadius: 8 }}>
+          <div style={{ marginBottom: 8, fontWeight: 600, color: "var(--fg, #111827)" }}>
+            高级源（auth / API）
+          </div>
+          <label style={{ display: "block", marginBottom: 8 }}>
+            <span className="muted" style={{ display: "block", marginBottom: 4 }}>
+              凭据 profile（<code>tbox_crawl_auth_profile</code>；对应 env{" "}
+              <code>TBOX_CRAWL_AUTH_&lt;PROFILE&gt;_HEADERS</code>）
+            </span>
+            <input
+              value={createAdvanced.authProfile}
+              onChange={(e) => setCreateAdvanced((s) => ({ ...s, authProfile: e.target.value }))}
+              placeholder="如 intranet（static_web / http_api 均可）"
+              style={{ minWidth: 320 }}
+            />
+          </label>
+          {createSource === "http_api" ? (
+            <>
+              <label style={{ display: "block", marginBottom: 8 }}>
+                <span className="muted" style={{ display: "block", marginBottom: 4 }}>
+                  JSON 数组路径（<code>tbox_crawl_api_items_path</code>，点分；留空表示根为数组）
+                </span>
+                <input
+                  value={createAdvanced.apiItemsPath}
+                  onChange={(e) => setCreateAdvanced((s) => ({ ...s, apiItemsPath: e.target.value }))}
+                  placeholder="data.items"
+                  style={{ minWidth: 320 }}
+                />
+              </label>
+              <label style={{ display: "block", marginBottom: 8 }}>
+                <span className="muted" style={{ display: "block", marginBottom: 4 }}>
+                  正文字段（<code>tbox_crawl_api_content_fields</code>，每行一个；留空用默认 title/content/…）
+                </span>
+                <textarea
+                  value={createAdvanced.apiContentFields}
+                  onChange={(e) => setCreateAdvanced((s) => ({ ...s, apiContentFields: e.target.value }))}
+                  rows={2}
+                  style={{ width: "100%", maxWidth: 640 }}
+                  placeholder={"title\nbody"}
+                />
+              </label>
+              <label style={{ display: "block", marginBottom: 0 }}>
+                <span className="muted" style={{ display: "block", marginBottom: 4 }}>
+                  文档 ID 字段（<code>tbox_crawl_api_id_field</code>，默认 id）
+                </span>
+                <input
+                  value={createAdvanced.apiIdField}
+                  onChange={(e) => setCreateAdvanced((s) => ({ ...s, apiIdField: e.target.value }))}
+                  placeholder="id"
+                  style={{ width: 160 }}
+                />
+              </label>
+            </>
+          ) : null}
         </div>
         <label style={{ display: "block", marginBottom: 12 }}>
           <span className="muted" style={{ marginRight: 8 }}>
@@ -804,6 +969,47 @@ export function CrawlPage() {
             ))}
           </select>
         </label>
+        <div style={{ marginBottom: 12, padding: "0.75rem", border: "1px dashed #e5e7eb", borderRadius: 8 }}>
+          <div style={{ marginBottom: 8, fontWeight: 600, color: "var(--fg, #111827)" }}>
+            爬取策略（extra_config）
+          </div>
+          <label style={{ display: "block", marginBottom: 8 }}>
+            <span className="muted" style={{ display: "block", marginBottom: 4 }}>
+              关键词（每行或逗号分隔，写入 <code>tbox_crawl_keywords</code>）
+            </span>
+            <textarea
+              value={createStrategy.keywords}
+              onChange={(e) => setCreateStrategy((s) => ({ ...s, keywords: e.target.value }))}
+              rows={2}
+              style={{ width: "100%", maxWidth: 640 }}
+              placeholder="政策, 补贴"
+            />
+          </label>
+          <label style={{ display: "block", marginBottom: 8 }}>
+            <span className="muted" style={{ display: "block", marginBottom: 4 }}>
+              最大深度（<code>tbox_crawl_max_depth</code>，非负整数，留空不限）
+            </span>
+            <input
+              type="number"
+              min={0}
+              value={createStrategy.maxDepth}
+              onChange={(e) => setCreateStrategy((s) => ({ ...s, maxDepth: e.target.value }))}
+              style={{ width: 120 }}
+            />
+          </label>
+          <label style={{ display: "block", marginBottom: 0 }}>
+            <span className="muted" style={{ display: "block", marginBottom: 4 }}>
+              允许域名（每行一个，<code>tbox_crawl_allowed_domains</code>）
+            </span>
+            <textarea
+              value={createStrategy.allowedDomains}
+              onChange={(e) => setCreateStrategy((s) => ({ ...s, allowedDomains: e.target.value }))}
+              rows={2}
+              style={{ width: "100%", maxWidth: 640 }}
+              placeholder={"example.com\nnews.example.com"}
+            />
+          </label>
+        </div>
         <div className="muted" style={{ marginBottom: 12, lineHeight: 1.7 }}>
           <div style={{ marginBottom: 6, fontWeight: 600, color: "var(--fg, #111827)" }}>extra_config（tick）</div>
           <label style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
@@ -897,14 +1103,33 @@ export function CrawlPage() {
             </span>
             <textarea value={editSeeds} onChange={(e) => setEditSeeds(e.target.value)} rows={5} style={{ width: "100%", maxWidth: 640 }} />
           </label>
+          <div style={{ marginBottom: 12, padding: "0.75rem", background: "#f8fafc", borderRadius: 8 }}>
+            <div style={{ marginBottom: 8, fontWeight: 600 }}>任务类型</div>
+            <select
+              value={editTaskMode}
+              onChange={(e) =>
+                onCrawlTaskModeChange(
+                  e.target.value as CrawlTaskMode,
+                  setEditTaskMode,
+                  setEditCron,
+                  setEditEnabled,
+                  setEditRunState,
+                )
+              }
+            >
+              <option value="special">专项爬取（无 Cron，手动执行）</option>
+              <option value="scheduled">定时爬取（Cron + 启用调度）</option>
+            </select>
+          </div>
           <div style={{ display: "flex", flexWrap: "wrap", gap: "1rem", marginBottom: 8 }}>
             <label>
               <span className="muted" style={{ marginRight: 8 }}>
                 来源
               </span>
-              <select value={editSource} onChange={(e) => setEditSource(e.target.value as "static_web" | "rss")}>
-                <option value="static_web">static_web</option>
-                <option value="rss">rss</option>
+              <select value={editSource} onChange={(e) => setEditSource(parseCrawlSourceType(e.target.value))}>
+                <option value="static_web">static_web（静态页）</option>
+                <option value="rss">rss（Feed）</option>
+                <option value="http_api">http_api（JSON API）</option>
               </select>
             </label>
             <label>
@@ -921,12 +1146,65 @@ export function CrawlPage() {
               <span className="muted" style={{ marginRight: 8 }}>
                 Cron
               </span>
-              <input value={editCron} onChange={(e) => setEditCron(e.target.value)} placeholder="5 段 cron 或留空" />
+              <input value={editCron} onChange={(e) => setEditCron(e.target.value)} placeholder="5 段 cron 或留空" disabled={editTaskMode === "special"} />
             </label>
             <label style={{ display: "flex", alignItems: "center", gap: 6 }}>
-              <input type="checkbox" checked={editEnabled} onChange={(e) => setEditEnabled(e.target.checked)} />
+              <input
+                type="checkbox"
+                checked={editEnabled}
+                onChange={(e) => setEditEnabled(e.target.checked)}
+                disabled={editTaskMode === "special"}
+              />
               <span className="muted">启用</span>
             </label>
+          </div>
+          <div style={{ marginBottom: 12, padding: "0.75rem", border: "1px dashed #cbd5e1", borderRadius: 8 }}>
+            <div style={{ marginBottom: 8, fontWeight: 600 }}>高级源（auth / API）</div>
+            <label style={{ display: "block", marginBottom: 8 }}>
+              <span className="muted" style={{ display: "block", marginBottom: 4 }}>
+                凭据 profile
+              </span>
+              <input
+                value={editAdvanced.authProfile}
+                onChange={(e) => setEditAdvanced((s) => ({ ...s, authProfile: e.target.value }))}
+                style={{ minWidth: 320 }}
+              />
+            </label>
+            {editSource === "http_api" ? (
+              <>
+                <label style={{ display: "block", marginBottom: 8 }}>
+                  <span className="muted" style={{ display: "block", marginBottom: 4 }}>
+                    JSON 数组路径
+                  </span>
+                  <input
+                    value={editAdvanced.apiItemsPath}
+                    onChange={(e) => setEditAdvanced((s) => ({ ...s, apiItemsPath: e.target.value }))}
+                    style={{ minWidth: 320 }}
+                  />
+                </label>
+                <label style={{ display: "block", marginBottom: 8 }}>
+                  <span className="muted" style={{ display: "block", marginBottom: 4 }}>
+                    正文字段
+                  </span>
+                  <textarea
+                    value={editAdvanced.apiContentFields}
+                    onChange={(e) => setEditAdvanced((s) => ({ ...s, apiContentFields: e.target.value }))}
+                    rows={2}
+                    style={{ width: "100%", maxWidth: 640 }}
+                  />
+                </label>
+                <label style={{ display: "block", marginBottom: 0 }}>
+                  <span className="muted" style={{ display: "block", marginBottom: 4 }}>
+                    文档 ID 字段
+                  </span>
+                  <input
+                    value={editAdvanced.apiIdField}
+                    onChange={(e) => setEditAdvanced((s) => ({ ...s, apiIdField: e.target.value }))}
+                    style={{ width: 160 }}
+                  />
+                </label>
+              </>
+            ) : null}
           </div>
           <label style={{ display: "block", marginBottom: 12 }}>
             <span className="muted" style={{ marginRight: 8 }}>
@@ -941,6 +1219,43 @@ export function CrawlPage() {
               ))}
             </select>
           </label>
+          <div style={{ marginBottom: 12, padding: "0.75rem", border: "1px dashed #e5e7eb", borderRadius: 8 }}>
+            <div style={{ marginBottom: 8, fontWeight: 600 }}>爬取策略（extra_config）</div>
+            <label style={{ display: "block", marginBottom: 8 }}>
+              <span className="muted" style={{ display: "block", marginBottom: 4 }}>
+                关键词
+              </span>
+              <textarea
+                value={editStrategy.keywords}
+                onChange={(e) => setEditStrategy((s) => ({ ...s, keywords: e.target.value }))}
+                rows={2}
+                style={{ width: "100%", maxWidth: 640 }}
+              />
+            </label>
+            <label style={{ display: "block", marginBottom: 8 }}>
+              <span className="muted" style={{ display: "block", marginBottom: 4 }}>
+                最大深度
+              </span>
+              <input
+                type="number"
+                min={0}
+                value={editStrategy.maxDepth}
+                onChange={(e) => setEditStrategy((s) => ({ ...s, maxDepth: e.target.value }))}
+                style={{ width: 120 }}
+              />
+            </label>
+            <label style={{ display: "block", marginBottom: 0 }}>
+              <span className="muted" style={{ display: "block", marginBottom: 4 }}>
+                允许域名
+              </span>
+              <textarea
+                value={editStrategy.allowedDomains}
+                onChange={(e) => setEditStrategy((s) => ({ ...s, allowedDomains: e.target.value }))}
+                rows={2}
+                style={{ width: "100%", maxWidth: 640 }}
+              />
+            </label>
+          </div>
           <div className="muted" style={{ marginBottom: 12, lineHeight: 1.7 }}>
             <div style={{ marginBottom: 6, fontWeight: 600, color: "var(--fg, #111827)" }}>extra_config（tick）</div>
             <label style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>

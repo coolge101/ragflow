@@ -94,3 +94,68 @@ export async function deleteDocuments(
   const body = await readJsonBody<MutationJson>(res);
   return { res, body };
 }
+
+/** List all documents (paginated server-side). */
+export async function listAllDocuments(
+  datasetId: string,
+  pageSize = 100,
+): Promise<{ docs: DocRow[]; error?: string }> {
+  const all: DocRow[] = [];
+  let page = 1;
+  let total = 0;
+  for (;;) {
+    const { res, body } = await listDocuments(datasetId, { page, page_size: pageSize });
+    if (res.status === 401 || body.code === 401) {
+      return { docs: [], error: "未授权" };
+    }
+    if (body.code !== 0) {
+      return { docs: [], error: body.message || `错误码 ${body.code}` };
+    }
+    const batch = Array.isArray(body.data?.docs) ? body.data.docs : [];
+    total = typeof body.data?.total === "number" ? body.data.total : batch.length;
+    all.push(...batch);
+    if (all.length >= total || batch.length === 0) {
+      break;
+    }
+    page += 1;
+    if (page > 500) {
+      return { docs: all, error: "文档数量过多，已截断分页" };
+    }
+  }
+  return { docs: all };
+}
+
+/** GET /v1/document/get/:docId — original uploaded file bytes. */
+export async function downloadDocumentBlob(docId: string): Promise<{ blob: Blob | null; error?: string }> {
+  const res = await fetch(`/v1/document/get/${encodeURIComponent(docId)}`, { headers: authOnly() });
+  if (res.status === 401) {
+    return { blob: null, error: "未授权" };
+  }
+  if (!res.ok) {
+    return { blob: null, error: `下载失败 HTTP ${res.status}` };
+  }
+  const blob = await res.blob();
+  return { blob };
+}
+
+/**
+ * POST /api/v1/documents/ingest — re-run parsing (official UI path).
+ * `run=1` (RUNNING); `delete=true` clears existing chunks before re-index.
+ */
+export async function reparseDocuments(
+  documentIds: string[],
+  options?: { delete?: boolean; applyKb?: boolean },
+): Promise<{ res: Response; body: MutationJson }> {
+  const res = await fetch("/api/v1/documents/ingest", {
+    method: "POST",
+    headers: { ...authOnly(), "Content-Type": "application/json" },
+    body: JSON.stringify({
+      doc_ids: documentIds,
+      run: 1,
+      delete: options?.delete ?? true,
+      apply_kb: options?.applyKb ?? false,
+    }),
+  });
+  const body = await readJsonBody<MutationJson>(res);
+  return { res, body };
+}

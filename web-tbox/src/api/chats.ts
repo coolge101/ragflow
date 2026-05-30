@@ -119,3 +119,57 @@ export async function getSession(
   const body = await readJsonBody<GetSessionJson>(res);
   return { res, body };
 }
+
+export type GetChatJson = {
+  code: number;
+  message?: string;
+  data?: Record<string, unknown>;
+};
+
+export type MutateChatJson = {
+  code: number;
+  message?: string;
+  data?: Record<string, unknown>;
+};
+
+export async function getChat(chatId: string): Promise<{ res: Response; body: GetChatJson }> {
+  const res = await fetch(`/api/v1/chats/${encodeURIComponent(chatId)}`, {
+    headers: authHeadersGet(),
+  });
+  const body = await readJsonBody<GetChatJson>(res);
+  return { res, body };
+}
+
+export async function createChat(
+  payload: Record<string, unknown>,
+): Promise<{ res: Response; body: MutateChatJson }> {
+  const res = await fetch("/api/v1/chats", {
+    method: "POST",
+    headers: authHeaders(),
+    body: JSON.stringify(payload),
+  });
+  const body = await readJsonBody<MutateChatJson>(res);
+  return { res, body };
+}
+
+export async function updateChat(
+  chatId: string,
+  payload: Record<string, unknown>,
+): Promise<{ res: Response; body: MutateChatJson }> {
+  const res = await fetch(`/api/v1/chats/${encodeURIComponent(chatId)}`, {
+    method: "PUT",
+    headers: authHeaders(),
+    body: JSON.stringify(payload),
+  });
+  const body = await readJsonBody<MutateChatJson>(res);
+  return { res, body };
+}
+
+export async function deleteChat(chatId: string): Promise<{ res: Response; body: MutateChatJson }> {
+  const res = await fetch(`/api/v1/chats/${encodeURIComponent(chatId)}`, {
+    method: "DELETE",
+    headers: authHeadersGet(),
+  });
+  const body = await readJsonBody<MutateChatJson>(res);
+  return { res, body };
+}

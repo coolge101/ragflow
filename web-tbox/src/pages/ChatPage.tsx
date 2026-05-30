@@ -1,4 +1,5 @@
 import { FormEvent, useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { Link } from "react-router-dom";
 import { streamChatCompletions } from "../api/chatCompletion";
 import {
   createChatSession,
@@ -11,7 +12,23 @@ import {
 } from "../api/chats";
 import { ApiErrorBanner } from "../components/ApiErrorBanner";
 import { ReferenceChunks } from "../components/ReferenceChunks";
+import { hasPermission } from "../constants/permissions";
+import { CHAT_APP_SCENARIOS } from "../utils/chatAppScenarioTemplates";
+import { useAuth } from "../context/AuthContext";
 import { useNarrowLayout } from "../hooks/useNarrowLayout";
+import {
+  buildChatPrintHtml,
+  downloadUtf8File,
+  exportFilenameDatePrefix,
+  formatChatMarkdown,
+  printHtmlDocument,
+} from "../utils/exportConsultationResult";
+import {
+  confirmLargeExport,
+  exportChatToDocx,
+  exportChatToPptx,
+  LARGE_EXPORT_CHAT_THRESHOLD,
+} from "../utils/exportOffice";
 
 type ChatMessage = { role: "user" | "assistant"; content: string };
 
@@ -36,6 +53,8 @@ function toApiMessages(msgs: ChatMessage[]): Array<{ role: string; content: stri
 }
 
 export function ChatPage() {
+  const { permissions } = useAuth();
+  const canConfigureKb = hasPermission(permissions, "kb.configure");
   const narrow = useNarrowLayout();
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
   const [chats, setChats] = useState<ChatRow[]>([]);
@@ -321,6 +340,74 @@ export function ChatPage() {
     abortRef.current?.abort();
   }
 
+  const selectedAppLabel = selectedChatId
+    ? String(chats.find((c) => String(c.id) === selectedChatId)?.name ?? selectedChatId)
+    : "仅模型";
+
+  function onExportMarkdown() {
+    if (!messages.length) {
+      return;
+    }
+    const md = formatChatMarkdown({
+      title: "TBOX 对话记录",
+      messages,
+      appLabel: selectedAppLabel,
+    });
+    downloadUtf8File(`tbox-chat-${exportFilenameDatePrefix()}.md`, md);
+  }
+
+  function onExportPdf() {
+    if (!messages.length) {
+      return;
+    }
+    try {
+      const html = buildChatPrintHtml({
+        title: "TBOX 对话记录",
+        messages,
+        appLabel: selectedAppLabel,
+      });
+      printHtmlDocument(html, "TBOX 对话记录");
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "无法打开打印窗口");
+    }
+  }
+
+  async function onExportWord() {
+    if (!messages.length) {
+      return;
+    }
+    if (!confirmLargeExport(messages.length, "对话消息", LARGE_EXPORT_CHAT_THRESHOLD)) {
+      return;
+    }
+    try {
+      await exportChatToDocx({
+        title: "TBOX 对话记录",
+        messages,
+        appLabel: selectedAppLabel,
+      });
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Word 导出失败");
+    }
+  }
+
+  async function onExportPptx() {
+    if (!messages.length) {
+      return;
+    }
+    if (!confirmLargeExport(messages.length, "对话消息（幻灯片）", LARGE_EXPORT_CHAT_THRESHOLD)) {
+      return;
+    }
+    try {
+      await exportChatToPptx({
+        title: "TBOX 对话记录",
+        messages,
+        appLabel: selectedAppLabel,
+      });
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "PPT 导出失败");
+    }
+  }
+
   const showAppsEmpty = !chatsLoading && !chatsError && chats.length === 0;
   const showThreadEmpty = messages.length === 0 && streaming === null;
 
@@ -395,6 +482,39 @@ export function ChatPage() {
           <button type="button" disabled={chatsLoading} onClick={() => void loadChats()}>
             {chatsLoading ? "…" : "刷新应用"}
           </button>
+          <button
+            type="button"
+            disabled={messages.length === 0 || loading || streaming !== null}
+            onClick={onExportMarkdown}
+            title="下载当前会话为 Markdown 文件"
+          >
+            导出 Markdown
+          </button>
+          <button
+            type="button"
+            disabled={messages.length === 0 || loading || streaming !== null}
+            onClick={onExportPdf}
+            title="在新窗口打印，可选择另存为 PDF"
+          >
+            导出 PDF…
+          </button>
+          <button
+            type="button"
+            disabled={messages.length === 0 || loading || streaming !== null}
+            onClick={() => void onExportWord()}
+            title="下载当前会话为 Word (.docx) 文件"
+          >
+            导出 Word
+          </button>
+          <button
+            type="button"
+            disabled={messages.length === 0 || loading || streaming !== null}
+            onClick={() => void onExportPptx()}
+            title="下载当前会话为 PowerPoint (.pptx) 文件"
+          >
+            导出 PPT
+          </button>
+          {canConfigureKb ? <Link to="/apps">管理应用</Link> : null}
           {chatsLoading ? <span className="muted">加载应用列表…</span> : null}
           {selectedChatId && sessionsLoading ? <span className="muted">加载会话…</span> : null}
         </div>
@@ -411,7 +531,21 @@ export function ChatPage() {
               fontSize: "0.92rem",
             }}
           >
-            当前账号下<strong>暂无「应用」</strong>。请在 RAGFlow 官方界面创建对话应用后，点「刷新应用」；在此之前仍可使用「仅模型」对话。
+            {canConfigureKb ? (
+              <>
+                当前暂无可用对话应用。可{" "}
+                <Link to="/apps/new">新建空白应用</Link>
+                {CHAT_APP_SCENARIOS.map((s, i) => (
+                  <span key={s.id}>
+                    {i === 0 ? "，或从模板创建：" : "、"}
+                    <Link to={`/apps/new?template=${s.id}`}>{s.label}</Link>
+                  </span>
+                ))}
+                ；创建后点「刷新应用」。在此之前仍可使用「仅模型」对话。
+              </>
+            ) : (
+              <>当前暂无可用对话应用。请联系管理员配置；在此之前仍可使用「仅模型」对话。</>
+            )}
           </div>
         ) : null}
 

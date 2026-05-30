@@ -64,8 +64,24 @@ export const JOURNEY_STEPS: JourneyStep[] = [
       "无消息时有引导文案（按是否选应用/会话变化）",
       "流式输出可中止；中止不红错、不删已发用户句",
       "「仅模型」模式不传 chat_id",
+      "有消息时可「导出 Markdown / PDF / Word / PPT」",
       "窄屏下引用区在消息区下方全宽展示",
       "新消息与流式输出时消息区自动滚到底部",
+    ],
+  },
+  {
+    id: "chat-apps",
+    order: 3.5,
+    title: "对话应用",
+    targetPath: "/apps",
+    summary: "kb.configure 下创建/编辑对话应用，绑定知识库与 Prompt。",
+    acceptance: [
+      "侧栏可见「对话应用」（需 kb.configure）",
+      "可新建应用并绑定知识库",
+      "可从咨询/决策/辅导模板预填（/apps/new?template=…）",
+      "保存后在对话页可选该应用",
+      "发送消息后引用侧栏有 chunks（库内已有内容）",
+      "用户可见文案无 RAGFlow",
     ],
   },
   {
@@ -78,6 +94,7 @@ export const JOURNEY_STEPS: JourneyStep[] = [
       "可选知识库并发起检索",
       "无知识库时有说明；首次进入有操作引导",
       "检索成功但 0 条时有提示，并可「清空条件」",
+      "有命中结果时可「导出 Markdown / PDF / Excel / PPT」",
       "修改问题或知识库后，旧结果自动清除",
       "错误可重试",
       "（可选）关键词/语义切换以接口能力为准",
@@ -117,7 +134,8 @@ export const JOURNEY_STEPS: JourneyStep[] = [
     summary: "TBOX 采集任务 CRUD、调度与执行一次。",
     acceptance: [
       "列表、新建、编辑、删除、执行一次可用",
-      "extra_config 勾选与 JSON 与后端契约一致",
+      "可选「专项 / 定时」任务类型；可填关键词、深度、允许域名",
+      "extra_config 勾选与 JSON 与后端契约一致；策略键由 worker 消费",
     ],
   },
   {

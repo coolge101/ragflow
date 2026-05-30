@@ -1,7 +1,8 @@
 import { type FormEvent, useCallback, useEffect, useRef, useState } from "react";
 import { ApiErrorBanner } from "../components/ApiErrorBanner";
 import { createDataset, deleteDatasets, listDatasets, type DatasetRow } from "../api/datasets";
-import { deleteDocuments, listDocuments, parseDocuments, uploadDocuments, type DocRow } from "../api/datasetDocuments";
+import { deleteDocuments, listDocuments, parseDocuments, reparseDocuments, uploadDocuments, type DocRow } from "../api/datasetDocuments";
+import { exportDatasetZip, importDatasetZipFile } from "../utils/datasetZipTransfer";
 import { hasPermission } from "../constants/permissions";
 import { useAuth } from "../context/AuthContext";
 
@@ -114,12 +115,11 @@ export function DocumentsPage() {
   const canDeleteKb = hasPermission(permissions, "kb.dangerous");
   const canUpload = hasPermission(permissions, "doc.upload");
   const canReparse = hasPermission(permissions, "doc.reparse");
+  const canExportZip = hasPermission(permissions, "export.data");
   const canConfigureKb = hasPermission(permissions, "kb.configure");
   const canCreateKb = canUpload || canConfigureKb;
   /** 首次解析（未开始→解析中）：与上传同一类操作权限。 */
-  const canStartParse = canUpload || canReparse;
-  /** 已完成/失败后再跑解析：仅建议具备重解析权限（避免误触大量算力）。 */
-  const canReparseDoneOrFail = canReparse || canUpload;
+  const canStartParse = canUpload;
 
   const [kbPage, setKbPage] = useState(1);
   const [rows, setRows] = useState<DatasetRow[]>([]);
@@ -138,7 +138,10 @@ export function DocumentsPage() {
   const [uploadBusy, setUploadBusy] = useState(false);
   const [parseBusy, setParseBusy] = useState(false);
   const [parseRowBusy, setParseRowBusy] = useState<string | null>(null);
+  const [zipBusy, setZipBusy] = useState(false);
+  const [zipStatus, setZipStatus] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement | null>(null);
+  const zipImportRef = useRef<HTMLInputElement | null>(null);
 
   const [createOpen, setCreateOpen] = useState(false);
   const [createName, setCreateName] = useState("");
@@ -270,7 +273,7 @@ export function DocumentsPage() {
     }
     if (
       !window.confirm(
-        `确定删除知识库「${name}」？\n此操作与官方 RAGFlow 行为一致（DELETE /api/v1/datasets），不可撤销。`,
+        `确定删除知识库「${name}」？\n此操作调用 DELETE /api/v1/datasets，不可撤销。`,
       )
     ) {
       return;
@@ -416,6 +419,94 @@ export function DocumentsPage() {
     }
   }
 
+  async function onReparseDocument(doc: DocRow) {
+    if (!activeKb || !canReparse) {
+      return;
+    }
+    const id = doc.id as string | undefined;
+    if (!id) {
+      return;
+    }
+    const name = (doc.name as string) || id;
+    const chunks = typeof doc.chunk_count === "number" ? doc.chunk_count : 0;
+    const clearMsg =
+      chunks > 0
+        ? `将清除现有约 ${chunks} 个分块并重新解析文档「${name}」。`
+        : `将重新解析文档「${name}」。`;
+    if (!window.confirm(`${clearMsg}\n\n调用 POST /api/v1/documents/ingest（run=1, delete=true）。是否继续？`)) {
+      return;
+    }
+    setParseRowBusy(id);
+    setDocsError(null);
+    try {
+      const { res, body } = await reparseDocuments([id], { delete: true });
+      if (res.status === 401 || body.code === 401) {
+        setDocsError("未授权");
+        return;
+      }
+      if (body.code !== 0) {
+        setDocsError(body.message || `重解析失败 (${body.code})`);
+        return;
+      }
+      await loadDocs(activeKb, docsPage);
+    } catch (e) {
+      setDocsError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setParseRowBusy(null);
+    }
+  }
+
+  async function onExportZip() {
+    if (!activeKb || !canExportZip) {
+      return;
+    }
+    setZipBusy(true);
+    setZipStatus(null);
+    setDocsError(null);
+    try {
+      const result = await exportDatasetZip(activeKb, activeKbName || activeKb, setZipStatus);
+      if (!result.ok) {
+        if (result.error !== "已取消") {
+          setDocsError(result.error);
+        }
+      } else {
+        setZipStatus("ZIP 已开始下载");
+      }
+    } catch (e) {
+      setDocsError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setZipBusy(false);
+    }
+  }
+
+  async function onZipImportSelected(files: FileList | null) {
+    if (!activeKb || !files?.length || !canUpload) {
+      return;
+    }
+    const f = files[0];
+    setZipBusy(true);
+    setZipStatus(null);
+    setDocsError(null);
+    try {
+      const result = await importDatasetZipFile(activeKb, f, setZipStatus);
+      if (!result.ok) {
+        setDocsError(result.error);
+        return;
+      }
+      setZipStatus(`已上传 ${result.uploaded} 个文件（未开始解析，请手动开始解析）`);
+      setDocsPage(1);
+      await loadDocs(activeKb, 1);
+      await load();
+    } catch (e) {
+      setDocsError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setZipBusy(false);
+      if (zipImportRef.current) {
+        zipImportRef.current.value = "";
+      }
+    }
+  }
+
   async function onFilesSelected(files: FileList | File[] | null) {
     if (!activeKb || !files?.length) {
       return;
@@ -452,12 +543,14 @@ export function DocumentsPage() {
       <p className="muted" style={{ maxWidth: 880 }}>
         知识库列表来自 <code>GET /api/v1/datasets</code>。展开后可管理该库内<strong>文档</strong>：
         <code>POST /api/v1/datasets</code> 新建空库（需 <code>doc.upload</code> 或 <code>kb.configure</code>）；
-        <code>GET/POST/DELETE /api/v1/datasets/&lt;id&gt;/documents</code> 管理文档（与官方一致）。上传后状态为<strong>未开始</strong>属正常，需再点<strong>开始解析</strong>（
+        <code>GET/POST/DELETE /api/v1/datasets/&lt;id&gt;/documents</code> 管理文档；<strong>重解析</strong>（已完成/失败）调用{" "}
+        <code>POST /api/v1/documents/ingest</code>（需 <code>doc.reparse</code>）。上传后状态为<strong>未开始</strong>属正常，需再点<strong>开始解析</strong>（
         <code>POST …/documents/parse</code>）才会切片与入库。删除单个文档需 <code>doc.delete</code>；<strong>删除整个知识库</strong>需{" "}
         <code>kb.dangerous</code>（与「知识库配置」页一致）。
       </p>
       <p className="muted" style={{ maxWidth: 880, fontSize: "0.9rem" }}>
-        批量导出 ZIP 等若官方未暴露与本页一致的 REST，请暂用官方 <code>web/</code>；后续可接 TBOX 扩展。
+        <strong>整库 ZIP</strong>：无专用 REST；导出通过 <code>GET /v1/document/get/&lt;doc_id&gt;</code> 拉取原文件并在浏览器打包（需{" "}
+        <code>export.data</code>）；导入解压后走 multipart 上传（需 <code>doc.upload</code>）。大库导出前会确认。
       </p>
 
       {error ? (
@@ -616,13 +709,12 @@ export function DocumentsPage() {
               </h2>
               {canUpload ? (
                 <p className="muted" style={{ fontSize: "0.85rem", marginTop: "-0.25rem", marginBottom: "0.65rem" }}>
-                  可将文件<strong>拖入本卡片</strong>上传（与「上传文件」相同）。上传后默认为<strong>未开始</strong>，请点下方<strong>开始解析</strong>或「解析本页全部未开始」以触发切片（与官方 RAGFlow 一致）。
+                  可将文件<strong>拖入本卡片</strong>上传（与「上传文件」相同）。上传后默认为<strong>未开始</strong>，请点下方<strong>开始解析</strong>或「解析本页全部未开始」以触发切片（与本系统文档流程一致）。
                   解析过程中列表会<strong>每约 2.5 秒自动刷新</strong>，「进度」列展示后端返回的完成比例与说明。
                 </p>
               ) : null}
               <p className="muted" style={{ fontSize: "0.82rem", marginBottom: "0.65rem", maxWidth: 920 }}>
-                若长时间停留在「解析中」或变为「失败」，多与<strong>租户嵌入模型未配置/不可用</strong>、<strong>任务队列未消费</strong>或<strong>文档引擎（ES/Infinity）异常</strong>有关，请到 RAGFlow
-                管理里检查模型与依赖服务，并结合<strong>审计</strong>页与容器日志排查。
+                若长时间停留在「解析中」或变为「失败」，多与<strong>租户嵌入模型未配置/不可用</strong>、<strong>任务队列未消费</strong>或<strong>文档引擎（ES/Infinity）异常</strong>有关，请到<strong>知识库配置</strong>检查模型与依赖服务，并结合<strong>审计</strong>页与容器日志排查。
               </p>
               {docsError ? (
                 <ApiErrorBanner
@@ -663,7 +755,7 @@ export function DocumentsPage() {
                 {canStartParse && activeKb ? (
                   <button
                     type="button"
-                    disabled={docsLoading || parseBusy || !!parseRowBusy}
+                    disabled={docsLoading || parseBusy || !!parseRowBusy || zipBusy}
                     onClick={() => {
                       const ids = docs
                         .map((d) => d.id as string | undefined)
@@ -681,6 +773,34 @@ export function DocumentsPage() {
                   >
                     {parseBusy ? "批量解析请求中…" : "解析本页全部未开始/已取消"}
                   </button>
+                ) : null}
+                {canUpload ? (
+                  <>
+                    <input
+                      ref={zipImportRef}
+                      type="file"
+                      accept=".zip,application/zip"
+                      style={{ display: "none" }}
+                      onChange={(ev) => void onZipImportSelected(ev.target.files)}
+                    />
+                    <button
+                      type="button"
+                      disabled={uploadBusy || docsLoading || zipBusy}
+                      onClick={() => zipImportRef.current?.click()}
+                    >
+                      {zipBusy ? "ZIP 处理中…" : "ZIP 批量导入"}
+                    </button>
+                  </>
+                ) : null}
+                {canExportZip ? (
+                  <button type="button" disabled={docsLoading || zipBusy} onClick={() => void onExportZip()}>
+                    {zipBusy ? "ZIP 处理中…" : "导出 ZIP"}
+                  </button>
+                ) : null}
+                {zipStatus ? (
+                  <span className="muted" style={{ fontSize: "0.85rem" }}>
+                    {zipStatus}
+                  </span>
                 ) : null}
                 <span className="muted">
                   共 {docsTotal} 条 · 第 {docsPage}/{docsTotalPages} 页
@@ -799,15 +919,20 @@ export function DocumentsPage() {
                                       {parseRowBusy === did ? "提交中…" : "开始解析"}
                                     </button>
                                   ) : null}
-                                  {did && canReparseDoneOrFail && isDocRunDoneOrFail(d.run) ? (
+                                  {did && canReparse && isDocRunDoneOrFail(d.run) ? (
                                     <button
                                       type="button"
-                                      disabled={!!parseBusy || parseRowBusy === did || busyId === did}
-                                      onClick={() => void onParseDocuments([did], "row")}
+                                      disabled={!!parseBusy || parseRowBusy === did || busyId === did || zipBusy}
+                                      onClick={() => void onReparseDocument(d)}
                                       style={{ fontSize: "0.85rem" }}
                                     >
                                       {parseRowBusy === did ? "提交中…" : "重新解析"}
                                     </button>
+                                  ) : null}
+                                  {did && isDocRunDoneOrFail(d.run) && !canReparse ? (
+                                    <span className="muted" style={{ fontSize: "0.8rem" }}>
+                                      无重解析权限
+                                    </span>
                                   ) : null}
                                   {did && canDeleteDoc ? (
                                     <button

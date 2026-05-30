@@ -4,6 +4,8 @@ import { useRouteDocumentTitle } from "./hooks/useRouteDocumentTitle";
 import { MainLayout } from "./layouts/MainLayout";
 import { ProtectedShell } from "./layouts/ProtectedShell";
 import { AuditPage } from "./pages/AuditPage";
+import { ChatAppEditPage } from "./pages/ChatAppEditPage";
+import { ChatAppsPage } from "./pages/ChatAppsPage";
 import { ChatPage } from "./pages/ChatPage";
 import { CrawlPage } from "./pages/CrawlPage";
 import { DocumentsPage } from "./pages/DocumentsPage";
@@ -79,6 +81,30 @@ export function App() {
             element={
               <RequirePermission permission="kb.configure">
                 <KbConfigPage />
+              </RequirePermission>
+            }
+          />
+          <Route
+            path="apps"
+            element={
+              <RequirePermission permission="kb.configure">
+                <ChatAppsPage />
+              </RequirePermission>
+            }
+          />
+          <Route
+            path="apps/new"
+            element={
+              <RequirePermission permission="kb.configure">
+                <ChatAppEditPage />
+              </RequirePermission>
+            }
+          />
+          <Route
+            path="apps/:id"
+            element={
+              <RequirePermission permission="kb.configure">
+                <ChatAppEditPage />
               </RequirePermission>
             }
           />

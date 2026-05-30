@@ -188,21 +188,28 @@ PY=python3
 # Select Nginx Configuration based on API_PROXY_SCHEME
 # -----------------------------------------------------------------------------
 NGINX_CONF_DIR="/etc/nginx/conf.d"
+apply_nginx_conf() {
+    local src="$1"
+    if [[ -f "$NGINX_CONF_DIR/$src" ]]; then
+        cp -f "$NGINX_CONF_DIR/$src" "$NGINX_CONF_DIR/ragflow.conf"
+        echo "Applied nginx config: $src"
+        return 0
+    fi
+    return 1
+}
 if [ -n "$API_PROXY_SCHEME" ]; then
     if [[ "${API_PROXY_SCHEME}" == "hybrid" ]]; then
-        cp -f "$NGINX_CONF_DIR/ragflow.conf.hybrid" "$NGINX_CONF_DIR/ragflow.conf"
-        echo "Applied nginx config: ragflow.conf.hybrid"
+        apply_nginx_conf "ragflow.conf.hybrid" || true
     elif [[ "${API_PROXY_SCHEME}" == "go" ]]; then
-        cp -f "$NGINX_CONF_DIR/ragflow.conf.golang" "$NGINX_CONF_DIR/ragflow.conf"
-        echo "Applied nginx config: ragflow.conf.golang (default)"
+        apply_nginx_conf "ragflow.conf.golang" || true
     else
-        cp -f "$NGINX_CONF_DIR/ragflow.conf.python" "$NGINX_CONF_DIR/ragflow.conf"
-        echo "Applied nginx config: ragflow.conf.python"
+        apply_nginx_conf "ragflow.conf.python" || apply_nginx_conf "ragflow.conf" || \
+            echo "WARNING: no ragflow.conf.python / ragflow.conf in image; leaving nginx as-is" >&2
     fi
 else
-    # Default to python backend
-    cp -f "$NGINX_CONF_DIR/ragflow.conf.python" "$NGINX_CONF_DIR/ragflow.conf"
-    echo "Default: applied nginx config: ragflow.conf.python"
+    # Default to python backend (older images may only ship ragflow.conf)
+    apply_nginx_conf "ragflow.conf.python" || apply_nginx_conf "ragflow.conf" || \
+        echo "WARNING: no ragflow.conf.python / ragflow.conf in image; leaving nginx as-is" >&2
 fi
 
 # -----------------------------------------------------------------------------

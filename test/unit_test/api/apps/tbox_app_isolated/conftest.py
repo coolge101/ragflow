@@ -95,10 +95,13 @@ def install_import_stubs(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setitem(sys.modules, "api.db.db_models", db_models)
 
     crawl_svc_mod = ModuleType("api.db.services.tbox_crawl_task_service")
+    managed_svc_mod = ModuleType("api.db.services.tbox_managed_user_service")
     services_pkg = ModuleType("api.db.services")
     services_pkg.tbox_crawl_task_service = crawl_svc_mod
+    services_pkg.tbox_managed_user_service = managed_svc_mod
     monkeypatch.setitem(sys.modules, "api.db.services", services_pkg)
     monkeypatch.setitem(sys.modules, "api.db.services.tbox_crawl_task_service", crawl_svc_mod)
+    monkeypatch.setitem(sys.modules, "api.db.services.tbox_managed_user_service", managed_svc_mod)
 
     api_utils = ModuleType("api.utils.api_utils")
 

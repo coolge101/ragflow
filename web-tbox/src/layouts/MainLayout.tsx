@@ -27,6 +27,7 @@ const NAV_ITEMS: NavItem[] = [
   { to: "/documents", label: "文档 / 知识库", perm: "doc.view" },
   { to: "/crawl", label: "采集", perm: "crawl.manage" },
   { to: "/kb", label: "知识库配置", perm: "kb.configure" },
+  { to: "/apps", label: "对话应用", perm: "kb.configure" },
   { to: "/audit", label: "审计", perm: "audit.read" },
   {
     to: "/users",

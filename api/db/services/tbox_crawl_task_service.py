@@ -24,17 +24,23 @@ from urllib.parse import urlparse
 from api.db import UserTenantRole
 from api.db.db_models import Knowledgebase, TboxCrawlTask, UserTenant
 from api.db.services.knowledgebase_service import KnowledgebaseService
-from api.db.services.tbox_crawl_ingest_service import ingest_rss_seeds_into_kb, ingest_static_web_seeds_into_kb
+from api.db.services.tbox_crawl_ingest_service import (
+    ingest_http_api_seeds_into_kb,
+    ingest_rss_seeds_into_kb,
+    ingest_static_web_seeds_into_kb,
+)
+from common.tbox_crawl_auth import validate_extra_config_no_secrets
 from common.constants import StatusEnum
 from common.misc_utils import get_uuid
 from common.tbox_crawl_http_probe import probe_seed_urls
 from common.tbox_crawl_last_error import format_crawl_worker_error
+from common.tbox_crawl_strategy import parse_strategy, resolve_target_urls
 
 _LOG = logging.getLogger(__name__)
 
 MAX_SEED_URLS = 100
 MAX_URL_LEN = 2048
-ALLOWED_SOURCE_TYPES = frozenset({"static_web", "rss"})
+ALLOWED_SOURCE_TYPES = frozenset({"static_web", "rss", "http_api"})
 ALLOWED_RUN_STATES = frozenset({"draft", "ready", "paused"})
 _CRON_TOKEN_RE = re.compile(r"^[\d\*/,\-]+$")
 
@@ -77,6 +83,14 @@ def validate_seed_urls(urls) -> tuple[list[str] | None, str | None]:
             return None, "invalid URL (missing host)"
         cleaned.append(u)
     return cleaned, None
+
+
+def validate_extra_config(extra_config) -> str | None:
+    if extra_config is None:
+        return None
+    if not isinstance(extra_config, dict):
+        return "extra_config must be an object"
+    return validate_extra_config_no_secrets(extra_config)
 
 
 def validate_schedule_cron(expr: str) -> str | None:
@@ -341,8 +355,11 @@ def execute_crawl_task_stub_tick(task_id: str) -> None:
     One crawl execution step: optional HTTP probe, then optional KB ingest.
 
     Ingest runs when ``dataset_id`` is set (unless ``extra_config.tbox_skip_ingest``):
-    ``static_web`` uses SSRF-safe GET + upload; ``rss`` uses ``RSSConnector`` + per-entry ``.txt`` upload.
+    ``static_web`` uses SSRF-safe GET + upload; ``rss`` uses ``RSSConnector`` + per-entry ``.txt`` upload;
+    ``http_api`` GET JSON endpoints and uploads one ``.txt`` per array item.
     ``robots.txt`` is consulted via ``common/tbox_crawl_robots.py`` unless ``extra_config.tbox_skip_robots_check``.
+    Strategy keys ``tbox_crawl_keywords``, ``tbox_crawl_max_depth``, ``tbox_crawl_allowed_domains`` are applied via
+    :mod:`common.tbox_crawl_strategy` (domain filter, optional link expansion, keyword filter at ingest).
     Transient HTTP retry whitelist: ``extra_config.tbox_crawl_retry_statuses`` (task full replace) /
     ``tbox_crawl_retry_extra_statuses`` (union) are passed to ``common.tbox_crawl_ssrf_fetch.effective_retry_statuses``
     for probe + ingest (process ``TBOX_CRAWL_RETRY_STATUSES`` overrides task keys when set).
@@ -359,9 +376,26 @@ def execute_crawl_task_stub_tick(task_id: str) -> None:
 
     seeds = list(row.seed_urls or [])
     skip_robots = bool(extra.get("tbox_skip_robots_check"))
+    strategy = parse_strategy(extra)
+    target_urls, strategy_note = resolve_target_urls(
+        seeds,
+        source_type=str(row.source_type or "static_web"),
+        strategy=strategy,
+        skip_robots=skip_robots,
+        extra_config=extra,
+    )
+    if not target_urls:
+        record_worker_tick(
+            task_id,
+            ok=False,
+            message=format_crawl_worker_error("STRATEGY", strategy_note or "no URLs to crawl after strategy"),
+        )
+        return
+    if strategy_note:
+        _LOG.info("tbox_crawl_tick task_id=%s strategy: %s", task_id, strategy_note)
 
     if not extra.get("tbox_skip_http_probe"):
-        ok, msg = probe_seed_urls(seeds, skip_robots=skip_robots, extra_config=extra)
+        ok, msg = probe_seed_urls(target_urls, skip_robots=skip_robots, extra_config=extra)
         if not ok:
             record_worker_tick(task_id, ok=False, message=format_crawl_worker_error("HTTP_PROBE", msg))
             return
@@ -390,9 +424,11 @@ def execute_crawl_task_stub_tick(task_id: str) -> None:
 
     st = str(row.source_type or "static_web")
     if st == "static_web":
-        ok_i, msg_i = ingest_static_web_seeds_into_kb(kb, row.tenant_id, seeds, skip_robots=skip_robots, extra_config=extra)
+        ok_i, msg_i = ingest_static_web_seeds_into_kb(kb, row.tenant_id, target_urls, skip_robots=skip_robots, extra_config=extra)
     elif st == "rss":
-        ok_i, msg_i = ingest_rss_seeds_into_kb(kb, row.tenant_id, seeds, skip_robots=skip_robots, extra_config=extra)
+        ok_i, msg_i = ingest_rss_seeds_into_kb(kb, row.tenant_id, target_urls, skip_robots=skip_robots, extra_config=extra)
+    elif st == "http_api":
+        ok_i, msg_i = ingest_http_api_seeds_into_kb(kb, row.tenant_id, target_urls, skip_robots=skip_robots, extra_config=extra)
     else:
         _LOG.info("tbox_crawl_tick: unknown source_type=%s task_id=%s", row.source_type, task_id)
         ok_i, msg_i = True, ""
@@ -401,5 +437,7 @@ def execute_crawl_task_stub_tick(task_id: str) -> None:
         record_worker_tick(task_id, ok=True, message="")
     elif st == "rss":
         record_worker_tick(task_id, ok=False, message=format_crawl_worker_error("INGEST_RSS", msg_i))
+    elif st == "http_api":
+        record_worker_tick(task_id, ok=False, message=format_crawl_worker_error("INGEST_API", msg_i))
     else:
         record_worker_tick(task_id, ok=False, message=format_crawl_worker_error("INGEST_STATIC", msg_i))

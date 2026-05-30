@@ -43,6 +43,7 @@ tika-server*.jar*
 cl100k_base.tiktoken
 chrome*
 huggingface.co/
+_incoming/
 nltk_data/
 uv-x86_64*.tar.gz
 

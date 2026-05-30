@@ -29,6 +29,8 @@ from urllib.parse import urljoin, urlparse
 
 import requests
 
+from common.tbox_crawl_auth import build_fetch_headers
+
 from common.ssrf_guard import assert_url_is_safe, pin_dns
 from common.tbox_crawl_origin_throttle import OriginFetchThrottler
 
@@ -310,7 +312,7 @@ def fetch_url_body_capped(
         raise ValueError("max_bytes must be positive")
 
     rs = retry_statuses if retry_statuses is not None else effective_retry_statuses(extra_config)
-    headers = {"User-Agent": _DEFAULT_UA}
+    headers = build_fetch_headers(extra_config, default_user_agent=_DEFAULT_UA)
     response = _ssrf_redirecting_stream_get(
         url.strip(),
         timeout=timeout,
@@ -375,7 +377,7 @@ def probe_url_streaming_cap(
         return 0, "max_read_bytes must be positive"
 
     rs = retry_statuses if retry_statuses is not None else effective_retry_statuses(extra_config)
-    headers = {"User-Agent": _DEFAULT_UA}
+    headers = build_fetch_headers(extra_config, default_user_agent=_DEFAULT_UA)
     try:
         response = _ssrf_redirecting_stream_get(
             url.strip(),

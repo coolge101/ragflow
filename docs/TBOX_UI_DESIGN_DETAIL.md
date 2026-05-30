@@ -46,6 +46,9 @@
 |--------|--------|--------------|-------------------|----------|
 | `login` | `/login` | 登录 | — | ✅ |
 | `chat` | `/` | 对话 | `chat.use` | — |
+| `chat-apps` | `/apps` | 对话应用 | `kb.configure` | — |
+| `chat-apps-new` | `/apps/new` | 新建对话应用 | `kb.configure` | — |
+| `chat-apps-edit` | `/apps/:id` | 编辑对话应用 | `kb.configure` | — |
 | `search` | `/search` | 检索 | `search.use` | — |
 | `documents` | `/documents` | 文档 | `doc.view` | — |
 | `crawl` | `/crawl` | 采集 | `crawl.manage` | — |

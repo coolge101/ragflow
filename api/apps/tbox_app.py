@@ -329,6 +329,9 @@ async def crawl_tasks_create():
             extra = {}
         if not isinstance(extra, dict):
             return get_json_result(code=RetCode.ARGUMENT_ERROR, message="extra_config must be an object")
+        secret_err = crawl_svc.validate_extra_config(extra)
+        if secret_err:
+            return get_json_result(code=RetCode.ARGUMENT_ERROR, message=secret_err)
         dataset_id = req.get("dataset_id")
         if dataset_id is not None:
             if not isinstance(dataset_id, str) or not dataset_id.strip():
@@ -409,6 +412,9 @@ async def crawl_tasks_patch(task_id: str):
             ex = req.get("extra_config")
             if not isinstance(ex, dict):
                 return get_json_result(code=RetCode.ARGUMENT_ERROR, message="extra_config must be an object")
+            secret_err = crawl_svc.validate_extra_config(ex)
+            if secret_err:
+                return get_json_result(code=RetCode.ARGUMENT_ERROR, message=secret_err)
             updates["extra_config"] = ex
         if "dataset_id" in req:
             ds = req.get("dataset_id")

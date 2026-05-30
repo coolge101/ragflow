@@ -4,8 +4,9 @@
 
 **相关文档**
 
+- **能力矩阵与下一阶段计划（G1–G5）**：[`docs/superpowers/specs/2026-05-24-tbox-capability-matrix-design.md`](./superpowers/specs/2026-05-24-tbox-capability-matrix-design.md)、[`docs/superpowers/plans/2026-05-24-tbox-next-phase.md`](./superpowers/plans/2026-05-24-tbox-next-phase.md)
 - 小白按步验收：`docs/TBOX_UI_ACCEPTANCE_WALKTHROUGH.md`
-- 咨询结果在哪一页、当前能否导出多格式：见本文「二期：业务结果导出」；一期对话在 `/`、检索在 `/search`，尚无 PDF/Word/Excel/Markdown 一键导出。
+- 咨询结果导出：**P1 已支持 MD/PDF**（`/`、`/search`）；Word/Excel 见 phase3 plan。
 
 ---
 
@@ -38,7 +39,26 @@
 
 ---
 
-## 三、二期：业务结果导出（对话 / 检索）
+## 三、业务结果导出（对话 / 检索）
+
+**一期 + P1 已交付（2026-05-24）**
+
+| 格式 | 路径 | 状态 |
+|------|------|------|
+| Markdown | **`/`**、**`/search`** | ✅ `exportConsultationResult.ts` |
+| PDF（打印） | 同上 | ✅ 浏览器「另存为 PDF」 |
+
+**P2 已交付（2026-05-24 Task 11）**
+
+| 格式 | 路径 | 状态 |
+|------|------|------|
+| Word (.docx) | **`/`** | ✅ |
+| Excel (.xlsx) | **`/search`** | ✅ |
+| PowerPoint (.pptx) | **`/`**、**`/search`** | ✅ Task 11b |
+
+---
+
+## 三（原）· 二期导出范围备忘
 
 **目标**：在**对话页**（`/`）与**检索页**（`/search`）等，支持将「咨询结果」导出为多种文件格式。
 
@@ -46,11 +66,10 @@
 
 1. **导出内容**：当前会话消息、当前检索结果列表、（可选）侧栏引用片段合并进同一文件。
 2. **格式**（按优先级可调整）
-   - **Markdown / 纯文本**：拼接后 `Blob` 下载，实现成本相对低。
-   - **PDF**：打印转 PDF（与验收流类似）或前端库 / 后端生成。
-   - **Word（.docx）**：前端 `docx` 或后端生成。
-   - **Excel（.xlsx）**：更适合检索多行；对话转表需定义列语义。
-3. **技术选型**：纯前端 vs 后端生成（分页、字体、大文档更稳）——二期立项时定一版方案。
+   - **Markdown / 纯文本**：✅ 已交付。
+   - **PDF**：✅ 打印转 PDF 已交付。
+   - **Word（.docx）**：P2。
+   - **Excel（.xlsx）**：P2。
 
 **非目标（除非产品明确要求）**
 
@@ -70,16 +89,16 @@
 
 | 方向 | 说明 |
 |------|------|
-| **采集高级策略** | `/crawl` 在种子 URL、调度之外：关键词策略、深度/域名限制等（与后端 `extra_config` 能力对齐的 UI）。 |
+| **采集高级策略** | ✅ P1：`/crawl` 关键词/深度/域名 + worker（`common/tbox_crawl_strategy.py`）。P2：登录站点、API 源。 |
 | **审计筛选与导出** | 审计列表：时间、用户、动作类型筛选；可选 CSV/Excel 导出（与 Agent 日志 CSV 导出类似思路）。 |
 
 ---
 
 ## 五、二期落地时自检清单
 
-- [ ] `PageReviewPanel` / `journeySteps` / `pathToJourneyStep` 与新增或变更路由一致。
-- [x] `docs/TBOX_UI_ACCEPTANCE_WALKTHROUGH.md` 已与一期实现对齐（含 `/kb`、删库权限说明）；动线再变时继续更新。
-- [ ] 新增导出：文件名、编码（UTF-8 BOM 如需 Excel 打开中文）、大内容性能与错误提示。
+- [x] `PageReviewPanel` / `journeySteps` / `pathToJourneyStep` 与 P1 路由（导出、模板、爬取策略）一致。
+- [x] `docs/TBOX_UI_ACCEPTANCE_WALKTHROUGH.md` 已与 P1 实现对齐。
+- [x] 导出 MD/PDF：UTF-8 下载与打印路径已接入 `/` 与 `/search`。
 - [ ] 静态线框 `public/ui-pages/` 与真实页差异在评审会上说清，避免验收误解。
 
 ---

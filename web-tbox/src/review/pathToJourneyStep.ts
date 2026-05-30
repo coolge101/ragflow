@@ -8,6 +8,9 @@ export function pathToJourneyStepId(pathname: string): string | null {
   if (pathname === "/review" || pathname.startsWith("/review/")) {
     return null;
   }
+  if (pathname === "/apps" || pathname.startsWith("/apps/")) {
+    return "chat-apps";
+  }
   const exact: Record<string, string> = {
     "/": "chat",
     "/search": "search",

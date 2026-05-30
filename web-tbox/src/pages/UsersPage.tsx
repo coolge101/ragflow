@@ -382,7 +382,7 @@ export function UsersPage() {
     <div style={{ maxWidth: 1040 }}>
       <h1 style={{ marginTop: 0 }}>用户与角色</h1>
       <p className="muted">
-        与 RAGFlow 官方 <code>user_tenant.role</code> 一致的四档角色在本表展示；<strong>管理员 / 所有者</strong>可改成员角色、增删成员、配置<strong>TBOX
+        与后端 <code>user_tenant.role</code> 一致的四档角色在本表展示；<strong>管理员 / 所有者</strong>可改成员角色、增删成员、配置<strong>TBOX
         权限</strong>与<strong>RSA 初始登录密码</strong>（不写邀请邮件）。成员可查看列表并在本页离开团队。
       </p>
       <section
@@ -395,7 +395,7 @@ export function UsersPage() {
           fontSize: "0.88rem",
         }}
       >
-        <div style={{ fontWeight: 600, marginBottom: 6 }}>RAGFlow 租户内四档角色</div>
+        <div style={{ fontWeight: 600, marginBottom: 6 }}>空间内四档角色</div>
         <ul className="muted" style={{ margin: 0, paddingLeft: "1.15rem", lineHeight: 1.55 }}>
           <li>
             <strong>所有者（owner）</strong>：每个工作空间唯一；不可被移除或改为其它角色；可改自己的账号与密码。
@@ -407,7 +407,7 @@ export function UsersPage() {
             <strong>成员（normal）</strong>：默认业务角色；可在表格中改为「待接受」或管理员等。
           </li>
           <li>
-            <strong>待接受（invite）</strong>：RAGFlow 原用于邮件邀请态；此处仍可作为一档角色保存。若已由管理者设置密码并加入空间，用户可直接登录并在登录后自行改密。
+            <strong>待接受（invite）</strong>：后端原用于邮件邀请态；此处仍可作为一档角色保存。若已由管理者设置密码并加入空间，用户可直接登录并在登录后自行改密。
           </li>
         </ul>
       </section>
@@ -580,7 +580,7 @@ export function UsersPage() {
               <tr style={{ borderBottom: "2px solid var(--border-subtle)", textAlign: "left" }}>
                 <th style={{ padding: "0.5rem" }}>邮箱（登录账号）</th>
                 <th style={{ padding: "0.5rem" }}>昵称</th>
-                <th style={{ padding: "0.5rem" }}>RAGFlow 角色</th>
+                <th style={{ padding: "0.5rem" }}>空间角色</th>
                 <th style={{ padding: "0.5rem" }}>TBOX 权限</th>
                 <th style={{ padding: "0.5rem" }}>状态</th>
                 <th style={{ padding: "0.5rem" }}>最近更新</th>

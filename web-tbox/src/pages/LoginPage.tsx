@@ -198,8 +198,7 @@ export function LoginPage() {
         {sessionBootstrap === "pending" ? null : (
           <>
             <p className="muted">
-              使用与 RAGFlow 相同的账号（邮箱 + 密码）。请求 <code>POST /api/v1/auth/login</code>，与官方{" "}
-              <code>web/</code> 加密方式一致。
+              使用您的 TBOX 账号（邮箱 + 密码）。请求 <code>POST /api/v1/auth/login</code>，密码经 RSA 公钥加密后提交，与本系统登录接口一致。
             </p>
             <form onSubmit={onSubmit} aria-busy={loading}>
               <label style={{ display: "block", marginBottom: "0.75rem" }}>

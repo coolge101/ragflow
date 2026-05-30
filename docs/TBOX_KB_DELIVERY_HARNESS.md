@@ -9,18 +9,28 @@
 
 ---
 
-## 1. 产品线定义：「基于 RAGFlow 的 TBOX 知识库」（已与你对齐）
+## 1. 产品线定义：基于知识库的咨询、决策、辅导系统（已与你对齐）
 
-下列四条为**当前共识下的产品范围**；后续验收与分期以本节为准。
+**定位**：在 RAGFlow 引擎之上，通过 **TBOX 自研 UI（`web-tbox/`）** 交付「Embedding → 检索/对话 → 可归档输出」闭环。
+
+下列 **G1–G5** 为**当前共识下的产品范围**；**能力矩阵与下一阶段 Task** 见 **[`docs/superpowers/specs/2026-05-24-tbox-capability-matrix-design.md`](./superpowers/specs/2026-05-24-tbox-capability-matrix-design.md)** 与 **[`docs/superpowers/plans/2026-05-24-tbox-next-phase.md`](./superpowers/plans/2026-05-24-tbox-next-phase.md)**。
+
+| ID | 能力 | 说明 |
+|----|------|------|
+| **G1** | **自有成果 Embedding** | PDF、Word、Excel、图片等上传、解析、分块与嵌入（见 `/documents`、`/kb`）。 |
+| **G2** | **网络知识爬取** | 关键词与多种方式（定时、专项等）；遵守 robots；见 **§7** 与 `/crawl`。 |
+| **G3** | **LLM 对话** | 首选用 **DeepSeek**，须可扩展其他模型；对话应用 `/apps`、流式对话 `/`、检索 `/search`。 |
+| **G4** | **结果导出** | 咨询/决策/辅导输出 **Markdown、PDF**；Word/Excel/PPT 为扩展项（见二期备忘）。 |
+| **G5** | **RAGFlow 能力 + 自研 UI** | 围绕 G1–G4 对齐必要引擎能力；**Apache 2.0** 合规；用户界面 **TBOX 品牌**（见矩阵「非目标」）。 |
+
+**原 §1 四条（引擎/ UI / 爬取 / Docker）**仍成立：G1–G5 为其产品化表述；**细化约束**见 **§7**。
 
 | # | 能力 | 说明 |
 |---|------|------|
-| **1** | **以开源 RAGFlow 为基座的二次开发** | 在官方 RAGFlow 能力之上扩展与定制，保持与上游的升级/合并策略可执行（见 §5 分支策略）。 |
-| **2** | **新 UI：兼容原有能力 + TBOX 扩展** | 在兼容 RAGFlow 既有功能的前提下，增加：**用户管理**、**知识库管理**（导入、导出、删除等）、**知识爬取管理**等界面与流程。 |
-| **3** | **网络知识爬取** | 系统具备从网络获取与更新相关知识的能力（采集、调度、入库或与 KB 流水线衔接；数据源类型、robots、调度等见 **§7**）。 |
-| **4** | **Docker 可部署到其他服务器** | 交付形态支持在**其他机器**上以 **Docker**（或 Compose 编排）部署，文档与镜像/配置需支持可复现安装（见 §3 交付 Harness）。 |
-
-**细化约束**已写入 **§7**（原 §6 问卷已答复）。
+| **1** | **以开源 RAGFlow 为基座的二次开发** | 见 §5 分支策略与矩阵非目标节。 |
+| **2** | **新 UI** | `web-tbox/`；用户、KB、爬取、对话应用等。 |
+| **3** | **网络知识爬取** | 对应 **G2**。 |
+| **4** | **Docker 可部署到其他服务器** | 见 §3、Runbook。 |
 
 ---
 
@@ -139,10 +149,14 @@
 - **需登录站点 / API 拉取**：凭据与密钥管理须单独设计（环境变量/密钥卷），不得写入仓库。
 - **独立前端 + 上游合并**：建议明确 **API 版本化** 与 **RAGFlow 版本钉扎**，避免前端与后端漂移。
 
-### 7.5 第三方模型（可选验收）
+### 7.5 第三方模型（G3-MODEL-DEEPSEEK，发版前手测）
 
-- RAGFlow 上游已支持在租户中配置 **DeepSeek** 等供应商（见 `conf/models/deepseek.json`、`rag/llm/`、官方 `web/` 模型常量）。**非 TBOX 独占功能**，随上游合并保持即可。
-- **可选发版前手测**：在目标环境为租户添加 DeepSeek（或兼容 OpenAI-API 的网关）API Key，在应用或默认模型中选一条 DeepSeek 对话模型，经 **`web-tbox/` 对话页** 或官方 `web/` 完成一轮流式对话，确认无鉴权/代理错误。
+- RAGFlow 上游已支持 **DeepSeek** 等供应商（`conf/models/deepseek.json`、`rag/llm/`）。**非 TBOX 独占功能**，随上游合并保持即可。
+- **发版前手测（仅 `web-tbox`）**：
+  1. **`/kb`**：选知识库 → **供应商 API Key** 配置 DeepSeek → **空间默认模型** 或表单中选 `模型名@DeepSeek`。
+  2. **`/apps`** 或 **`/`**：选绑定知识库的应用（或「仅模型」+ DeepSeek）→ 发送一条消息。
+  3. **通过**：流式输出正常；`GET /v1/tbox/health` 为 200；无 502/HTML 当 JSON。
+- 详细命令与环境见 **`docs/TBOX_QUICKSTART.md` §3.2**。
 
 ---
 
@@ -215,6 +229,8 @@
 | 2026-05-02 | **§9.4.2**：**529** 纳入 **`_RETRY_STATUSES`**；**`TBOX_API_BOUNDARY` §1.3** 明确 **`TBOX_CRAWL_RETRY_MAX_ATTEMPTS_<CODE>=0`** 关闭该码重试 |
 | 2026-05-02 | **§9.4.2**：**`effective_retry_statuses`** — 环境变量 **`TBOX_CRAWL_RETRY_STATUSES`** / **`TBOX_CRAWL_RETRY_EXTRA_STATUSES`** 与 **`extra_config.tbox_crawl_retry_extra_statuses`** 配置白名单；**`DEFAULT_RETRY_STATUS_CODES`**；**`TBOX_API_BOUNDARY` §1.2–1.3** 同步 |
 | 2026-05-02 | **§9.4.2**：**`extra_config.tbox_crawl_retry_statuses`** 任务级全量白名单（**`effective_retry_statuses`** 第二优先级） | **`TBOX_API_BOUNDARY` §1.2** 同步 |
+| 2026-05-24 | **§1** 升级为 G1–G5「咨询/决策/辅导」产品目标；新增能力矩阵 spec 与下一阶段 plan；§7.5 DeepSeek 手测仅 `web-tbox` |
+| 2026-05-24 | **P1 落地**：G4 导出、G3 场景模板、G2 爬取策略 UI+worker、G1 手测清单；验收/`journeySteps`/phase3 plan 同步 |
 
 ---
 
@@ -230,8 +246,9 @@
 | **S1** | **已推进** | `docs/TBOX_API_BOUNDARY.md`；`api/apps/tbox_app.py`：`/health`、`/contract`；**`/me`（鉴权）**、**`/logout`**；`/me` 契约版本当前为 **v4**（`permissions` 含 `crawl.manage` 等；以 `TBOX_API_CONTRACT_VERSION` 与 `GET /v1/tbox/contract` 为准）。租户列表来自 `UserTenant`；更细「一一对应」字段表仍可在 S3 补全。 |
 | **S2** | **已推进** | `web-tbox/`：**`/login` 邮箱密码登录**（RSA → `/api/v1/auth/login`）、**`/` 控制台**拉取 **`/v1/tbox/me`**（带 `Authorization`）、**退出** 调 **`POST /v1/tbox/logout`**。IA/权限/视觉以 **`docs/TBOX_UI_DESIGN_OVERVIEW.md`**、**`docs/TBOX_UI_DESIGN_DETAIL.md`** 为准；参考原型见 **§2.1**。 |
 | **S3** | **已启动** | **知识库 `/documents`**（含 **文档列表/上传/删除**）；**对话 `/`**；**检索 `/search`**；**用户 `/users`**；**审计 `/audit`**（ingestions）；**`permissions`**（**v4** 含 `crawl.manage`）。**整库 ZIP 导出** 仍视官方 REST 暴露情况。 |
-| **S4** | **部分启动** | **`/crawl`** + **`crawl.manage`**；**`/v1/tbox/crawl/tasks` CRUD**；**`rag/svr/tbox_crawl_worker.py`** 轮询 + tick：**探测** + **`robots.txt` 预检**（可跳过）+ **`dataset_id`** 时 **`static_web`/`rss`** 入库；**`docker/entrypoint.sh`** **`ENABLE_TBOX_CRAWL_WORKER`**；**`web-tbox` `CrawlPage`**（含 **`extra_config` 勾选 + JSON / 完整 JSON 模式**）。**Crawl-delay、全量 robots 语义、登录/API 源等**见 **§9.4 待办**。 |
+| **S4** | **已推进** | **`/crawl`** + worker tick；**`extra_config` 策略键**（`tbox_crawl_keywords` / `_max_depth` / `_allowed_domains`）UI + **`common/tbox_crawl_strategy.py`**；专项/定时任务类型。**Crawl-delay、登录/API 源等**见 **§9.4**。 |
 | **S5–S7** | 未开始 | 按 §9.1 继续排期。 |
+| **矩阵/下阶段** | **P1 已落地** | 阶段 0–2 见 **[`2026-05-24-tbox-next-phase.md`](./superpowers/plans/2026-05-24-tbox-next-phase.md)**；**P2** 见 **[`2026-05-24-tbox-phase3-plan.md`](./superpowers/plans/2026-05-24-tbox-phase3-plan.md)**。 |
 
 ### 9.1 阶段总览
 
