@@ -15,8 +15,8 @@
 | 字段 | 值 |
 |------|-----|
 | 记录日期 | 2026-05-30 |
-| 本 fork 工作区 `HEAD`（文档更新时钉扎） | `817b4ef994536ce02ee7acab79ef7fa4cf099900` |
-| 备注 | **Phase 11** @ `817b4ef99`。Phase 10 镜像含 `/ragflow/scripts` ✅。S6 merge @ `f9bd37fdd`；**ahead 95 / behind 0**。 |
+| 本 fork 工作区 `HEAD`（文档更新时钉扎） | `21cef6ef2d70d6ff31213c59afeee4518b56d573` |
+| 备注 | **Phase 12** @ `21cef6ef2`。`tbox_record_vm_acceptance.sh` + Walkthrough Q ✅。S6 merge @ `f9bd37fdd`；**ahead 99 / behind 0**。 |
 
 ## 3. 常用端口（默认本地开发）
 
