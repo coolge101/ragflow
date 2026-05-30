@@ -273,7 +273,8 @@
 | **Phase 12** | **5180 验收闭环 ✅** | 记录脚本、Walkthrough Q、登录 JWT 修复 @ `94afbe047` — phase12 plan |
 | **Phase 13** | **收尾与例行运维 ✅** | 漂移记录、P2 smoke、5180 手测归档 — phase13 plan |
 | **Phase 14** | **G3 对话应用 API 回归** | `tbox_chat_apps_smoke.sh` 纳入 release — phase14 plan |
-| **矩阵/里程碑** | **Phase 0–14** | 后续：**S6 例行 `--fetch`** + **§9.4 Crawl-delay** 等 P2 深化 |
+| **Phase 15** | **G5 权限 API 回归** | `tbox_permissions_smoke.sh`（admin 必测；`TBOX_SMOKE_NORMAL_*` 双账号）— phase15 plan |
+| **矩阵/里程碑** | **Phase 0–15** | 后续：**S6 例行 `--fetch`** + **Citation 侧栏** 等 P2 深化 |
 
 ### 9.1 阶段总览
 

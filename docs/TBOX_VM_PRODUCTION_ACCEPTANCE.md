@@ -39,6 +39,8 @@ bash scripts/tbox_record_upstream_drift.sh --fetch
 bash scripts/tbox_p2_regression_smoke.sh
 # G3 对话应用 CRUD：
 bash scripts/tbox_chat_apps_smoke.sh
+# G5 权限 API（admin 必测；双账号见 TBOX_SMOKE_NORMAL_*）：
+bash scripts/tbox_permissions_smoke.sh
 ```
 
 **通过标准**：退出码 **0**（Docker 容器、5180/login、health、release smoke）。
@@ -77,13 +79,14 @@ LAN IP：`hostname -I | awk '{print $1}'`
 | 日期 | 2026-05-30 |
 | VM / LAN IP | 10.40.92.240 |
 | Console | http://10.40.92.240:5180/login |
-| Git HEAD | `c9d8ff9a8` |
+| Git HEAD | `705630f4e` |
 | `tbox_vm_production_acceptance.sh` | ☑ pass |
 | `tbox_login_smoke.sh` | ☑ pass |
 | `tbox_p2_regression_smoke.sh` | ☑ pass |
+| `tbox_chat_apps_smoke.sh` | ☑ pass |
 | §3 内网与双账号 A–D | ☑ 手测 2026-05-30 |
 | §4 产品动线 Walkthrough | ☑ 手测 2026-05-30 |
-| 备注 | 自动化 + 5180 手测归档完成；Phase 13 Task 45 ✅ |
+| 备注 | Phase 13–14 手测 + 自动化归档 ✅；Phase 15 permissions smoke 开发中 |
 
 ---
 
@@ -95,3 +98,4 @@ LAN IP：`hostname -I | awk '{print $1}'`
 - Phase 12 plan：`docs/superpowers/plans/2026-05-30-tbox-phase12-plan.md`
 - Phase 13 plan：`docs/superpowers/plans/2026-05-30-tbox-phase13-plan.md`
 - Phase 14 plan：`docs/superpowers/plans/2026-05-30-tbox-phase14-plan.md`
+- Phase 15 plan：`docs/superpowers/plans/2026-05-30-tbox-phase15-plan.md`

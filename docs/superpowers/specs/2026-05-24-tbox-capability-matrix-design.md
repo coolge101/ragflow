@@ -147,6 +147,7 @@
 | **12** | 5180 产品验收闭环 | 产品/运维 | **`tbox_record_vm_acceptance.sh`**、登录 JWT 修复 — phase12 plan |
 | **13** | 收尾与例行运维 | 运维/产品 | 漂移记录、P2 smoke、5180 手测 — phase13 plan |
 | **14** | G3 对话应用 API 回归 | 产品 | **`tbox_chat_apps_smoke.sh`** — phase14 plan |
+| **15** | G5 权限 API 回归 | 产品/运维 | **`tbox_permissions_smoke.sh`** — phase15 plan |
 
 详细 Task 见 implementation plan。
 
