@@ -31,6 +31,7 @@ npm run dev
 
 ```bash
 npm run typecheck
+npm test          # chunkDisplay + citationUtils（Phase 20）
 npm run build
 ```
 

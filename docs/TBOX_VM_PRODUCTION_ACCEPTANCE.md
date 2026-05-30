@@ -79,15 +79,17 @@ LAN IP：`hostname -I | awk '{print $1}'`
 | 日期 | 2026-05-30 |
 | VM / LAN IP | 10.40.92.240 |
 | Console | http://10.40.92.240:5180/login |
-| Git HEAD | `e1efa0025` |
+| Git HEAD | `dbb941c56` |
 | `tbox_vm_production_acceptance.sh` | ☑ pass |
 | `tbox_login_smoke.sh` | ☑ pass |
 | `tbox_p2_regression_smoke.sh` | ☑ pass |
 | `tbox_chat_apps_smoke.sh` | ☑ pass |
-| `tbox_permissions_smoke.sh` | ☑ pass（admin） |
+| `tbox_permissions_smoke.sh` | ☑ pass（admin；双账号见 `TBOX_SMOKE_ENV.md`） |
+| `web-tbox npm test` | ☑ 12 tests（chunkDisplay + citationUtils） |
 | §3 内网与双账号 A–D | ☑ 手测 2026-05-30 |
 | §4 产品动线 Walkthrough | ☑ 手测 2026-05-30 |
-| 备注 | Phase 13–17 归档 ✅；双账号 API：`cp scripts/tbox_smoke.env.example scripts/tbox_smoke.env` — **`docs/TBOX_SMOKE_ENV.md`** |
+| Phase 16–17 UI | ☐ Citation / 检索高亮（5180 重建 console 后手测） |
+| 备注 | Phase 14–20 自动化 ✅；`docs/TBOX_SMOKE_ENV.md` 双账号 optional |
 
 ---
 
@@ -100,3 +102,4 @@ LAN IP：`hostname -I | awk '{print $1}'`
 - Phase 13 plan：`docs/superpowers/plans/2026-05-30-tbox-phase13-plan.md`
 - Phase 14 plan：`docs/superpowers/plans/2026-05-30-tbox-phase14-plan.md`
 - Phase 15 plan：`docs/superpowers/plans/2026-05-30-tbox-phase15-plan.md`
+- Phase 16–20 plans：`docs/superpowers/plans/2026-05-30-tbox-phase16-plan.md` … `phase20-plan.md`
