@@ -15,8 +15,8 @@
 | 字段 | 值 |
 |------|-----|
 | 记录日期 | 2026-05-30 |
-| 本 fork 工作区 `HEAD`（文档更新时钉扎） | `878545a75013821fdad61c785e28947a63635fa2` |
-| 备注 | **Phase 19** @ `878545a75`。ChunkListPanel 共用 ✅。S6 merge @ `f9bd37fdd`；**behind 0 / ahead ~118**。 |
+| 本 fork 工作区 `HEAD`（文档更新时钉扎） | `26b35cf6c675ba133fb42fc97f09642dc8bb8442` |
+| 备注 | **Phase 20** @ `26b35cf6c`。Vitest 12 tests ✅。S6 merge @ `f9bd37fdd`；**behind 0 / ahead ~119**。 |
 
 ## 3. 常用端口（默认本地开发）
 
