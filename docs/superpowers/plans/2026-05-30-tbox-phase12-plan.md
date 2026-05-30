@@ -44,9 +44,12 @@
 
 ## Task 44: 手测（人工，Agent 不可代劳）
 
-- [ ] §3 A–D：5180 登录、内网、双账号侧栏
-- [ ] §4 + Walkthrough Q：G1 向导、L–P 抽样
-- [ ] 将 `tbox_record_vm_acceptance.sh` 输出填入 §5
+- [x] §3 A：本机 5180 admin 登录（2026-05-30 用户确认 + `tbox_login_smoke.sh`）
+- [x] §3 C：health / 契约 v5（自动化）
+- [ ] §3 B：内网另一设备 5180
+- [ ] §3 D：双账号侧栏
+- [ ] §4 + Walkthrough Q/L–P：G1 向导等
+- [x] §5 记录表已填（自动化项 + 登录；见 `TBOX_VM_PRODUCTION_ACCEPTANCE.md` §5）
 
 ---
 
@@ -54,6 +57,9 @@
 
 - [x] `bash scripts/tbox_record_vm_acceptance.sh` 输出完整草稿
 - [x] `bash scripts/tbox_vm_production_acceptance.sh` 退出码 0
-- [ ] §5 记录表已填（手测完成后）
+- [x] `bash scripts/tbox_login_smoke.sh` 退出码 0
+- [x] §5 记录表已填（部分手测待 Phase 13 Task 45）
 
 **Plan saved to:** `docs/superpowers/plans/2026-05-30-tbox-phase12-plan.md`
+
+**后续：** [`2026-05-30-tbox-phase13-plan.md`](./2026-05-30-tbox-phase13-plan.md)

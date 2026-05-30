@@ -43,9 +43,9 @@ bash scripts/tbox_record_vm_acceptance.sh --run-smoke
 
 | 步骤 | 操作 | 通过 |
 |------|------|------|
-| A | 本机打开 `http://127.0.0.1:5180/login`，admin 登录 | ☐ |
+| A | 本机打开 `http://127.0.0.1:5180/login`，admin 登录 | ☑ |
 | B | 内网另一设备 `http://<VM-LAN-IP>:5180/login` 可登录 | ☐ |
-| C | `curl -sf http://127.0.0.1:9380/v1/tbox/health` 含 `tbox_api_contract_version` | ☐ |
+| C | `curl -sf http://127.0.0.1:9380/v1/tbox/health` 含 `tbox_api_contract_version` | ☑ |
 | D | 普通用户 vs admin：**侧栏菜单** 随 `permissions` 不同 | ☐ |
 
 LAN IP：`hostname -I | awk '{print $1}'`
@@ -68,13 +68,17 @@ LAN IP：`hostname -I | awk '{print $1}'`
 
 | 项 | 值 |
 |----|-----|
-| 日期 | |
-| VM / LAN IP | |
-| Git HEAD | |
-| `tbox_vm_production_acceptance.sh` | ☐ pass |
-| 双账号权限 | ☐ |
-| UI Walkthrough | ☐ |
-| 备注 | |
+| 日期 | 2026-05-30 |
+| VM / LAN IP | 10.40.92.240 |
+| Console | http://10.40.92.240:5180/login |
+| Git HEAD | `94afbe047` |
+| `tbox_vm_production_acceptance.sh` | ☑ pass（G1 + G3 smoke） |
+| `tbox_login_smoke.sh` | ☑ pass（5180 登录 + `/v1/tbox/me`） |
+| §3 A/C 本机登录与健康 | ☑ |
+| 双账号权限（§3 D） | ☐ 待手测 |
+| UI Walkthrough Q + L–P（§4） | ☐ 待手测 |
+| G1 向导 `/documents`（§4） | ☐ 待手测 |
+| 备注 | 2026-05-30 修复 S6 登录 JWT；`admin@ragflow.io` / `admin` 已验证 |
 
 ---
 
@@ -84,3 +88,4 @@ LAN IP：`hostname -I | awk '{print $1}'`
 - 从 GitHub 部署：`docs/TBOX_DEPLOY_FROM_GITHUB.md`
 - Phase 9 plan：`docs/superpowers/plans/2026-05-24-tbox-phase9-plan.md`
 - Phase 12 plan：`docs/superpowers/plans/2026-05-30-tbox-phase12-plan.md`
+- Phase 13 plan：`docs/superpowers/plans/2026-05-30-tbox-phase13-plan.md`

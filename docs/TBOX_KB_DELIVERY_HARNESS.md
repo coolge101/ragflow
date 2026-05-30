@@ -270,8 +270,9 @@
 | **S6 merge** | **2026-05-30 ✅** | `origin/main` @ `cd18cfab7` → `tbox-deploy` @ `f9bd37fdd`；**behind 0 / ahead 93** — 见 **`TBOX_UPSTREAM_MERGE_RUNBOOK.md`** §4 |
 | **Phase 10** | **栈加固 ✅** | `tbox_verify_stack_image.sh`、镜像内置 `scripts/` — phase10 plan |
 | **Phase 11** | **运维硬化 ✅** | post-merge 全链路验收、build 磁盘 recovery — phase11 plan |
-| **Phase 12** | **5180 验收闭环** | `tbox_record_vm_acceptance.sh`、Walkthrough Q、journeySteps — phase12 plan（§3–4 手测待填） |
-| **矩阵/里程碑** | **Phase 0–12** | 后续：**§5 手测填表** + **S6 `--fetch` 漂移** + **P2 择一** |
+| **Phase 12** | **5180 验收闭环 ✅** | 记录脚本、Walkthrough Q、登录 JWT 修复 @ `94afbe047` — phase12 plan |
+| **Phase 13** | **收尾与例行运维** | 剩余手测 §3 B/D §4、S6 `--fetch` 漂移 — phase13 plan |
+| **矩阵/里程碑** | **Phase 0–13** | 后续：**手测收尾** + **P2 择一** |
 
 ### 9.1 阶段总览
 

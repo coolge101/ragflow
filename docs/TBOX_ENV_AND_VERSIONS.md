@@ -15,8 +15,8 @@
 | 字段 | 值 |
 |------|-----|
 | 记录日期 | 2026-05-30 |
-| 本 fork 工作区 `HEAD`（文档更新时钉扎） | `21cef6ef2d70d6ff31213c59afeee4518b56d573` |
-| 备注 | **Phase 12** @ `21cef6ef2`。`tbox_record_vm_acceptance.sh` + Walkthrough Q ✅。S6 merge @ `f9bd37fdd`；**ahead 99 / behind 0**。 |
+| 本 fork 工作区 `HEAD`（文档更新时钉扎） | `94afbe047bd1fdc60ca3906c5e509b2e9ef6d42a` |
+| 备注 | **Phase 12/13** @ `94afbe047`。5180 登录 JWT 修复 ✅；VM smoke + login smoke ✅。S6 merge @ `f9bd37fdd`；**ahead 102 / behind 0**。 |
 
 ## 3. 常用端口（默认本地开发）
 

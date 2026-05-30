@@ -144,7 +144,8 @@
 | **9** | VM 验收 + G1 向导 | 产品/运维 | **`TBOX_VM_PRODUCTION_ACCEPTANCE.md`**、`G1IngestFormatGuide`（见 phase9 plan） |
 | **10** | S6 后栈加固 | 运维 | **`tbox_verify_stack_image.sh`**、Dockerfile `COPY scripts`（见 phase10 plan） |
 | **11** | 运维硬化 | 运维 | post-merge 校验链、build 磁盘 recovery（见 phase11 plan） |
-| **12** | 5180 产品验收闭环 | 产品/运维 | **`tbox_record_vm_acceptance.sh`**、Walkthrough Q、journeySteps（见 phase12 plan） |
+| **12** | 5180 产品验收闭环 | 产品/运维 | **`tbox_record_vm_acceptance.sh`**、登录 JWT 修复 — phase12 plan |
+| **13** | 收尾与例行运维 | 运维/产品 | 手测 §3 B/D §4、S6 `--fetch` — phase13 plan |
 
 详细 Task 见 implementation plan。
 

@@ -18,6 +18,7 @@ LAN="$(hostname -I 2>/dev/null | awk '{print $1}' || echo unknown)"
 CONSOLE_PORT="${TBOX_CONSOLE_PORT:-5180}"
 
 SMOKE_STATUS="not run"
+LOGIN_STATUS="not run"
 API="${TBOX_SMOKE_BASE_URL:-http://127.0.0.1:9380}"
 if [[ "$RUN_SMOKE" -eq 1 ]]; then
   if bash scripts/tbox_vm_production_acceptance.sh; then
@@ -35,6 +36,12 @@ else
   fi
 fi
 
+if bash scripts/tbox_login_smoke.sh >/dev/null 2>&1; then
+  LOGIN_STATUS="pass"
+else
+  LOGIN_STATUS="FAIL"
+fi
+
 cat <<EOF
 # 粘贴到 docs/TBOX_VM_PRODUCTION_ACCEPTANCE.md §5
 
@@ -45,6 +52,8 @@ cat <<EOF
 | Console | http://${LAN}:${CONSOLE_PORT}/login |
 | Git HEAD | ${HEAD} |
 | \`tbox_vm_production_acceptance.sh\` | ${SMOKE_STATUS} |
+| \`tbox_login_smoke.sh\` | ${LOGIN_STATUS} |
+| §3 A 本机登录 | $([[ "$LOGIN_STATUS" == "pass" ]] && echo "☑" || echo "☐ 待手测") |
 | 双账号权限（§3 D） | ☐ 待手测 |
 | UI Walkthrough Q + L–P（§4） | ☐ 待手测 |
 | G1 向导 /documents（§4） | ☐ 待手测 |
