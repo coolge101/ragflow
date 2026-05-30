@@ -31,6 +31,13 @@ fi
 echo ""
 
 echo "==> [1/4] Docker stack"
+if ! bash scripts/tbox_verify_stack_image.sh; then
+  if [[ "${TBOX_ALLOW_STOCK_IMAGE:-0}" == "1" ]]; then
+    echo "WARN: stack image check failed (allowed by TBOX_ALLOW_STOCK_IMAGE=1)"
+  else
+    fail=1
+  fi
+fi
 if ! docker ps --format '{{.Names}}' | grep -q 'ragflow-cpu'; then
   echo "WARN: ragflow-cpu container not running" >&2
   fail=1

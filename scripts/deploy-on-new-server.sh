@@ -55,10 +55,13 @@ if [[ ! -f docker/.env ]]; then
   cp docker/.env.example docker/.env
 fi
 
-# Ensure TBOX image name is set (append if missing)
+# Ensure TBOX image name is set (append if missing; replace Hub stock image)
 if ! grep -q '^RAGFLOW_IMAGE=' docker/.env 2>/dev/null; then
   echo "RAGFLOW_IMAGE=ragflow-tbox:local" >> docker/.env
   echo "==> Appended RAGFLOW_IMAGE=ragflow-tbox:local to docker/.env"
+elif grep -q '^RAGFLOW_IMAGE=.*infiniflow/ragflow' docker/.env 2>/dev/null; then
+  sed -i 's|^RAGFLOW_IMAGE=.*|RAGFLOW_IMAGE=ragflow-tbox:local|' docker/.env
+  echo "==> Replaced stock RAGFLOW_IMAGE with ragflow-tbox:local in docker/.env"
 fi
 
 if [[ "$UP_ONLY" -eq 1 ]]; then

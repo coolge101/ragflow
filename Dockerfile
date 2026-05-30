@@ -236,6 +236,7 @@ COPY common common
 COPY memory memory
 COPY bin bin
 COPY tools/scripts tools/scripts
+COPY scripts scripts
 
 COPY docker/service_conf.yaml.template ./conf/service_conf.yaml.template
 COPY docker/entrypoint.sh ./

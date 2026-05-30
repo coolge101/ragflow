@@ -41,3 +41,5 @@
 - [x] `bash scripts/tbox_vm_production_acceptance.sh`（console 栈运行中；G1 冒烟 PNG 用 `picture` 分块）
 
 **Plan saved to:** `docs/superpowers/plans/2026-05-24-tbox-phase9-plan.md`
+
+**后续：** [`2026-05-30-tbox-phase10-plan.md`](./2026-05-30-tbox-phase10-plan.md)（S6 merge 后栈加固）

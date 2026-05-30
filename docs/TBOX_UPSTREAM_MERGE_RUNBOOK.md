@@ -72,6 +72,8 @@ uv run pytest test/unit_test/api/apps/tbox_app_isolated -m tbox_app_isolated -q
 | 验证 | health ✅ · web-tbox typecheck/build ✅ · pytest/G1/G3 smoke ⚠️ 本地 `uv sync` 需 Python 3.13+ 且 spacy 模型下载（网络） |
 | 备注 | 保留 TBOX：`tbox_app` 注册日志、`fix_empty_tenant_model_id`、SDK url_prefix；采纳 upstream `get_secret_key()` 与 TenantModel* 表 |
 
+**Post-fix（同日）**：`RAGFLOW_IMAGE=ragflow-tbox:local` + `TBOX_SMOKE_RUNNER=docker` → release/VM smoke ✅（`7ea81bec7`）。
+
 ---
 
 ## 5. 差异快照（合并前例行）
