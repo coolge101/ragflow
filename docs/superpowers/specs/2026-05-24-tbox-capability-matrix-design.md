@@ -104,7 +104,7 @@
 | G3-CHAT-STREAM | 流式对话 + 引用 | ✅ | ✅ `/` | SSE completions | ✅ | `reference.chunks` + **Citation 点击高亮**（Phase 16） |
 | G3-CHAT-SESSION | 会话列表/切换 | ✅ | ✅ `/` | chats sessions API | ✅ | |
 | G3-SCENARIO | **咨询/决策/辅导** 场景模板 | ❌ 无预设 | ✅ `/apps` 模板 | `/apps` 数据 | **P1** | 三套 Prompt/检索预设 |
-| G3-SEARCH | 知识库内检索试用 | ✅ next-search | ✅ `/search` | dataset search | ✅ | |
+| G3-SEARCH | 知识库内检索试用 | ✅ next-search | ✅ `/search` | dataset search | ✅ | 结果条目点击高亮（Phase 17） |
 
 ### G4 — 结果导出
 
@@ -149,6 +149,7 @@
 | **14** | G3 对话应用 API 回归 | 产品 | **`tbox_chat_apps_smoke.sh`** — phase14 plan |
 | **15** | G5 权限 API 回归 | 产品/运维 | **`tbox_permissions_smoke.sh`** — phase15 plan |
 | **16** | G3 Citation 侧栏联动 | 产品 | **`ChatMessageContent` / `ReferenceChunks`** — phase16 plan |
+| **17** | S6 漂移 + 检索高亮 | 运维/产品 | Runbook §5 **`--fetch`**；**`SearchResultList`** — phase17 plan |
 
 详细 Task 见 implementation plan。
 

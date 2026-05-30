@@ -1,5 +1,6 @@
 import { FormEvent, useCallback, useEffect, useState } from "react";
 import { ApiErrorBanner } from "../components/ApiErrorBanner";
+import { SearchResultList, searchChunkSnippet } from "../components/SearchResultList";
 import { listDatasets, type DatasetRow } from "../api/datasets";
 import { searchDataset, type ChunkRow } from "../api/datasetSearch";
 import {
@@ -17,17 +18,6 @@ import {
   parseSearchChunkRow,
 } from "../utils/exportOffice";
 
-function chunkSnippet(c: ChunkRow): string {
-  const doc = (c.document_keyword as string) || (c.docnm_kwd as string) || "";
-  const content =
-    (c.content_with_weight as string) ||
-    (c.content_ltks as string) ||
-    (c.content as string) ||
-    "";
-  const sim = c.similarity != null ? `相似度 ${Number(c.similarity).toFixed(3)}` : "";
-  return [doc && `【${doc}】`, sim, content.slice(0, 500)].filter(Boolean).join("\n");
-}
-
 export function SearchPage() {
   const [datasets, setDatasets] = useState<DatasetRow[]>([]);
   const [datasetId, setDatasetId] = useState("");
@@ -40,6 +30,7 @@ export function SearchPage() {
   const [searchError, setSearchError] = useState<string | null>(null);
   /** 最近一次「成功」检索对应的 `datasetId\\ttrim(question)`，用于区分未检索与 0 结果 */
   const [lastSuccessSearchKey, setLastSuccessSearchKey] = useState<string | null>(null);
+  const [activeResultIndex, setActiveResultIndex] = useState<number | null>(null);
 
   const loadDatasets = useCallback(async () => {
     setLoadingList(true);
@@ -78,6 +69,7 @@ export function SearchPage() {
     if (lastSuccessSearchKey !== null && lastSuccessSearchKey !== key) {
       setChunks([]);
       setTotal(0);
+      setActiveResultIndex(null);
     }
   }, [datasetId, question, lastSuccessSearchKey]);
 
@@ -89,6 +81,7 @@ export function SearchPage() {
     setLoadingSearch(true);
     setSearchError(null);
     setChunks([]);
+    setActiveResultIndex(null);
     try {
       const { res, body } = await searchDataset(datasetId, { question: q, top_k: 10 });
       if (res.status === 401 || body.code === 401) {
@@ -139,6 +132,7 @@ export function SearchPage() {
     setChunks([]);
     setTotal(0);
     setSearchError(null);
+    setActiveResultIndex(null);
     setLastSuccessSearchKey(null);
   }
 
@@ -154,7 +148,7 @@ export function SearchPage() {
     !searchError;
 
   function buildExportChunks() {
-    return chunks.map((c, i) => ({ index: i + 1, snippet: chunkSnippet(c) }));
+    return chunks.map((c, i) => ({ index: i + 1, snippet: searchChunkSnippet(c) }));
   }
 
   function onExportMarkdown() {
@@ -375,23 +369,14 @@ export function SearchPage() {
               导出 PPT
             </button>
           </div>
-          <ol style={{ paddingLeft: "1.2rem", display: "flex", flexDirection: "column", gap: "0.75rem" }}>
-            {chunks.map((c, i) => (
-              <li
-                key={String(c.chunk_id ?? c.id ?? i)}
-                style={{
-                  background: "#fff",
-                  border: "1px solid var(--border-subtle)",
-                  borderRadius: 8,
-                  padding: "0.75rem 1rem",
-                  whiteSpace: "pre-wrap",
-                  wordBreak: "break-word",
-                }}
-              >
-                {chunkSnippet(c)}
-              </li>
-            ))}
-          </ol>
+          <p className="muted" style={{ fontSize: "0.85rem", margin: "0 0 0.75rem" }}>
+            点击结果条目可高亮查看；切换检索会清空选中。
+          </p>
+          <SearchResultList
+            chunks={chunks}
+            activeIndex={activeResultIndex}
+            onSelectChunk={setActiveResultIndex}
+          />
         </section>
       ) : null}
     </div>

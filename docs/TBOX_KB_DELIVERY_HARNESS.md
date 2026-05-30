@@ -275,7 +275,8 @@
 | **Phase 14** | **G3 对话应用 API 回归** | `tbox_chat_apps_smoke.sh` 纳入 release — phase14 plan |
 | **Phase 15** | **G5 权限 API 回归** | `tbox_permissions_smoke.sh`（admin 必测；`TBOX_SMOKE_NORMAL_*` 双账号）— phase15 plan |
 | **Phase 16** | **G3 Citation 侧栏联动** | `ChatMessageContent` + `ReferenceChunks` 双向高亮 — phase16 plan |
-| **矩阵/里程碑** | **Phase 0–16** | 后续：**S6 例行 `--fetch`** 等运维 |
+| **Phase 17** | **S6 漂移例行 + 检索高亮** | Runbook §5 @ ahead 114；`SearchResultList` — phase17 plan |
+| **矩阵/里程碑** | **Phase 0–17** | 后续：双账号 permissions env、Citation 手测归档 |
 
 ### 9.1 阶段总览
 

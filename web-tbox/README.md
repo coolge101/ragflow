@@ -17,7 +17,7 @@ npm run dev
 - **主壳**：侧栏导航 + 顶栏用户与退出；菜单与路由受 **`GET /v1/tbox/me`** 返回的 **`permissions`** 控制（契约 **v4+**，含 `crawl.manage`）。
 - **`/`**：对话（`chat.use`）— **`GET /api/v1/chats`**、**`GET/POST .../chats/:id/sessions`**、**`GET .../sessions/:sid`**，**`POST /api/v1/chat/completions`** SSE；「仅模型」不传 `chat_id`。右侧 **本轮引用**（`reference.chunks`）；回答中 **`[ID:n]` 点击 ↔ 侧栏高亮**（Phase 16）。
 - **`/apps`**：对话应用（`kb.configure`）— **`GET/POST/PUT/DELETE /api/v1/chats`**；列表 **`/apps`**、新建 **`/apps/new`**、编辑 **`/apps/:id`**；绑定知识库、Prompt、检索与高级配置后可在对话页选用。
-- **`/search`**：检索（`search.use`）— **`POST /api/v1/datasets/:id/search`**。
+- **`/search`**：检索（`search.use`）— **`POST /api/v1/datasets/:id/search`**；结果列表可点击高亮（Phase 17）。
 - **`/documents`**：知识库列表（`doc.view`）；**新建空知识库**（`POST /api/v1/datasets`，需 **`doc.upload` 或 `kb.configure`**）；展开后文档 **列表 / 上传（`doc.upload`）/ 开始解析（`POST …/documents/parse`，与官方一致：上传后默认「未开始」）/ 删文档（`doc.delete`）**；**删整库**需 **`kb.dangerous`**；**`/kbs`** 重定向到此处。
 - **`/kb`**：知识库单库配置（`kb.configure`）— **`GET/PUT /api/v1/datasets/:id`**；同页含**空间默认模型**（`GET/PATCH /api/v1/users/me/models`）、**模型下拉**（`GET /v1/llm/list` + 国产/常用预设 +「其他」手输）与**供应商 API Key**（`POST /v1/llm/set_api_key`）；**删整库**需 **`kb.dangerous`**（与文档页一致）。
 - **`/audit`**：`audit.read` — **`GET /api/v1/datasets/<id>/ingestions`**（流水线/入库日志）。
