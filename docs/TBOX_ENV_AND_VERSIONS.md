@@ -15,8 +15,8 @@
 | 字段 | 值 |
 |------|-----|
 | 记录日期 | 2026-05-30 |
-| 本 fork 工作区 `HEAD`（文档更新时钉扎） | `7ea81bec73a12fe64544b141b4e896da470dd655` |
-| 备注 | **Phase 10** @ `7ea81bec7`（post-merge 栈加固）。S6 merge @ `f9bd37fdd`；相对 `origin/main`：**ahead 93 / behind 0**。 |
+| 本 fork 工作区 `HEAD`（文档更新时钉扎） | `7231184ec67e01d032f8777ca95b448386672822` |
+| 备注 | **Phase 10** @ `7231184ec`（栈加固）。S6 merge @ `f9bd37fdd`；相对 `origin/main`：**ahead 94 / behind 0**。 |
 
 ## 3. 常用端口（默认本地开发）
 
