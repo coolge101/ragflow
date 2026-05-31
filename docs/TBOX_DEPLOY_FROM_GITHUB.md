@@ -230,6 +230,8 @@ bash scripts/tbox_phase16_17_finish.sh --archive
 
 详 **[`TBOX_DEPLOY_RUNBOOK.md`](./TBOX_DEPLOY_RUNBOOK.md)** §8.1 · **[`TBOX_VM_PRODUCTION_ACCEPTANCE.md`](./TBOX_VM_PRODUCTION_ACCEPTANCE.md)** · **[`TBOX_SMOKE_ENV.md`](./TBOX_SMOKE_ENV.md)**。
 
+`deploy-on-new-server.sh` 成功后会打印 **5180 + pre_release** 下一步（Phase 39）。
+
 ---
 
 ## 7. web-tbox 前端

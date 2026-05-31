@@ -7,6 +7,11 @@
 #   bash scripts/deploy-on-new-server.sh --build-only    # skip compose up
 #   bash scripts/deploy-on-new-server.sh --up-only       # skip download/build (image must exist)
 #
+# After stack is up (5180 quasi-production):
+#   TBOX_CONSOLE=1 bash docker/tbox-compose-up.sh
+#   bash scripts/tbox_setup_smoke_env.sh
+#   bash scripts/tbox_pre_release.sh --help
+#
 # Do NOT rely on `docker pull infiniflow/ragflow_deps:latest` alone — it may not match this
 # repo's Dockerfile (Tika / HF layout). This script always builds deps from download_deps.py output.
 set -euo pipefail
@@ -121,6 +126,14 @@ echo "==> Deploy complete. Quick checks:"
 echo "    curl -sf http://127.0.0.1:\${SVR_HTTP_PORT:-9380}/v1/tbox/health"
 echo "    bash scripts/tbox_release_smoke.sh   # or skipped above if TBOX_SKIP_RELEASE_SMOKE=1"
 echo ""
-echo "==> Frontend (optional):"
+echo "==> Quasi-production (5180 console + pre_release):"
+echo "    TBOX_CONSOLE=1 bash docker/tbox-compose-up.sh"
+echo "    bash scripts/tbox_setup_smoke_env.sh"
+echo "    bash scripts/tbox_pre_release.sh --help"
+echo "    bash scripts/tbox_pre_release.sh"
+echo "    # Phase 16–17 browser: bash scripts/tbox_phase16_17_finish.sh --archive"
+echo "    Doc: docs/TBOX_DEPLOY_RUNBOOK.md §8.1 · docs/TBOX_VM_PRODUCTION_ACCEPTANCE.md"
+echo ""
+echo "==> Frontend (optional dev @ 5174):"
 echo "    cd web-tbox && cp -n .env.example .env && npm ci && npm run dev"
 echo "    Login uses POST /api/v1/auth/login — do NOT set VITE_AUTH_LOGIN_PATH=/v1/user/login"

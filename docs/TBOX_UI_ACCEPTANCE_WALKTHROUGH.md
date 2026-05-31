@@ -271,13 +271,24 @@ Phase 16–17 浏览器通过后（步骤 **C §7** + **D**）：`bash scripts/t
 
 ### 步骤 Q：准生产 VM（5180，可选）
 
-> 见 [`TBOX_VM_PRODUCTION_ACCEPTANCE.md`](./TBOX_VM_PRODUCTION_ACCEPTANCE.md)。浏览器基址 **`http://<VM-IP>:5180`**（非 5174 dev）。
+> 见 [`TBOX_VM_PRODUCTION_ACCEPTANCE.md`](./TBOX_VM_PRODUCTION_ACCEPTANCE.md)。浏览器基址 **`http://<VM-IP>:5180`**（非 5174 dev）。Review 确认页：**`/review/step/vm-5180`**（§2.2）。
 
-1. `bash scripts/tbox_vm_production_acceptance.sh` 退出码 0
-2. `bash scripts/tbox_record_vm_acceptance.sh` 生成 §5 草稿
-3. 内网设备登录 5180；admin + 普通用户侧栏差异
-4. `/documents` 确认 **G1 向导** 与 Excel/图片上传提示
-5. 可选 Walkthrough **L–P** 抽样（Office 导出、爬取、审计等）
+**自动化（仓库根，Docker @ 9380 + 5180 已起）**：
+
+```bash
+bash scripts/tbox_setup_smoke_env.sh          # 可选：编辑 scripts/tbox_smoke.env
+bash scripts/tbox_pre_release.sh              # 或 TBOX_PRE_RELEASE_VM=1 …
+bash scripts/tbox_pre_release.sh --help       # 模式矩阵
+```
+
+**浏览器手测**：
+
+1. 内网 **`http://<VM-IP>:5180/login`** — admin 与普通用户侧栏随 `permissions` 不同（VM §3 A–D）
+2. **步骤 C §7**（Citation）+ **步骤 D**（检索高亮）在 5180 上完成
+3. 可选 Walkthrough **L–P** 抽样（Office 导出、爬取、审计等）
+4. 通过后：**`bash scripts/tbox_phase16_17_finish.sh --archive`**（更新 VM 验收 §5）
+
+**新服务器部署后**：`bash scripts/deploy-on-new-server.sh` 完成 release smoke 后，见脚本末尾 **5180 / pre_release** 提示。
 
 ---
 

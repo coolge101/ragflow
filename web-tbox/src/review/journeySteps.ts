@@ -174,12 +174,12 @@ export const JOURNEY_STEPS: JourneyStep[] = [
     targetPath: "/documents",
     summary: "Docker tbox-console（5180）；自动化 smoke + VM 手测 §3–4。",
     acceptance: [
-      "bash scripts/tbox_vm_production_acceptance.sh 退出码 0",
+      "bash scripts/tbox_pre_release.sh 或 tbox_vm_production_acceptance.sh 退出码 0",
       "http://<LAN-IP>:5180/login 可登录（非 5174 dev）",
-      "admin 与普通用户侧栏随 permissions 不同",
-      "/documents 可见 G1 多格式入库向导与 Excel/图片分块提示",
-      "bash scripts/tbox_record_vm_acceptance.sh 生成 §5 记录草稿",
+      "admin 与普通用户侧栏随 permissions 不同（VM §3 A–D）",
+      "步骤 C §7 Citation + 步骤 D 检索高亮在 5180 通过",
       "Phase 16–17 通过后 bash scripts/tbox_phase16_17_finish.sh --archive",
+      "可选：deploy-on-new-server 后 TBOX_CONSOLE=1 起 5180",
     ],
   },
   {
