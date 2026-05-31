@@ -42,6 +42,17 @@ bash scripts/tbox_permissions_smoke.sh
 
 **须同时设置** EMAIL 与 PASSWORD；只填一项会报错。
 
+**准生产强制双账号**（VM 验收 §3 D 全自动化）：
+
+```bash
+# scripts/tbox_smoke.env 已填 TBOX_SMOKE_NORMAL_* 后：
+TBOX_REQUIRE_DUAL_ACCOUNT=1 bash scripts/tbox_vm_production_acceptance.sh
+# 或单独 permissions：
+TBOX_REQUIRE_DUAL_ACCOUNT=1 bash scripts/tbox_permissions_smoke.sh
+```
+
+未配置双账号时 `TBOX_REQUIRE_DUAL_ACCOUNT=1` 会失败并提示填写 `scripts/tbox_smoke.env`。
+
 ---
 
 ## 相关文档

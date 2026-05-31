@@ -49,6 +49,10 @@ bash scripts/tbox_rebuild_console.sh
 
 可选跳过前端检查（无 Node 环境）：`TBOX_SKIP_WEB_TBOX_CHECK=1 bash scripts/tbox_vm_production_acceptance.sh`
 
+强制双账号 permissions（须 `scripts/tbox_smoke.env` 含 `TBOX_SMOKE_NORMAL_*`）：`TBOX_REQUIRE_DUAL_ACCOUNT=1 bash scripts/tbox_vm_production_acceptance.sh`
+
+Post-merge 在 `web-tbox/` 变更时自动重建 5180：见 `scripts/tbox_post_upstream_merge.sh`（`TBOX_REBUILD_CONSOLE=auto`）。
+
 ---
 
 ## 3. 内网与双账号（手测）
@@ -106,5 +110,5 @@ LAN IP：`hostname -I | awk '{print $1}'`
 - Phase 13 plan：`docs/superpowers/plans/2026-05-30-tbox-phase13-plan.md`
 - Phase 14 plan：`docs/superpowers/plans/2026-05-30-tbox-phase14-plan.md`
 - Phase 15 plan：`docs/superpowers/plans/2026-05-30-tbox-phase15-plan.md`
-- Phase 16–23 plans：`docs/superpowers/plans/2026-05-30-tbox-phase16-plan.md` … `phase23-plan.md`
+- Phase 16–24 plans：`docs/superpowers/plans/2026-05-30-tbox-phase16-plan.md` … `phase24-plan.md`
 - Console 重建：`docs/TBOX_CONSOLE_REBUILD.md`

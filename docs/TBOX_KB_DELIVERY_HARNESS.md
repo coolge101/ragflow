@@ -282,7 +282,8 @@
 | **Phase 21** | **test 纳入 CI** | `web-tbox.yml` + **`tbox_web_tbox_check.sh`** — phase21 plan |
 | **Phase 22** | **VM 验收 6 步 + S6 漂移** | web-tbox check 纳入 VM acceptance；Runbook §5 @ ahead 124 — phase22 plan |
 | **Phase 23** | **Console 重建 + 双账号校验** | **`tbox_rebuild_console.sh`** + permissions 半填 fail — phase23 plan |
-| **矩阵/里程碑** | **Phase 0–23** | 后续：5180 手测 Phase 16–17 归档 |
+| **Phase 24** | **Post-merge console 链 + 双账号门禁** | **`tbox_web_tbox_git_changed.sh`** + `TBOX_REBUILD_CONSOLE=auto` + `TBOX_REQUIRE_DUAL_ACCOUNT` — phase24 plan |
+| **矩阵/里程碑** | **Phase 0–24** | 后续：5180 手测 Phase 16–17 归档 |
 
 ### 9.1 阶段总览
 

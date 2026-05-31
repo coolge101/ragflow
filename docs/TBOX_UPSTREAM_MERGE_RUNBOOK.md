@@ -49,6 +49,8 @@ curl -sf http://127.0.0.1:9380/v1/tbox/health
 TBOX_SMOKE_RUNNER=docker bash scripts/tbox_release_smoke.sh
 # 或完整 post-merge：
 bash scripts/tbox_post_upstream_merge.sh
+# post-merge 在 web-tbox/ 有变更时自动 force-recreate 5180（TBOX_REBUILD_CONSOLE=auto，默认）
+# 强制/跳过：TBOX_REBUILD_CONSOLE=1 | TBOX_REBUILD_CONSOLE=0
 
 # Python 单测（需 Python 3.13+ 且 uv sync 成功）
 uv run pytest test/unit_test/common/test_tbox_crawl_strategy.py -q
@@ -136,6 +138,17 @@ bash scripts/tbox_upstream_divergence.sh --fetch
 | 结论 | behind 0；无缺失 upstream commit；下次 merge 前再 `--fetch` |
 
 生成：`bash scripts/tbox_record_upstream_drift.sh --fetch`
+
+### 2026-05-31 快照（`--fetch` 后）（`tbox-deploy` @ Phase 24 前 `e84ed501d`）
+
+| 项 | 值 |
+|----|-----|
+| HEAD | `e84ed501d` — Phase 23 console rebuild + dual-account env validation |
+| upstream | `origin/main` @ `cd18cfab7` |
+| merge-base | `cd18cfab7` |
+| behind | **0** |
+| ahead | **128** |
+| 结论 | behind 0；无缺失 upstream commit；下次 merge 前再 `--fetch` |
 
 ### 2026-05-30 合并后（`tbox-deploy` @ `f9bd37fdd`）
 

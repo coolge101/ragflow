@@ -95,7 +95,18 @@ echo ""
 echo "==> [6/6] Release smoke (health + G1 + G3 + chat apps + P2 + permissions)"
 export TBOX_SMOKE_BASE_URL="${API}"
 export TBOX_SMOKE_RUNNER="${TBOX_SMOKE_RUNNER:-docker}"
-if bash scripts/tbox_release_smoke.sh; then
+# shellcheck source=scripts/tbox_load_smoke_env.sh
+source "$ROOT/scripts/tbox_load_smoke_env.sh"
+_tbox_load_smoke_env "$ROOT"
+if [[ "${TBOX_REQUIRE_DUAL_ACCOUNT:-0}" == "1" ]]; then
+  if ! _tbox_smoke_dual_account_configured; then
+    echo "FAIL: TBOX_REQUIRE_DUAL_ACCOUNT=1 but scripts/tbox_smoke.env missing TBOX_SMOKE_NORMAL_*" >&2
+    fail=1
+  else
+    echo "    (dual-account required — permissions smoke will assert normal_checked)"
+  fi
+fi
+if [[ "$fail" -eq 0 ]] && bash scripts/tbox_release_smoke.sh; then
   echo "OK: release smoke"
 else
   fail=1

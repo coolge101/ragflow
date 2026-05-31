@@ -17,6 +17,10 @@ _tbox_load_smoke_env() {
   fi
 }
 
+_tbox_smoke_dual_account_configured() {
+  [[ -n "${TBOX_SMOKE_NORMAL_EMAIL:-}" && -n "${TBOX_SMOKE_NORMAL_PASSWORD:-}" ]]
+}
+
 _tbox_smoke_docker_exec_env() {
   # 追加 docker exec -e 参数（仅非空变量）
   local -n _out=$1

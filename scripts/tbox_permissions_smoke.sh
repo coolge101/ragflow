@@ -33,11 +33,14 @@ echo "==> G5 permissions smoke @ ${TBOX_SMOKE_BASE_URL:-http://127.0.0.1:9380}"
 out="$(_run_python scripts/tbox_permissions_smoke.py)"
 echo "$out" | python3 -m json.tool
 echo "$out" | python3 -c "
-import json, sys
+import json, os, sys
 d = json.load(sys.stdin)
 r = d.get('result') or {}
 if not r.get('admin_ok'):
     sys.exit('admin_ok false')
+require_dual = os.environ.get('TBOX_REQUIRE_DUAL_ACCOUNT', '') in ('1', 'true', 'yes', 'on')
+if require_dual and not r.get('normal_checked'):
+    sys.exit('TBOX_REQUIRE_DUAL_ACCOUNT=1 but normal_checked is false — fill scripts/tbox_smoke.env (see docs/TBOX_SMOKE_ENV.md)')
 print('OK:', r.get('note', ''))
 "
 echo "==> PERMISSIONS SMOKE PASSED"

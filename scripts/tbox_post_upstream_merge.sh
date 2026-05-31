@@ -5,6 +5,7 @@
 #   bash scripts/tbox_post_upstream_merge.sh
 #   TBOX_CHINA_DOWNLOAD=1 bash scripts/tbox_post_upstream_merge.sh   # 国内网络
 #   TBOX_SKIP_BUILD=1 bash scripts/tbox_post_upstream_merge.sh       # 仅 smoke（镜像已重建）
+#   TBOX_REBUILD_CONSOLE=auto|1|0  # auto（默认）：web-tbox/ 有 diff 时 force-recreate 5180
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -36,6 +37,25 @@ fi
 echo "==> web-tbox typecheck + test + build (host)"
 bash scripts/tbox_web_tbox_check.sh
 echo ""
+
+# Force-recreate 5180 when web-tbox/ changed (compose build may reuse cached layers).
+# TBOX_REBUILD_CONSOLE=auto (default) | 1 | 0
+_rebuild_console="${TBOX_REBUILD_CONSOLE:-auto}"
+if [[ "$_rebuild_console" == "auto" ]]; then
+  if bash scripts/tbox_web_tbox_git_changed.sh --quiet; then
+    _rebuild_console=1
+  else
+    _rebuild_console=0
+  fi
+fi
+if [[ "$_rebuild_console" == "1" ]]; then
+  echo "==> Rebuild tbox-console (TBOX_REBUILD_CONSOLE=1 or web-tbox/ changed)"
+  TBOX_SKIP_WEB_TBOX_CHECK=1 bash scripts/tbox_rebuild_console.sh
+  echo ""
+else
+  echo "    (5180 unchanged — skip console force-recreate; set TBOX_REBUILD_CONSOLE=1 to override)"
+  echo ""
+fi
 
 echo "==> Release smoke (docker runner — avoids host uv/spacy when GitHub times out)"
 export TBOX_SMOKE_RUNNER=docker
