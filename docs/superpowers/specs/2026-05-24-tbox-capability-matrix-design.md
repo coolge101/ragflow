@@ -123,7 +123,7 @@
 | G5-UI-USERS | 用户与 TBOX 权限 | ✅ team | ✅ `/users` | TBOX managed-users | ✅ | |
 | G5-UI-AUDIT | 入库/流水线日志 | ✅ ingestions | ✅ **`/audit`** 筛选+导出 | 官方 REST | P2 | 时间/状态/关键词；CSV/Excel |
 | G5-BRAND | 用户可见零 RAGFlow 品牌 | — | ✅ | — | P0 | 2026-05-24 阶段 1 文案清理 |
-| G5-MATRIX | 本能力矩阵维护 | — | 本文 | — | **P0** | Phase 39 @ `fa6e34457`；§6 Phase 0–39；Harness §9.0 同步（phase40 钉扎） |
+| G5-MATRIX | 本能力矩阵维护 | — | 本文 | — | **P0** | Phase 40 @ `08dbc3041`；§6 Phase 0–40；Harness §9.0 同步 |
 | G5-LICENSE | Apache 2.0 合规 | LICENSE | ✅ 分发包 | — | P0 | UI 不用商标 |
 
 ---

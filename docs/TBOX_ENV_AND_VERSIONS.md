@@ -15,8 +15,8 @@
 | 字段 | 值 |
 |------|-----|
 | 记录日期 | 2026-05-31 |
-| 本 fork 工作区 `HEAD`（文档更新时钉扎） | `fa6e34457` |
-| 备注 | **Phase 39** @ `fa6e34457`。deploy 发版提示 + 步骤 Q + 矩阵 §6 ✅。S6 merge @ `f9bd37fdd`；**behind 0 / ahead ~155**。 |
+| 本 fork 工作区 `HEAD`（文档更新时钉扎） | `08dbc3041` |
+| 备注 | **Phase 40** @ `08dbc3041`。start-tbox 提示 + §6 Q + G5-MATRIX ✅。S6 merge @ `f9bd37fdd`；**behind 0 / ahead ~156**。 |
 
 ## 3. 常用端口（默认本地开发）
 
