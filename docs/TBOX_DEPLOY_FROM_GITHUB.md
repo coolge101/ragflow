@@ -219,18 +219,36 @@ curl -sf "$API/v1/tbox/health" | python3 -m json.tool
 
 **准生产发版链（5180 console，推荐）**：
 
+三脚本在栈就绪后会调用 **`scripts/tbox_print_release_next_steps.sh`**（与 **[`TBOX_DEPLOY_RUNBOOK.md`](./TBOX_DEPLOY_RUNBOOK.md)** §3.1.3 · **[`TBOX_QUICKSTART.md`](./TBOX_QUICKSTART.md)** §1.3 一致）：
+
+| 脚本 | 场景 | 何时打印发版链 |
+|------|------|----------------|
+| **`bash scripts/deploy-on-new-server.sh`** | 新服务器克隆部署 | 部署成功后 |
+| **`bash scripts/start-tbox-ragflow.sh --console`** | Docker + 5180 | **`--console`** 或 **`TBOX_CONSOLE=1`** |
+| **`TBOX_CONSOLE=1 bash scripts/tbox-up.sh`** | 仓库根仅 Compose | **`TBOX_CONSOLE=1`** 时 |
+
+手动查看：
+
+```bash
+bash scripts/tbox_print_release_next_steps.sh
+bash scripts/tbox_print_release_next_steps.sh --with-compose-hint
+```
+
+典型顺序：
+
 ```bash
 cd <REPO>
-bash scripts/tbox_setup_smoke_env.sh    # 可选：编辑 scripts/tbox_smoke.env
-bash scripts/tbox_pre_release.sh        # host check → suite + §5
-bash scripts/tbox_pre_release.sh --help # 模式：TBOX_PRE_RELEASE_VM / TBOX_REQUIRE_DUAL_ACCOUNT 等
-# Phase 16–17 浏览器手测后：
+TBOX_CONSOLE=1 bash docker/tbox-compose-up.sh   # 若 deploy 未起 5180
+bash scripts/tbox_setup_smoke_env.sh            # 可选：编辑 scripts/tbox_smoke.env
+bash scripts/tbox_pre_release.sh                # host check → suite + §5
+bash scripts/tbox_pre_release.sh --help         # 模式：TBOX_PRE_RELEASE_VM / TBOX_REQUIRE_DUAL_ACCOUNT 等
+# Phase 16–17 浏览器（Walkthrough 步骤 C §7 + D）：
+bash scripts/tbox_phase16_17_handtest.sh
+# 确认页：http://<host>:5180/review/step/phase16-17
 bash scripts/tbox_phase16_17_finish.sh --archive
 ```
 
-详 **[`TBOX_DEPLOY_RUNBOOK.md`](./TBOX_DEPLOY_RUNBOOK.md)** §8.1 · **[`TBOX_VM_PRODUCTION_ACCEPTANCE.md`](./TBOX_VM_PRODUCTION_ACCEPTANCE.md)** · **[`TBOX_SMOKE_ENV.md`](./TBOX_SMOKE_ENV.md)**。
-
-`deploy-on-new-server.sh` 成功后会打印 **5180 + pre_release** 下一步（Phase 39）。
+详 **[`TBOX_DEPLOY_RUNBOOK.md`](./TBOX_DEPLOY_RUNBOOK.md)** §8.1 · **[`TBOX_UI_ACCEPTANCE_WALKTHROUGH.md`](./TBOX_UI_ACCEPTANCE_WALKTHROUGH.md)** §2.1 / §2.2 · **[`TBOX_VM_PRODUCTION_ACCEPTANCE.md`](./TBOX_VM_PRODUCTION_ACCEPTANCE.md)** · **[`TBOX_SMOKE_ENV.md`](./TBOX_SMOKE_ENV.md)**。
 
 ---
 

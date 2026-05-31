@@ -114,6 +114,8 @@ TBOX_SKIP_HOST_CHECK=1 TBOX_PRE_RELEASE_VM=1 bash scripts/tbox_pre_release.sh
 
 浏览器 Phase 16–17 通过后：**`bash scripts/tbox_phase16_17_finish.sh --archive`**
 
+手测清单：**`bash scripts/tbox_phase16_17_handtest.sh`** · 浏览器确认页 **`/review/step/phase16-17`**（Walkthrough **§2.2**）。完整发版链：**`bash scripts/tbox_print_release_next_steps.sh`**（Runbook **§3.1.3**）。
+
 当 `--run-suite` 或 `--run-smoke` 已执行对应检查时，不会重复跑相同 probe。
 
 ---
