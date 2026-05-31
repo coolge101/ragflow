@@ -15,8 +15,8 @@
 | 字段 | 值 |
 |------|-----|
 | 记录日期 | 2026-05-31 |
-| 本 fork 工作区 `HEAD`（文档更新时钉扎） | `86257c4b2` |
-| 备注 | **Phase 41** @ `86257c4b2`。tbox-up + QUICKSTART + global 手测 ✅。S6 merge @ `f9bd37fdd`；**behind 0 / ahead ~157**。 |
+| 本 fork 工作区 `HEAD`（文档更新时钉扎） | `ea9a21086` |
+| 备注 | **Phase 42** @ `ea9a21086`。发版提示 helper + phase16-17 journey ✅。S6 merge @ `f9bd37fdd`；**behind 0 / ahead ~158**。 |
 
 ## 3. 常用端口（默认本地开发）
 
