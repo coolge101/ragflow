@@ -182,7 +182,12 @@ docker compose -f docker-compose-base.yml --profile elasticsearch down
 | **发版前（推荐）** | `bash scripts/tbox_pre_release.sh` |
 | 模式说明 | `bash scripts/tbox_pre_release.sh --help` |
 | Smoke 凭据 | `bash scripts/tbox_setup_smoke_env.sh` → 编辑 `scripts/tbox_smoke.env` |
+| Phase 16–17 手测清单 | `bash scripts/tbox_phase16_17_handtest.sh` |
 | Phase 16–17 手测归档 | `bash scripts/tbox_phase16_17_finish.sh --archive` |
+| 浏览器确认页 | **`/review/step/phase16-17`**（5180 或 5174 dev；Walkthrough **§2.2**） |
+| 查看发版链（三脚本共用） | `bash scripts/tbox_print_release_next_steps.sh` |
+
+**启动脚本**（栈就绪后自动或手动打印上表发版链）：**`tbox-up.sh`**（`TBOX_CONSOLE=1`）、**`start-tbox-ragflow.sh --console`**、**`deploy-on-new-server.sh`** — 对照 **[`TBOX_DEPLOY_RUNBOOK.md`](./TBOX_DEPLOY_RUNBOOK.md)** §3.1.3 · **[`TBOX_QUICKSTART.md`](./TBOX_QUICKSTART.md)** §1.3。
 
 详 **[`TBOX_DEPLOY_RUNBOOK.md`](./TBOX_DEPLOY_RUNBOOK.md)** §8.1 · **[`TBOX_SMOKE_ENV.md`](./TBOX_SMOKE_ENV.md)** · **[`TBOX_VM_PRODUCTION_ACCEPTANCE.md`](./TBOX_VM_PRODUCTION_ACCEPTANCE.md)** · 脚本索引 **[`TBOX_SMOKE_SCRIPTS.md`](./TBOX_SMOKE_SCRIPTS.md)**。
 

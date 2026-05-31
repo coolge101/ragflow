@@ -160,6 +160,7 @@
 | **40** | start-tbox + §6 Q | 运维 | **`start-tbox-ragflow.sh --console`** + G5-MATRIX — phase40 plan |
 | **41** | tbox-up + QUICKSTART | 运维 | **`tbox-up.sh`** 5180 提示 + journey global — phase41 plan |
 | **42** | 发版提示 helper + phase16-17 journey | 运维 | **`tbox_print_release_next_steps.sh`** + Runbook §3.1.3 + **`/review/step/phase16-17`** — phase42 plan |
+| **43** | helper 单测 + QUICKSTART §1.3 + 手册 | 运维/产品 | scripts unit + **`tbox_host_check`** + SYSTEM_USER_MANUAL §5.4 — phase43 plan |
 
 详细 Task 见 **`docs/TBOX_KB_DELIVERY_HARNESS.md`** §9.0 与 `docs/superpowers/plans/2026-05-31-tbox-phase*-plan.md`。
 

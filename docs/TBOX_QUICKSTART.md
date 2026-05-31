@@ -19,6 +19,7 @@ bash scripts/start-tbox-ragflow.sh --console   # 或 TBOX_CONSOLE=1 bash scripts
 bash scripts/tbox_setup_smoke_env.sh
 bash scripts/tbox_pre_release.sh
 # 5180 手测 C/D 后：bash scripts/tbox_phase16_17_finish.sh --archive
+# 查看完整发版链：bash scripts/tbox_print_release_next_steps.sh
 ```
 
 验收清单：**[`TBOX_VM_PRODUCTION_ACCEPTANCE.md`](./TBOX_VM_PRODUCTION_ACCEPTANCE.md)**（5180 + 内网双账号 + Walkthrough）。发版前：**`bash scripts/tbox_pre_release.sh`**（模式矩阵：**`bash scripts/tbox_pre_release.sh --help`**）。脚本索引：**[`TBOX_SMOKE_SCRIPTS.md`](./TBOX_SMOKE_SCRIPTS.md)**。
@@ -77,6 +78,23 @@ bash scripts/tbox_post_upstream_merge.sh
 | 5180 | **`bash scripts/start-tbox-ragflow.sh --console`** 或 **`TBOX_CONSOLE=1 bash scripts/tbox-up.sh`** |
 | 磁盘 | build 后 **no space left on device**：镜像可能已成功 → `docker builder prune -af` 再 `--force-recreate ragflow-cpu`（Runbook §3.1） |
 | 日常清理 | `bash scripts/tbox_disk_cleanup.sh`（不删 DB volume）；Docker 数据应在 **`/data/docker`** |
+
+### 1.3 启动脚本与发版提示（5180 / pre_release）
+
+栈就绪后，三脚本共用 **`scripts/tbox_print_release_next_steps.sh`** 打印下一步（详 **[`TBOX_DEPLOY_RUNBOOK.md`](./TBOX_DEPLOY_RUNBOOK.md)** §3.1.3）：
+
+| 脚本 | 场景 | 何时打印发版链 |
+|------|------|----------------|
+| **`bash scripts/tbox-up.sh`** | 仓库根一键 Compose | **`TBOX_CONSOLE=1`** 时 |
+| **`bash scripts/start-tbox-ragflow.sh --console`** | Docker + 5180 console | **`--console`** 或 **`TBOX_CONSOLE=1`** |
+| **`bash scripts/deploy-on-new-server.sh`** | 新服务器克隆部署 | 部署成功后 |
+
+手动查看（无需起栈）：
+
+```bash
+bash scripts/tbox_print_release_next_steps.sh
+bash scripts/tbox_print_release_next_steps.sh --with-compose-hint
+```
 
 ## 2. 启动 RAGFlow API
 

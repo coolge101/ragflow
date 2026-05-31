@@ -27,4 +27,6 @@ else
 fi
 echo ""
 
+echo "==> 5180 / pre_release 链（栈就绪后）: bash scripts/tbox_print_release_next_steps.sh"
+echo ""
 echo "==> HOST CHECK OK"

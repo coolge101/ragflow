@@ -49,7 +49,8 @@ CI：`.github/workflows/web-tbox.yml`（`npm ci` + `typecheck` + `test` + `build
 ## 界面验收与评审页
 
 - **按步 Walkthrough**：[`docs/TBOX_UI_ACCEPTANCE_WALKTHROUGH.md`](../docs/TBOX_UI_ACCEPTANCE_WALKTHROUGH.md) — **§2.2** 对照本目录 `src/review/journeySteps.ts` 与 **`/review/step/:id`**
-- **5180 准生产**：Citation（`/`）+ 检索高亮（`/search`）手测后 — `bash scripts/tbox_phase16_17_finish.sh --archive`
+- **5180 准生产**：Citation（`/`）+ 检索高亮（`/search`）手测 — 确认页 **`/review/step/phase16-17`**；通过后 `bash scripts/tbox_phase16_17_finish.sh --archive`
+- **发版链（三脚本共用）**：`bash scripts/tbox_print_release_next_steps.sh`（见 QUICKSTART **§1.3**、Runbook **§3.1.3**）
 - **发版前**：`bash scripts/tbox_pre_release.sh --help`（模式矩阵见 [`TBOX_SMOKE_SCRIPTS.md`](../docs/TBOX_SMOKE_SCRIPTS.md)）
 
 生产构建需 **`/review`** 时：`.env` 设 **`VITE_REVIEW_PAGES=1`** 后 `npm run build`（见 `docs/TBOX_SYSTEM_USER_MANUAL.md` §5.3）。
