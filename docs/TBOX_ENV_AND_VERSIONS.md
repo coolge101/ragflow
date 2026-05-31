@@ -15,8 +15,8 @@
 | 字段 | 值 |
 |------|-----|
 | 记录日期 | 2026-05-31 |
-| 本 fork 工作区 `HEAD`（文档更新时钉扎） | `6551b96d0` |
-| 备注 | **Phase 64** @ `6551b96d0`。UPSTREAM §3.2 ↔ Runbook §8.1 + post_merge QUICKSTART §1.3 ✅。S6 merge @ `f9bd37fdd`；**behind 0 / ahead ~196**。 |
+| 本 fork 工作区 `HEAD`（文档更新时钉扎） | `af7596419` |
+| 备注 | **Phase 65** @ `af7596419`。s6_preflight ↔ post_merge + DEPLOY_FROM_GITHUB §6/§8 ✅。S6 merge @ `f9bd37fdd`；**behind 0 / ahead ~198**。 |
 
 ## 3. 常用端口（默认本地开发）
 
