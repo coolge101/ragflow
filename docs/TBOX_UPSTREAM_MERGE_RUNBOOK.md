@@ -119,6 +119,18 @@ bash scripts/tbox_record_upstream_drift.sh --fetch --write-runbook
 | 结论 | behind 0；无缺失 upstream commit；下次 merge 前再 `--fetch` |
 
 生成：`bash scripts/tbox_record_upstream_drift.sh --fetch`
+### 2026-05-31 快照（`--fetch` 后）（`tbox-deploy` @ `a345701fc`）
+
+| 项 | 值 |
+|----|-----|
+| HEAD | `a345701fc` — a345701fc TBOX Phase 34: gate unit tests and Phase 16-17 finish chain |
+| upstream | `origin/main` @ `cd18cfab79578bc0e2797b2614afde44f1e0a411` |
+| merge-base | `cd18cfab79578bc0e2797b2614afde44f1e0a411` |
+| behind | **0** |
+| ahead | **152** |
+| 结论 | behind 0；无缺失 upstream commit；下次 merge 前再 `--fetch` |
+
+生成：`bash scripts/tbox_s6_preflight.sh --write-runbook`
 ### 2026-05-31 快照（`--fetch` 后）（`tbox-deploy` @ `3ea471c83`）
 
 | 项 | 值 |
