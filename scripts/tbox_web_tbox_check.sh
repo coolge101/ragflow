@@ -18,3 +18,8 @@ echo "==> web-tbox build"
 npm run build
 echo ""
 echo "==> WEB-TBOX CHECK OK"
+echo "    5180 Phase 16–17 (VM §5 may still be ☐ after pre_release):"
+echo "    bash scripts/tbox_phase16_17_handtest.sh"
+echo "    bash scripts/tbox_phase16_17_finish.sh --archive"
+echo "    Full chain: bash scripts/tbox_print_release_next_steps.sh"
+echo "    CI parity: docs/TBOX_ENV_AND_VERSIONS.md §6.1 · web-tbox/README"
