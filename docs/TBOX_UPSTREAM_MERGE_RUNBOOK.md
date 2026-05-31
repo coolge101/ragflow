@@ -138,6 +138,18 @@ bash scripts/tbox_record_upstream_drift.sh --fetch --write-runbook
 | 结论 | behind 0；无缺失 upstream commit；下次 merge 前再 `--fetch` |
 
 生成：`bash scripts/tbox_record_upstream_drift.sh --fetch`
+### 2026-05-31 快照（`--fetch` 后）（`tbox-deploy` @ `f9c3e44f3`）
+
+| 项 | 值 |
+|----|-----|
+| HEAD | `f9c3e44f3` — TBOX Phase 63: Runbook §3.1.3/§8.1 align with Walkthrough §2.1, Harness 54-62 summary |
+| upstream | `origin/main` @ `cd18cfab79578bc0e2797b2614afde44f1e0a411` |
+| merge-base | `cd18cfab79578bc0e2797b2614afde44f1e0a411` |
+| behind | **0** |
+| ahead | **195** |
+| 结论 | behind 0；无缺失 upstream commit；下次 merge 前再 `--fetch` |
+
+生成：`bash scripts/tbox_s6_preflight.sh --write-runbook`
 ### 2026-05-31 快照（`--fetch` 后）（`tbox-deploy` @ `6e6f4e501`）
 
 | 项 | 值 |

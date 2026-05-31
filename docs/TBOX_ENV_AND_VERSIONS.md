@@ -15,8 +15,8 @@
 | 字段 | 值 |
 |------|-----|
 | 记录日期 | 2026-05-31 |
-| 本 fork 工作区 `HEAD`（文档更新时钉扎） | `6e6f4e501` |
-| 备注 | **Phase 62** @ `6e6f4e501`。setup_smoke_env ↔ example + Walkthrough §2.1 VM/SMOKE ✅。S6 merge @ `f9bd37fdd`；**behind 0 / ahead ~194**。 |
+| 本 fork 工作区 `HEAD`（文档更新时钉扎） | `f9c3e44f3` |
+| 备注 | **Phase 63** @ `f9c3e44f3`。Runbook §3.1.3/§8.1 ↔ Walkthrough §2.1 + Harness 54–62 摘要 ✅。S6 merge @ `f9bd37fdd`；**behind 0 / ahead ~195**。 |
 
 ## 3. 常用端口（默认本地开发）
 
