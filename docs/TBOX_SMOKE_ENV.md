@@ -114,7 +114,29 @@ TBOX_SKIP_HOST_CHECK=1 TBOX_PRE_RELEASE_VM=1 bash scripts/tbox_pre_release.sh
 
 浏览器 Phase 16–17 通过后：**`bash scripts/tbox_phase16_17_finish.sh --archive`**
 
-手测清单：**`bash scripts/tbox_phase16_17_handtest.sh`** · 浏览器确认页 **`/review/step/phase16-17`**（Walkthrough **§2.2**）。完整发版链：**`bash scripts/tbox_print_release_next_steps.sh`**（Runbook **§3.1.3**）。
+---
+
+## Phase 16–17 浏览器手测（5180）
+
+与 VM 验收 **§5**、Walkthrough **§2.1**、脚本索引 **「Phase 16–17 浏览器手测」** 专节（**[`TBOX_SMOKE_SCRIPTS.md`](./TBOX_SMOKE_SCRIPTS.md)**）文案一致。
+
+| 顺序 | 操作 | 说明 |
+|------|------|------|
+| 1 | `bash scripts/tbox_phase16_17_handtest.sh` | bundle + 打印 C/D 清单 |
+| 2 | 浏览器 Walkthrough **步骤 C §7 + D** | Citation（`/`）+ 检索高亮（`/search`） |
+| 2b（可选） | **`/review/step/phase16-17`** | 确认页（journey **`phase16-17`**） |
+| 3 | `bash scripts/tbox_phase16_17_finish.sh --archive` | 写 VM §5 ☑（内部 **`--confirm`**） |
+
+**环境变量**（写入 `scripts/tbox_smoke.env` 或 export）：
+
+| 变量 | 用途 |
+|------|------|
+| `TBOX_PHASE16_17_CONFIRM` | `1` = 等同 `finish --archive` 内的 **`--confirm`** |
+| `TBOX_CONSOLE_URL` | 手测基址（默认 `http://127.0.0.1:5180`） |
+
+勿在未手测前设 **`TBOX_PHASE16_17_HANDTEST_DONE=1`**（由 `finish --archive` / `record` 写入 §5）。
+
+**发版链**：**`bash scripts/tbox_print_release_next_steps.sh`**（Runbook **§3.1.3**）。
 
 当 `--run-suite` 或 `--run-smoke` 已执行对应检查时，不会重复跑相同 probe。
 
@@ -122,7 +144,7 @@ TBOX_SKIP_HOST_CHECK=1 TBOX_PRE_RELEASE_VM=1 bash scripts/tbox_pre_release.sh
 
 ## 相关文档
 
-- 脚本索引：**[`TBOX_SMOKE_SCRIPTS.md`](./TBOX_SMOKE_SCRIPTS.md)**（pre_release **`--help`**）
+- 脚本索引：**[`TBOX_SMOKE_SCRIPTS.md`](./TBOX_SMOKE_SCRIPTS.md)**（pre_release **`--help`** · Phase 16–17 专节）
 - 发版脚本链：**[`TBOX_DEPLOY_RUNBOOK.md`](./TBOX_DEPLOY_RUNBOOK.md)** §8.1
 - [`TBOX_VM_PRODUCTION_ACCEPTANCE.md`](./TBOX_VM_PRODUCTION_ACCEPTANCE.md) §2
 - Phase 18 plan：`docs/superpowers/plans/2026-05-30-tbox-phase18-plan.md`

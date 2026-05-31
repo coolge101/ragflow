@@ -34,10 +34,16 @@ Mode matrix (env vars):
   TBOX_SKIP_HOST_CHECK=1 TBOX_PRE_RELEASE_VM=1 bash scripts/tbox_pre_release.sh
   TBOX_REQUIRE_DUAL_ACCOUNT=1 TBOX_PRE_RELEASE_VM=1 bash scripts/tbox_pre_release.sh
 
-After pass (browser still required):
-  bash scripts/tbox_phase16_17_finish.sh --archive
+After pre_release pass (§5 automation ☑; Phase 16–17 UI still ☐):
 
-See: docs/TBOX_SMOKE_SCRIPTS.md · docs/TBOX_SMOKE_ENV.md
+  1. bash scripts/tbox_phase16_17_handtest.sh
+  2. Browser: Walkthrough step C §7 + D on 5180
+     Optional review: /review/step/phase16-17
+  3. bash scripts/tbox_phase16_17_finish.sh --archive
+
+Full release chain: bash scripts/tbox_print_release_next_steps.sh
+
+See: docs/TBOX_SMOKE_SCRIPTS.md (Phase 16–17 section) · docs/TBOX_SMOKE_ENV.md
 EOF
   exit 0
 fi
@@ -72,5 +78,8 @@ fi
 echo ""
 
 echo "==> PRE-RELEASE OK"
-echo "    Remaining manual: Phase 16–17 UI — bash scripts/tbox_phase16_17_handtest.sh"
-echo "    After hand-test: bash scripts/tbox_phase16_17_finish.sh --archive"
+echo "    Remaining manual (VM §5 Phase 16–17 still ☐):"
+echo "    1. bash scripts/tbox_phase16_17_handtest.sh"
+echo "    2. Browser C §7 + D on 5180 (optional /review/step/phase16-17)"
+echo "    3. bash scripts/tbox_phase16_17_finish.sh --archive"
+echo "    Full chain: bash scripts/tbox_print_release_next_steps.sh"

@@ -306,7 +306,8 @@
 | **Phase 45** | **CONSOLE_REBUILD + setup_smoke_env 收尾** | **`TBOX_CONSOLE_REBUILD.md`** + **`tbox_setup_smoke_env.sh`** helper 提示 — phase45 plan |
 | **Phase 46** | **phase16-17 脚本 + VM §5 文案** | **`handtest`/`finish`** + review/helper + §5 统一 — phase46 plan |
 | **Phase 47** | **SMOKE_SCRIPTS 专节 + Walkthrough §2.1** | Phase 16–17 脚本索引 + §2.1 与 VM §5 对齐 — phase47 plan |
-| **矩阵/里程碑** | **Phase 0–47** | 后续：5180 Phase 16–17 浏览器手测 |
+| **Phase 48** | **SMOKE_ENV 专节 + pre_release --help** | env 文档 + **`tbox_pre_release.sh`** 三步链 — phase48 plan |
+| **矩阵/里程碑** | **Phase 0–48** | 后续：5180 Phase 16–17 浏览器手测 |
 
 ### 9.1 阶段总览
 
