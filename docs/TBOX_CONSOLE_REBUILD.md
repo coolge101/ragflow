@@ -44,6 +44,14 @@ bash scripts/tbox_console_bundle_smoke.sh
 
 通过后更新 **`docs/TBOX_VM_PRODUCTION_ACCEPTANCE.md`** §5「Phase 16–17 UI」为 ☑。
 
+一键辅助（先 bundle smoke，再打印清单）：
+
+```bash
+bash scripts/tbox_phase16_17_handtest.sh
+# 手测完成后：
+TBOX_PHASE16_17_HANDTEST_DONE=1 bash scripts/tbox_record_vm_acceptance.sh
+```
+
 ---
 
 ## 相关
@@ -52,4 +60,4 @@ bash scripts/tbox_console_bundle_smoke.sh
 - VM 验收：`bash scripts/tbox_vm_production_acceptance.sh`
 - 开发联调（5174，无需重建镜像）：`cd web-tbox && npm run dev`
 
-**Plan:** `docs/superpowers/plans/2026-05-31-tbox-phase25-plan.md`
+**Plan:** `docs/superpowers/plans/2026-05-31-tbox-phase26-plan.md`

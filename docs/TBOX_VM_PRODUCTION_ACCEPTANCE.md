@@ -45,6 +45,8 @@ bash scripts/tbox_permissions_smoke.sh
 bash scripts/tbox_rebuild_console.sh
 # 验证 bundle 含 Citation / 高亮代码（不重建时通常 FAIL）：
 bash scripts/tbox_console_bundle_smoke.sh
+# Phase 16–17 手测清单（bundle 通过后）：
+bash scripts/tbox_phase16_17_handtest.sh
 ```
 
 **通过标准**：退出码 **0**（Docker 容器、5180/login、**console bundle**、health、**web-tbox check**、release smoke 7 步）。
@@ -99,7 +101,7 @@ LAN IP：`hostname -I | awk '{print $1}'`
 | `web-tbox npm test` | ☑ 12 tests（chunkDisplay + citationUtils） |
 | §3 内网与双账号 A–D | ☑ 手测 2026-05-30 |
 | §4 产品动线 Walkthrough | ☑ 手测 2026-05-30 |
-| Phase 16–17 UI | ☐ Citation / 检索高亮 — **`docs/TBOX_CONSOLE_REBUILD.md`** |
+| Phase 16–17 UI | ☐ Citation / 检索高亮 — **`bash scripts/tbox_phase16_17_handtest.sh`** |
 | 备注 | Phase 14–20 自动化 ✅；`docs/TBOX_SMOKE_ENV.md` 双账号 optional |
 
 ---
@@ -113,5 +115,5 @@ LAN IP：`hostname -I | awk '{print $1}'`
 - Phase 13 plan：`docs/superpowers/plans/2026-05-30-tbox-phase13-plan.md`
 - Phase 14 plan：`docs/superpowers/plans/2026-05-30-tbox-phase14-plan.md`
 - Phase 15 plan：`docs/superpowers/plans/2026-05-30-tbox-phase15-plan.md`
-- Phase 16–25 plans：`docs/superpowers/plans/2026-05-30-tbox-phase16-plan.md` … `phase25-plan.md`
+- Phase 16–26 plans：`docs/superpowers/plans/2026-05-30-tbox-phase16-plan.md` … `phase26-plan.md`
 - Console 重建：`docs/TBOX_CONSOLE_REBUILD.md`

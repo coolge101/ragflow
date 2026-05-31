@@ -77,7 +77,15 @@ else
 fi
 
 HAND_TEST="${TBOX_HAND_TEST_DONE:-1}"
+PHASE16_17_HAND="${TBOX_PHASE16_17_HANDTEST_DONE:-0}"
 hand_mark() { [[ "$HAND_TEST" == "1" ]] && echo "☑" || echo "☐ 待手测"; }
+phase16_17_mark() {
+  if [[ "$PHASE16_17_HAND" == "1" ]]; then
+    echo "☑ 手测 ${DATE}"
+  else
+    echo "☐ Citation / 检索高亮 — \`bash scripts/tbox_phase16_17_handtest.sh\`"
+  fi
+}
 
 cat <<EOF
 # 粘贴到 docs/TBOX_VM_PRODUCTION_ACCEPTANCE.md §5
@@ -95,7 +103,7 @@ cat <<EOF
 | \`tbox_permissions_smoke.sh\` | ${PERMS_STATUS} |
 | §3 内网与双账号 A–D | $(hand_mark) |
 | §4 产品动线 Walkthrough | $(hand_mark) |
-| Phase 16–17 UI（Citation / 检索高亮） | ☐ 5180 重建 console 后手测 — docs/TBOX_CONSOLE_REBUILD.md |
+| Phase 16–17 UI（Citation / 检索高亮） | $(phase16_17_mark) |
 | 备注 | 双账号：\`docs/TBOX_SMOKE_ENV.md\` |
 
 手测清单：docs/TBOX_VM_PRODUCTION_ACCEPTANCE.md §3–4

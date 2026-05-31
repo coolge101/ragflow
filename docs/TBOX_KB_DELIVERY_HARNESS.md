@@ -284,7 +284,8 @@
 | **Phase 23** | **Console 重建 + 双账号校验** | **`tbox_rebuild_console.sh`** + permissions 半填 fail — phase23 plan |
 | **Phase 24** | **Post-merge console 链 + 双账号门禁** | **`tbox_web_tbox_git_changed.sh`** + `TBOX_REBUILD_CONSOLE=auto` + `TBOX_REQUIRE_DUAL_ACCOUNT` — phase24 plan |
 | **Phase 25** | **Console bundle 冒烟** | **`tbox_console_bundle_smoke.sh`** — 5180 JS 含 Phase 16–17 markers — phase25 plan |
-| **矩阵/里程碑** | **Phase 0–25** | 后续：5180 手测 Phase 16–17 归档 + bundle smoke pass |
+| **Phase 26** | **Phase 16–17 手测链 + bundle 单测** | **`tbox_phase16_17_handtest.sh`** + pytest + post-merge stale 校验 — phase26 plan |
+| **矩阵/里程碑** | **Phase 0–26** | 后续：5180 Phase 16–17 手测归档 |
 
 ### 9.1 阶段总览
 

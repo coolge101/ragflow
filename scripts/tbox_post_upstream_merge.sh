@@ -55,6 +55,9 @@ if [[ "$_rebuild_console" == "1" ]]; then
 else
   echo "    (5180 unchanged — skip console force-recreate; set TBOX_REBUILD_CONSOLE=1 to override)"
   echo ""
+  echo "==> Console bundle smoke (verify 5180 not stale)"
+  bash scripts/tbox_console_bundle_smoke.sh
+  echo ""
 fi
 
 echo "==> Release smoke (docker runner — avoids host uv/spacy when GitHub times out)"
