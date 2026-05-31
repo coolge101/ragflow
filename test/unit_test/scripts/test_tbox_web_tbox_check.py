@@ -42,7 +42,8 @@ class TestHarnessPhase5462Summary(unittest.TestCase):
         self.assertIn("Phase 54–62", text)
         self.assertIn("Phase 63", text)
         self.assertIn("Phase 64", text)
-        self.assertIn("Phase 0–64", text)
+        self.assertIn("Phase 65", text)
+        self.assertIn("Phase 0–65", text)
 
 
 if __name__ == "__main__":

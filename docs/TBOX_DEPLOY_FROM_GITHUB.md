@@ -250,6 +250,22 @@ bash scripts/tbox_phase16_17_finish.sh --archive
 
 详 **[`TBOX_DEPLOY_RUNBOOK.md`](./TBOX_DEPLOY_RUNBOOK.md)** §8.1 · **[`TBOX_UI_ACCEPTANCE_WALKTHROUGH.md`](./TBOX_UI_ACCEPTANCE_WALKTHROUGH.md)** §2.1 / §2.2 · **[`TBOX_VM_PRODUCTION_ACCEPTANCE.md`](./TBOX_VM_PRODUCTION_ACCEPTANCE.md)** · **[`TBOX_SMOKE_ENV.md`](./TBOX_SMOKE_ENV.md)**。
 
+**S6 upstream merge（本 fork 例行）** — 与 **[`TBOX_UPSTREAM_MERGE_RUNBOOK.md`](./TBOX_UPSTREAM_MERGE_RUNBOOK.md)** §3.2 · §5 一致：
+
+| 阶段 | 命令 | 说明 |
+|------|------|------|
+| merge 前 | **`bash scripts/tbox_s6_preflight.sh`** | `--fetch` 漂移快照；钉扎 Runbook §5：`--write-runbook` |
+| merge 后 | **`bash scripts/tbox_post_upstream_merge.sh`** | 重建镜像 → host check → pre_release → VM §5 自动化 |
+| Phase 16–17 | 上表「典型顺序」三步 | Walkthrough **步骤 C §7 + D**；可选 **`/review/step/phase16-17`** |
+
+```bash
+bash scripts/tbox_s6_preflight.sh
+# git merge origin/main …
+bash scripts/tbox_post_upstream_merge.sh
+bash scripts/tbox_phase16_17_handtest.sh
+bash scripts/tbox_phase16_17_finish.sh --archive
+```
+
 ---
 
 ## 7. web-tbox 前端
@@ -281,6 +297,17 @@ git pull --ff-only
 
 # 若 Dockerfile / download_deps 有变，重新 1→2→3；否则仅重建 API：
 TBOX_BUILD_RAGFLOW=1 bash docker/tbox-compose-up.sh
+```
+
+**合并 upstream InfiniFlow `main`（S6）** — 勿仅用 `git pull` 代替 merge 后验收；见 **§6** 与 **[`TBOX_UPSTREAM_MERGE_RUNBOOK.md`](./TBOX_UPSTREAM_MERGE_RUNBOOK.md)**：
+
+```bash
+bash scripts/tbox_s6_preflight.sh              # merge 前漂移
+# git fetch origin && git merge origin/main …
+bash scripts/tbox_post_upstream_merge.sh       # 重建 + smoke + VM §5
+# Phase 16–17 浏览器（§6 典型顺序）：
+bash scripts/tbox_phase16_17_handtest.sh
+bash scripts/tbox_phase16_17_finish.sh --archive
 ```
 
 ---
