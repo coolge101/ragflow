@@ -43,11 +43,13 @@ bash scripts/tbox_chat_apps_smoke.sh
 bash scripts/tbox_permissions_smoke.sh
 # Phase 16–17 UI 变更后重建 5180 console：
 bash scripts/tbox_rebuild_console.sh
+# 验证 bundle 含 Citation / 高亮代码（不重建时通常 FAIL）：
+bash scripts/tbox_console_bundle_smoke.sh
 ```
 
-**通过标准**：退出码 **0**（Docker 容器、5180/login、health、**web-tbox check**、release smoke 6 步）。
+**通过标准**：退出码 **0**（Docker 容器、5180/login、**console bundle**、health、**web-tbox check**、release smoke 7 步）。
 
-可选跳过前端检查（无 Node 环境）：`TBOX_SKIP_WEB_TBOX_CHECK=1 bash scripts/tbox_vm_production_acceptance.sh`
+可选跳过：`TBOX_SKIP_WEB_TBOX_CHECK=1`；`TBOX_SKIP_CONSOLE_BUNDLE_SMOKE=1`（仅 API 栈验收时）
 
 强制双账号 permissions（须 `scripts/tbox_smoke.env` 含 `TBOX_SMOKE_NORMAL_*`）：`TBOX_REQUIRE_DUAL_ACCOUNT=1 bash scripts/tbox_vm_production_acceptance.sh`
 
@@ -93,6 +95,7 @@ LAN IP：`hostname -I | awk '{print $1}'`
 | `tbox_p2_regression_smoke.sh` | ☑ pass |
 | `tbox_chat_apps_smoke.sh` | ☑ pass |
 | `tbox_permissions_smoke.sh` | ☑ pass（admin；双账号见 `TBOX_SMOKE_ENV.md`） |
+| `tbox_console_bundle_smoke.sh` | ☑ pass（`tbox_rebuild_console.sh` 后；检测 minified markers） |
 | `web-tbox npm test` | ☑ 12 tests（chunkDisplay + citationUtils） |
 | §3 内网与双账号 A–D | ☑ 手测 2026-05-30 |
 | §4 产品动线 Walkthrough | ☑ 手测 2026-05-30 |
@@ -110,5 +113,5 @@ LAN IP：`hostname -I | awk '{print $1}'`
 - Phase 13 plan：`docs/superpowers/plans/2026-05-30-tbox-phase13-plan.md`
 - Phase 14 plan：`docs/superpowers/plans/2026-05-30-tbox-phase14-plan.md`
 - Phase 15 plan：`docs/superpowers/plans/2026-05-30-tbox-phase15-plan.md`
-- Phase 16–24 plans：`docs/superpowers/plans/2026-05-30-tbox-phase16-plan.md` … `phase24-plan.md`
+- Phase 16–25 plans：`docs/superpowers/plans/2026-05-30-tbox-phase16-plan.md` … `phase25-plan.md`
 - Console 重建：`docs/TBOX_CONSOLE_REBUILD.md`

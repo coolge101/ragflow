@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# 准生产 VM 验收脚本（5180 console + API 冒烟）
+# 准生产 VM 验收脚本（5180 console + API 冒烟，7 步）
 #
 # 前置：bash scripts/start-tbox-ragflow.sh --console  或 deploy-on-new-server 已完成
 #
@@ -53,7 +53,7 @@ else
 fi
 echo ""
 
-echo "==> [2/6] Console HTTP"
+echo "==> [2/7] Console HTTP"
 if curl -sf -o /dev/null -m 10 "${CONSOLE_URL}/login"; then
   echo "OK: ${CONSOLE_URL}/login"
 else
@@ -62,7 +62,20 @@ else
 fi
 echo ""
 
-echo "==> [3/6] API health"
+echo "==> [3/7] Console bundle (Phase 16–17 citation/highlight)"
+if [[ "${TBOX_SKIP_CONSOLE_BUNDLE_SMOKE:-0}" == "1" ]]; then
+  echo "SKIP: TBOX_SKIP_CONSOLE_BUNDLE_SMOKE=1"
+else
+  if bash scripts/tbox_console_bundle_smoke.sh; then
+    echo "OK: console bundle smoke"
+  else
+    echo "FAIL: stale 5180 bundle — run: bash scripts/tbox_rebuild_console.sh" >&2
+    fail=1
+  fi
+fi
+echo ""
+
+echo "==> [4/7] API health"
 if curl -sf "${API}/v1/tbox/health" | python3 -m json.tool >/dev/null; then
   curl -sf "${API}/v1/tbox/health" | python3 -m json.tool | head -6
   echo "OK: tbox health"
@@ -72,7 +85,7 @@ else
 fi
 echo ""
 
-echo "==> [4/6] Console login (5180 proxy + /v1/tbox/me)"
+echo "==> [5/7] Console login (5180 proxy + /v1/tbox/me)"
 if bash scripts/tbox_login_smoke.sh; then
   echo "OK: login smoke"
 else
@@ -80,7 +93,7 @@ else
 fi
 echo ""
 
-echo "==> [5/6] web-tbox check (typecheck + test + build)"
+echo "==> [6/7] web-tbox check (typecheck + test + build)"
 if [[ "${TBOX_SKIP_WEB_TBOX_CHECK:-0}" == "1" ]]; then
   echo "SKIP: TBOX_SKIP_WEB_TBOX_CHECK=1"
 else
@@ -92,7 +105,7 @@ else
 fi
 echo ""
 
-echo "==> [6/6] Release smoke (health + G1 + G3 + chat apps + P2 + permissions)"
+echo "==> [7/7] Release smoke (health + G1 + G3 + chat apps + P2 + permissions)"
 export TBOX_SMOKE_BASE_URL="${API}"
 export TBOX_SMOKE_RUNNER="${TBOX_SMOKE_RUNNER:-docker}"
 # shellcheck source=scripts/tbox_load_smoke_env.sh

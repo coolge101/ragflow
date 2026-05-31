@@ -24,11 +24,12 @@ SMOKE_STATUS="not run"
 LOGIN_STATUS="not run"
 WEB_TBOX_STATUS="not run"
 PERMS_STATUS="not run"
+CONSOLE_BUNDLE_STATUS="not run"
 API="${TBOX_SMOKE_BASE_URL:-http://127.0.0.1:9380}"
 
 if [[ "$RUN_SMOKE" -eq 1 ]]; then
   if bash scripts/tbox_vm_production_acceptance.sh; then
-    SMOKE_STATUS="pass (6/6)"
+    SMOKE_STATUS="pass (7/7)"
   else
     SMOKE_STATUS="FAIL"
   fi
@@ -67,6 +68,14 @@ else
   PERMS_STATUS="FAIL"
 fi
 
+if [[ "${TBOX_SKIP_CONSOLE_BUNDLE_SMOKE:-0}" == "1" ]]; then
+  CONSOLE_BUNDLE_STATUS="skipped"
+elif bash scripts/tbox_console_bundle_smoke.sh >/dev/null 2>&1; then
+  CONSOLE_BUNDLE_STATUS="pass (Phase 16–17 markers)"
+else
+  CONSOLE_BUNDLE_STATUS="FAIL — run tbox_rebuild_console.sh"
+fi
+
 HAND_TEST="${TBOX_HAND_TEST_DONE:-1}"
 hand_mark() { [[ "$HAND_TEST" == "1" ]] && echo "☑" || echo "☐ 待手测"; }
 
@@ -82,6 +91,7 @@ cat <<EOF
 | \`tbox_vm_production_acceptance.sh\` | ${SMOKE_STATUS} |
 | \`tbox_web_tbox_check.sh\` | ${WEB_TBOX_STATUS} |
 | \`tbox_login_smoke.sh\` | ${LOGIN_STATUS} |
+| \`tbox_console_bundle_smoke.sh\` | ${CONSOLE_BUNDLE_STATUS} |
 | \`tbox_permissions_smoke.sh\` | ${PERMS_STATUS} |
 | §3 内网与双账号 A–D | $(hand_mark) |
 | §4 产品动线 Walkthrough | $(hand_mark) |

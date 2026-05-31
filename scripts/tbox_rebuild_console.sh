@@ -42,6 +42,11 @@ else
 fi
 
 echo ""
+cd "$ROOT"
+echo "==> Console bundle smoke (Phase 16–17 markers)"
+bash scripts/tbox_console_bundle_smoke.sh
+
+echo ""
 echo "==> CONSOLE REBUILD OK"
 echo "Next: hand-test Phase 16–17 on ${CONSOLE_URL} (Citation + /search highlight)"
 echo "Doc: docs/TBOX_CONSOLE_REBUILD.md"

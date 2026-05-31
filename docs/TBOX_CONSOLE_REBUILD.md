@@ -17,8 +17,19 @@ bash scripts/tbox_rebuild_console.sh
 2. **`docker compose … build tbox-console`**
 3. **`--force-recreate tbox-console`**
 4. 探测 **`http://127.0.0.1:5180/login`**
+5. **`tbox_console_bundle_smoke.sh`** — 确认 bundle 含 Phase 16–17 特征串
 
 跳过宿主机检查（仅验证 Docker 构建）：`TBOX_SKIP_WEB_TBOX_CHECK=1 bash scripts/tbox_rebuild_console.sh`
+
+---
+
+## 自动化 bundle 检查
+
+```bash
+bash scripts/tbox_console_bundle_smoke.sh
+```
+
+检测 5180 所服务 JS 是否含 Citation（`kind:"cite"`）、ChunkListPanel（`scrollIntoView`、引用 regex）等 minified marker。旧镜像在未重建前 **应 FAIL**。
 
 ---
 
@@ -41,4 +52,4 @@ bash scripts/tbox_rebuild_console.sh
 - VM 验收：`bash scripts/tbox_vm_production_acceptance.sh`
 - 开发联调（5174，无需重建镜像）：`cd web-tbox && npm run dev`
 
-**Plan:** `docs/superpowers/plans/2026-05-30-tbox-phase23-plan.md`
+**Plan:** `docs/superpowers/plans/2026-05-31-tbox-phase25-plan.md`
