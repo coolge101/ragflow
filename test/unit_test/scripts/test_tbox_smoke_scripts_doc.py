@@ -35,7 +35,7 @@ class TestSmokeScriptsDoc(unittest.TestCase):
         self.assertIn("tbox_phase16_17_handtest.sh", self.smoke_text)
         self.assertIn("/review/step/phase16-17", self.smoke_text)
         self.assertIn("tbox_print_release_next_steps.sh", self.smoke_text)
-        self.assertIn("phase48-plan.md", self.smoke_text)
+        self.assertIn("phase49-plan.md", self.smoke_text)
 
     def test_walkthrough_section21_aligns_with_vm_wording(self) -> None:
         self.assertIn("handtest` → 浏览器 **C §7 + D**", self.walk_text)

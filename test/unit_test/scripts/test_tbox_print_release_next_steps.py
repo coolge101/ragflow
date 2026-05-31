@@ -45,8 +45,10 @@ class TestPrintReleaseNextSteps(unittest.TestCase):
         out = proc.stdout
         self.assertIn("tbox_pre_release.sh", out)
         self.assertIn("tbox_setup_smoke_env.sh", out)
-        self.assertIn("tbox_phase16_17_finish.sh --archive", out)
-        self.assertIn("TBOX_DEPLOY_RUNBOOK.md", out)
+        self.assertIn("tbox_phase16_17_handtest.sh", out)
+        self.assertIn("TBOX_SMOKE_SCRIPTS.md", out)
+        self.assertIn("TBOX_SMOKE_ENV.md", out)
+        self.assertIn("tbox_post_upstream_merge.sh", out)
 
     def test_with_compose_hint_includes_compose_up(self) -> None:
         proc = self._run("--with-compose-hint")

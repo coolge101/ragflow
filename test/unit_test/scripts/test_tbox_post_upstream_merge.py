@@ -36,6 +36,12 @@ class TestPostUpstreamMerge(unittest.TestCase):
         self.assertIn("tbox_print_release_next_steps.sh", self.post_merge_text)
         self.assertIn("TBOX_SMOKE_SCRIPTS.md", self.post_merge_text)
 
+    def test_upstream_runbook_section32_phase16_17(self) -> None:
+        runbook = (ROOT / "docs" / "TBOX_UPSTREAM_MERGE_RUNBOOK.md").read_text(encoding="utf-8")
+        section = runbook.split("### 3.2", 1)[1].split("\n---\n", 1)[0]
+        self.assertIn("tbox_phase16_17_handtest.sh", section)
+        self.assertIn("TBOX_SMOKE_SCRIPTS.md", section)
+
     def test_runbook_section81_cross_links_smoke_docs(self) -> None:
         section = self.runbook_text.split("### 8.1", 1)[1].split("\n---\n", 1)[0]
         self.assertIn("TBOX_SMOKE_SCRIPTS.md", section)
