@@ -15,8 +15,8 @@
 | 字段 | 值 |
 |------|-----|
 | 记录日期 | 2026-05-31 |
-| 本 fork 工作区 `HEAD`（文档更新时钉扎） | `8df0c53fa` |
-| 备注 | **Phase 55** @ `8df0c53fa`。host_check ↔ web_tbox_check 对齐 + Walkthrough D handtest ✅。S6 merge @ `f9bd37fdd`；**behind 0 / ahead ~187**。 |
+| 本 fork 工作区 `HEAD`（文档更新时钉扎） | `b752e564a` |
+| 备注 | **Phase 56** @ `b752e564a`。pre_release --help ↔ host_check + README 步骤 D ✅。S6 merge @ `f9bd37fdd`；**behind 0 / ahead ~188**。 |
 
 ## 3. 常用端口（默认本地开发）
 
