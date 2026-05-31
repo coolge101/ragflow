@@ -15,8 +15,8 @@
 | 字段 | 值 |
 |------|-----|
 | 记录日期 | 2026-05-31 |
-| 本 fork 工作区 `HEAD`（文档更新时钉扎） | `d41da73ed` |
-| 备注 | **Phase 28** @ `d41da73ed`。§5 自动钉扎 ✅。S6 merge @ `f9bd37fdd`；**behind 0 / ahead ~136**。 |
+| 本 fork 工作区 `HEAD`（文档更新时钉扎） | `a8f47e020` |
+| 备注 | **Phase 29** @ `a8f47e020`。发版门禁 pre_release ✅。S6 merge @ `f9bd37fdd`；**behind 0 / ahead ~138**。 |
 
 ## 3. 常用端口（默认本地开发）
 
