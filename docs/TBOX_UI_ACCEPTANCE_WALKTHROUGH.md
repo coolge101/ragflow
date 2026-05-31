@@ -61,12 +61,17 @@
 | 步骤 | 命令 / 路径 | 说明 |
 |------|-------------|------|
 | 发版前门禁 | `bash scripts/tbox_pre_release.sh` | host check → suite + §5（`--help` 见模式矩阵） |
+| Smoke 凭据 | `bash scripts/tbox_setup_smoke_env.sh` | 创建/校验 `scripts/tbox_smoke.env` |
+| 发版链（三脚本） | `bash scripts/tbox_print_release_next_steps.sh` | 5180 + pre_release 完整链（Runbook §3.1.3） |
 | 自动化套件 | `bash scripts/tbox_smoke_suite.sh` | bundle + 登录 + API release smoke |
 | 完整 VM 验收 | `bash scripts/tbox_vm_production_acceptance.sh` | 7 步（含 web-tbox check） |
 | UI 变更后 | `bash scripts/tbox_rebuild_console.sh` | 重建 5180 静态页 |
-| Phase 16–17 手测 | `bash scripts/tbox_phase16_17_handtest.sh` | Citation / 检索高亮清单 |
-| 手测归档 §5 | `bash scripts/tbox_phase16_17_finish.sh --archive` | bundle + **`--confirm`** 写 VM 验收 §5 |
+| Phase 16–17 手测 | `bash scripts/tbox_phase16_17_handtest.sh` | bundle + Citation / 检索高亮清单 |
+| 确认页（可选） | **`/review/step/phase16-17`** | journey **`phase16-17`**（§2.2） |
+| 手测归档 §5 | `bash scripts/tbox_phase16_17_finish.sh --archive` | 浏览器 C §7 + D 通过后写 VM §5 ☑ |
 | 双账号 API | `bash scripts/tbox_dual_account_check.sh` | 确认 `scripts/tbox_smoke.env` 已填 |
+
+**Phase 16–17 三步**（与 VM 验收 §5 一致）：`handtest` → 浏览器 **C §7 + D**（可选 **`/review/step/phase16-17`**）→ **`finish --archive`**。脚本索引专节：**[`TBOX_SMOKE_SCRIPTS.md`](./TBOX_SMOKE_SCRIPTS.md)**「Phase 16–17 浏览器手测」。
 
 下文步骤 A–P 在 5180 上验收时，将 **`5174` 全部替换为 `5180`**。Phase 16–17 要点见步骤 C 第 7 点、步骤 D Phase 17；详见 **`docs/TBOX_CONSOLE_REBUILD.md`**。
 
@@ -147,8 +152,8 @@ Phase 16–17 浏览器通过后（步骤 **C §7** + **D**）：`bash scripts/t
 5. 若有知识库应用：选应用、选会话或「首次发送时新建」，再发一条。
 6. **导出**：有消息后可用 **Markdown / PDF / Word / PPT** 导出。
 7. **引用联动（Phase 16）**：绑定知识库的应用提问后，若回答含 `[ID:0]` 等标记，**点击编号** → 右侧「本轮引用」对应片段**高亮并滚动**；点击侧栏片段可**反向高亮**正文引用编号。
-   - **5180 准生产**：基址用 **5180**（非 5174 dev）；bundle 自动化：`bash scripts/tbox_console_bundle_smoke.sh`
-   - 与步骤 D 一并通过后：`bash scripts/tbox_phase16_17_finish.sh --archive`
+   - **5180 准生产**：基址用 **5180**（非 5174 dev）；先 `bash scripts/tbox_phase16_17_handtest.sh`（含 bundle）
+   - 与步骤 D 一并通过后：`bash scripts/tbox_phase16_17_finish.sh --archive`（可选确认页 **`/review/step/phase16-17`**）
 
 **本页验收**：右下角 → 勾选「对话」条目；需要时去 `/review/step/chat`。
 

@@ -53,6 +53,26 @@ bash scripts/tbox_pre_release.sh --help
 
 ---
 
+## Phase 16–17 浏览器手测（5180）
+
+与 VM 验收 **§5**、Walkthrough **§2.1 / §2.2** 文案一致。勿在未手测前设 **`TBOX_PHASE16_17_HANDTEST_DONE=1`**。
+
+| 顺序 | 命令 / 路径 | 说明 |
+|------|-------------|------|
+| 0（UI 变更后） | `bash scripts/tbox_rebuild_console.sh` | 重建 5180 静态页 |
+| 1 | `bash scripts/tbox_phase16_17_handtest.sh` | bundle smoke + 打印 C/D 清单 |
+| 2 | 浏览器 Walkthrough **步骤 C §7 + D** | Citation（`/`）+ 检索高亮（`/search`） |
+| 2b（可选） | **`/review/step/phase16-17`** | 确认页勾选（journey **`phase16-17`**） |
+| 3 | `bash scripts/tbox_phase16_17_finish.sh --archive` | **`--confirm`** 写 VM §5 ☑ |
+
+等价：`bash scripts/tbox_archive_phase16_17_handtest.sh --confirm`（须先完成浏览器步骤）。
+
+**发版链（栈就绪后）**：三脚本共用 **`bash scripts/tbox_print_release_next_steps.sh`**（Runbook **§3.1.3** · QUICKSTART **§1.3**）。
+
+详 **`docs/TBOX_CONSOLE_REBUILD.md`** · **`docs/TBOX_VM_PRODUCTION_ACCEPTANCE.md`** §5。
+
+---
+
 ## API / 权限
 
 | 脚本 | 用途 |
@@ -79,4 +99,4 @@ bash scripts/tbox_pre_release.sh --help
 
 ## 相关 Plan
 
-Phase 14–41：`docs/superpowers/plans/2026-05-30-tbox-phase14-plan.md` … `phase41-plan.md`
+Phase 14–46：`docs/superpowers/plans/2026-05-30-tbox-phase14-plan.md` … `phase46-plan.md`

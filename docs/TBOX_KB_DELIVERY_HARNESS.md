@@ -305,7 +305,8 @@
 | **Phase 44** | **DEPLOY_FROM_GITHUB §6 + smoke example** | GitHub 部署 §6 三脚本/helper + **`tbox_smoke.env.example`** phase16-17 — phase44 plan |
 | **Phase 45** | **CONSOLE_REBUILD + setup_smoke_env 收尾** | **`TBOX_CONSOLE_REBUILD.md`** + **`tbox_setup_smoke_env.sh`** helper 提示 — phase45 plan |
 | **Phase 46** | **phase16-17 脚本 + VM §5 文案** | **`handtest`/`finish`** + review/helper + §5 统一 — phase46 plan |
-| **矩阵/里程碑** | **Phase 0–46** | 后续：5180 Phase 16–17 浏览器手测 |
+| **Phase 47** | **SMOKE_SCRIPTS 专节 + Walkthrough §2.1** | Phase 16–17 脚本索引 + §2.1 与 VM §5 对齐 — phase47 plan |
+| **矩阵/里程碑** | **Phase 0–47** | 后续：5180 Phase 16–17 浏览器手测 |
 
 ### 9.1 阶段总览
 
