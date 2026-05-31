@@ -49,4 +49,8 @@ bash scripts/tbox_console_bundle_smoke.sh
 echo ""
 echo "==> CONSOLE REBUILD OK"
 echo "Next: hand-test Phase 16–17 on ${CONSOLE_URL} (Citation + /search highlight)"
+echo "    Review: ${CONSOLE_URL}/review/step/phase16-17"
+echo "    bash scripts/tbox_phase16_17_handtest.sh"
+echo "    bash scripts/tbox_phase16_17_finish.sh --archive"
+echo "    Full chain: bash scripts/tbox_print_release_next_steps.sh"
 echo "Doc: docs/TBOX_CONSOLE_REBUILD.md"

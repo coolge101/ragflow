@@ -162,6 +162,7 @@
 | **42** | 发版提示 helper + phase16-17 journey | 运维 | **`tbox_print_release_next_steps.sh`** + Runbook §3.1.3 + **`/review/step/phase16-17`** — phase42 plan |
 | **43** | helper 单测 + QUICKSTART §1.3 + 手册 | 运维/产品 | scripts unit + **`tbox_host_check`** + SYSTEM_USER_MANUAL §5.4 — phase43 plan |
 | **44** | DEPLOY_FROM_GITHUB §6 + smoke example | 运维 | GitHub §6 对齐 + **`tbox_smoke.env.example`** + example 单测 — phase44 plan |
+| **45** | CONSOLE_REBUILD + setup_smoke_env | 运维 | **`TBOX_CONSOLE_REBUILD.md`** + **`tbox_setup_smoke_env.sh`** + rebuild 收尾 — phase45 plan |
 
 详细 Task 见 **`docs/TBOX_KB_DELIVERY_HARNESS.md`** §9.0 与 `docs/superpowers/plans/2026-05-31-tbox-phase*-plan.md`。
 

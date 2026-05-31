@@ -9,6 +9,13 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT"
 
+_print_release_next_steps_hint() {
+  echo "    bash scripts/tbox_pre_release.sh --help"
+  echo "    bash scripts/tbox_pre_release.sh"
+  echo "    Full chain: bash scripts/tbox_print_release_next_steps.sh"
+  echo "    Doc: docs/TBOX_DEPLOY_RUNBOOK.md §3.1.3 · docs/TBOX_SMOKE_ENV.md"
+}
+
 CHECK_ONLY=0
 [[ "${1:-}" == "--check-only" ]] && CHECK_ONLY=1
 
@@ -32,6 +39,7 @@ if bash scripts/tbox_dual_account_check.sh; then
   echo ""
   echo "==> SMOKE ENV OK (dual-account configured)"
   echo "    TBOX_REQUIRE_DUAL_ACCOUNT=1 bash scripts/tbox_pre_release.sh"
+  _print_release_next_steps_hint
   exit 0
 fi
 
@@ -41,4 +49,5 @@ echo "    1. Edit ${ENV_FILE}"
 echo "    2. Set TBOX_SMOKE_NORMAL_EMAIL and TBOX_SMOKE_NORMAL_PASSWORD"
 echo "    3. Re-run: bash scripts/tbox_setup_smoke_env.sh --check-only"
 echo "    Doc: docs/TBOX_SMOKE_ENV.md"
+_print_release_next_steps_hint
 exit 0

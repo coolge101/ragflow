@@ -303,7 +303,8 @@
 | **Phase 42** | **发版提示 helper + phase16-17 journey** | **`tbox_print_release_next_steps.sh`** + Runbook §3.1.3 + Walkthrough §2.2 — phase42 plan |
 | **Phase 43** | **helper 单测 + QUICKSTART §1.3 + 手册 §5.4** | scripts unit + **`tbox_host_check`** 提示 + 三脚本文档 — phase43 plan |
 | **Phase 44** | **DEPLOY_FROM_GITHUB §6 + smoke example** | GitHub 部署 §6 三脚本/helper + **`tbox_smoke.env.example`** phase16-17 — phase44 plan |
-| **矩阵/里程碑** | **Phase 0–44** | 后续：5180 Phase 16–17 浏览器手测 |
+| **Phase 45** | **CONSOLE_REBUILD + setup_smoke_env 收尾** | **`TBOX_CONSOLE_REBUILD.md`** + **`tbox_setup_smoke_env.sh`** helper 提示 — phase45 plan |
+| **矩阵/里程碑** | **Phase 0–45** | 后续：5180 Phase 16–17 浏览器手测 |
 
 ### 9.1 阶段总览
 
