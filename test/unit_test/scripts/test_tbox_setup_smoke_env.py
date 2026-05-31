@@ -54,6 +54,9 @@ class TestSetupSmokeEnv(unittest.TestCase):
         out = proc.stdout
         self.assertIn("tbox_pre_release.sh", out)
         self.assertIn("tbox_print_release_next_steps.sh", out)
+        self.assertIn("tbox_phase16_17_handtest.sh", out)
+        self.assertIn("TBOX_VM_PRODUCTION_ACCEPTANCE.md", out)
+        self.assertIn("TBOX_QUICKSTART.md", out)
 
     def test_created_env_prints_helper_on_first_run(self) -> None:
         if ENV_FILE.exists():

@@ -35,7 +35,7 @@ class TestSmokeScriptsDoc(unittest.TestCase):
         self.assertIn("tbox_phase16_17_handtest.sh", self.smoke_text)
         self.assertIn("/review/step/phase16-17", self.smoke_text)
         self.assertIn("tbox_print_release_next_steps.sh", self.smoke_text)
-        self.assertIn("phase60-plan.md", self.smoke_text)
+        self.assertIn("phase61-plan.md", self.smoke_text)
 
     def test_smoke_scripts_phase16_17_aligns_with_smoke_env(self) -> None:
         section = self.smoke_text.split("## Phase 16–17", 1)[1].split("## API", 1)[0]
@@ -48,6 +48,13 @@ class TestSmokeScriptsDoc(unittest.TestCase):
         self.assertIn("handtest` → 浏览器 **C §7 + D**", self.walk_text)
         self.assertIn("/review/step/phase16-17", self.walk_text)
         self.assertIn("TBOX_SMOKE_SCRIPTS.md", self.walk_text)
+
+    def test_walkthrough_section21_refs_vm_section5_and_smoke_example(self) -> None:
+        section21 = self.walk_text.split("### 2.1", 1)[1].split("### 2.2", 1)[0]
+        self.assertIn("TBOX_VM_PRODUCTION_ACCEPTANCE.md", section21)
+        self.assertIn("tbox_smoke.env.example", section21)
+        self.assertIn("步骤 D", section21)
+        self.assertIn("§1.3", section21)
 
 
 if __name__ == "__main__":

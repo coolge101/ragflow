@@ -12,8 +12,12 @@ cd "$ROOT"
 _print_release_next_steps_hint() {
   echo "    bash scripts/tbox_pre_release.sh --help"
   echo "    bash scripts/tbox_pre_release.sh"
+  echo "    Phase 16–17 (5180; see scripts/tbox_smoke.env.example):"
+  echo "    bash scripts/tbox_phase16_17_handtest.sh"
+  echo "    bash scripts/tbox_phase16_17_finish.sh --archive"
   echo "    Full chain: bash scripts/tbox_print_release_next_steps.sh"
-  echo "    Doc: docs/TBOX_DEPLOY_RUNBOOK.md §3.1.3 · docs/TBOX_SMOKE_ENV.md"
+  echo "    Doc: docs/TBOX_QUICKSTART.md §1.3 · docs/TBOX_VM_PRODUCTION_ACCEPTANCE.md §5"
+  echo "         docs/TBOX_SMOKE_SCRIPTS.md · docs/TBOX_SMOKE_ENV.md"
 }
 
 CHECK_ONLY=0

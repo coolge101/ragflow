@@ -66,12 +66,14 @@
 | 自动化套件 | `bash scripts/tbox_smoke_suite.sh` | bundle + 登录 + API release smoke |
 | 完整 VM 验收 | `bash scripts/tbox_vm_production_acceptance.sh` | 7 步（含 web-tbox check） |
 | UI 变更后 | `bash scripts/tbox_rebuild_console.sh` | 重建 5180 静态页 |
-| Phase 16–17 手测 | `bash scripts/tbox_phase16_17_handtest.sh` | bundle + Citation / 检索高亮清单 |
+| Phase 16–17 手测 | `bash scripts/tbox_phase16_17_handtest.sh` | Walkthrough **步骤 D** 5180 准生产前置 + bundle + C/D 清单 |
 | 确认页（可选） | **`/review/step/phase16-17`** | journey **`phase16-17`**（§2.2） |
 | 手测归档 §5 | `bash scripts/tbox_phase16_17_finish.sh --archive` | 浏览器 C §7 + D 通过后写 VM §5 ☑ |
 | 双账号 API | `bash scripts/tbox_dual_account_check.sh` | 确认 `scripts/tbox_smoke.env` 已填 |
 
-**Phase 16–17 三步**（与 VM 验收 §5 一致）：`handtest` → 浏览器 **C §7 + D**（可选 **`/review/step/phase16-17`**）→ **`finish --archive`**。脚本索引专节：**[`TBOX_SMOKE_SCRIPTS.md`](./TBOX_SMOKE_SCRIPTS.md)**「Phase 16–17 浏览器手测」。
+**Phase 16–17 三步**（与 VM 验收 **[§5](./TBOX_VM_PRODUCTION_ACCEPTANCE.md)** 一致）：`handtest` → 浏览器 **C §7 + D**（可选 **`/review/step/phase16-17`**）→ **`finish --archive`**。
+
+脚本与环境：**[`TBOX_SMOKE_SCRIPTS.md`](./TBOX_SMOKE_SCRIPTS.md)**「Phase 16–17 浏览器手测」· **[`TBOX_SMOKE_ENV.md`](./TBOX_SMOKE_ENV.md)** · **`scripts/tbox_smoke.env.example`** · QUICKSTART **[§1.3](./TBOX_QUICKSTART.md)**。
 
 下文步骤 A–P 在 5180 上验收时，将 **`5174` 全部替换为 `5180`**。Phase 16–17 要点见步骤 C 第 7 点、步骤 D Phase 17；详见 **`docs/TBOX_CONSOLE_REBUILD.md`**。
 
