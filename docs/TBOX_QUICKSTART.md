@@ -15,8 +15,10 @@
 
 ```bash
 cd /srv/tbox/ragflow   # 或 ~/ragflow 联调
-bash scripts/start-tbox-ragflow.sh --console
-bash scripts/tbox_vm_production_acceptance.sh
+bash scripts/start-tbox-ragflow.sh --console   # 或 TBOX_CONSOLE=1 bash scripts/tbox-up.sh
+bash scripts/tbox_setup_smoke_env.sh
+bash scripts/tbox_pre_release.sh
+# 5180 手测 C/D 后：bash scripts/tbox_phase16_17_finish.sh --archive
 ```
 
 验收清单：**[`TBOX_VM_PRODUCTION_ACCEPTANCE.md`](./TBOX_VM_PRODUCTION_ACCEPTANCE.md)**（5180 + 内网双账号 + Walkthrough）。发版前：**`bash scripts/tbox_pre_release.sh`**（模式矩阵：**`bash scripts/tbox_pre_release.sh --help`**）。脚本索引：**[`TBOX_SMOKE_SCRIPTS.md`](./TBOX_SMOKE_SCRIPTS.md)**。
@@ -57,17 +59,22 @@ bash docker/tbox-compose-up.sh
 合并 `origin/main` 后须 **重建 API 镜像**（容器内代码不会自动更新）：
 
 ```bash
-# 一键：重建 + typecheck/test/build + release smoke
+# 一键：重建 + host check + pre_release (VM+§5)
 bash scripts/tbox_post_upstream_merge.sh
+# merge 前漂移：bash scripts/tbox_s6_preflight.sh
 # 国内网络可加：TBOX_CHINA_DOWNLOAD=1
 # 镜像已重建仅验 smoke：TBOX_SKIP_BUILD=1 bash scripts/tbox_post_upstream_merge.sh
+# 本地仅 compose（无 merge）：TBOX_CONSOLE=1 bash scripts/tbox-up.sh
+#   或 bash scripts/start-tbox-ragflow.sh --console
 ```
 
 | 项 | 说明 |
 |----|------|
 | Python | merge 后 **`>=3.13`**（`pyproject.toml`）；宿主机 `uv sync` 若 GitHub spacy 超时，用 **`TBOX_SMOKE_RUNNER=docker`** |
 | 记录 | [`TBOX_UPSTREAM_MERGE_RUNBOOK.md`](./TBOX_UPSTREAM_MERGE_RUNBOOK.md) §4 |
-| 差异 | `bash scripts/tbox_upstream_divergence.sh --fetch` |
+| 漂移 | **`bash scripts/tbox_s6_preflight.sh`**（或 `tbox_upstream_divergence.sh --fetch`） |
+| 发版 | post-merge 末尾 **`tbox_pre_release.sh`**（VM+§5）；模式 **`bash scripts/tbox_pre_release.sh --help`** |
+| 5180 | **`bash scripts/start-tbox-ragflow.sh --console`** 或 **`TBOX_CONSOLE=1 bash scripts/tbox-up.sh`** |
 | 磁盘 | build 后 **no space left on device**：镜像可能已成功 → `docker builder prune -af` 再 `--force-recreate ragflow-cpu`（Runbook §3.1） |
 | 日常清理 | `bash scripts/tbox_disk_cleanup.sh`（不删 DB volume）；Docker 数据应在 **`/data/docker`** |
 

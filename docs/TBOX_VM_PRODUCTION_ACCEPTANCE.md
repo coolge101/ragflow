@@ -127,6 +127,6 @@ LAN IP：`hostname -I | awk '{print $1}'`
 - Phase 13 plan：`docs/superpowers/plans/2026-05-30-tbox-phase13-plan.md`
 - Phase 14 plan：`docs/superpowers/plans/2026-05-30-tbox-phase14-plan.md`
 - Phase 15 plan：`docs/superpowers/plans/2026-05-30-tbox-phase15-plan.md`
-- Phase 16–40 plans：`docs/superpowers/plans/2026-05-30-tbox-phase16-plan.md` … `phase40-plan.md`
+- Phase 16–41 plans：`docs/superpowers/plans/2026-05-30-tbox-phase16-plan.md` … `phase41-plan.md`
 - 冒烟脚本索引：`docs/TBOX_SMOKE_SCRIPTS.md`
 - Console 重建：`docs/TBOX_CONSOLE_REBUILD.md`

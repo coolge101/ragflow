@@ -23,6 +23,8 @@ export const JOURNEY_STEPS: JourneyStep[] = [
       "各路由浏览器标签标题为「模块名 · TBOX 知识库」",
       "未登录访问受保护 URL 会跳转到 /login 并带 redirect",
       "登录成功或已有会话会按 redirect 或进入首页",
+      "5180 准生产：Walkthrough 步骤 C §7 + D 通过后 bash scripts/tbox_phase16_17_finish.sh --archive",
+      "发版前：bash scripts/tbox_pre_release.sh --help（见 Walkthrough §2.1）",
     ],
   },
   {

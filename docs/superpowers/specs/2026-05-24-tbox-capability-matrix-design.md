@@ -157,7 +157,8 @@
 | **22** | VM 验收 6 步 + 漂移 | 运维 | VM acceptance + Runbook §5 — phase22 plan |
 | **23** | Console 重建 | 运维/产品 | **`tbox_rebuild_console.sh`** — phase23 plan |
 | **24–39** | 发版链 / smoke / S6 | 运维/产品 | post-merge console、smoke suite、§5 钉扎、host check、双账号 gate、pre_release 矩阵、Review 映射 — phase24–39 plans |
-| **39** | deploy + 步骤 Q + 矩阵 | 运维 | **`deploy-on-new-server`** pre_release 提示 + Walkthrough Q ↔ **`vm-5180`** — phase39 plan |
+| **40** | start-tbox + §6 Q | 运维 | **`start-tbox-ragflow.sh --console`** + G5-MATRIX — phase40 plan |
+| **41** | tbox-up + QUICKSTART | 运维 | **`tbox-up.sh`** 5180 提示 + journey global — phase41 plan |
 
 详细 Task 见 **`docs/TBOX_KB_DELIVERY_HARNESS.md`** §9.0 与 `docs/superpowers/plans/2026-05-31-tbox-phase*-plan.md`。
 
