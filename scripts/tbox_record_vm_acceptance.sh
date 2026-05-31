@@ -76,17 +76,8 @@ else
   fi
 fi
 
-_mark_not_probed() {
-  [[ "$1" == "not run" ]] && echo "not probed" || echo "$1"
-}
-
 if [[ "$SKIP_PROBE" -eq 1 ]]; then
-  SMOKE_SUITE_STATUS="$(_mark_not_probed "$SMOKE_SUITE_STATUS")"
-  LOGIN_STATUS="$(_mark_not_probed "$LOGIN_STATUS")"
-  WEB_TBOX_STATUS="$(_mark_not_probed "$WEB_TBOX_STATUS")"
-  PERMS_STATUS="$(_mark_not_probed "$PERMS_STATUS")"
-  CONSOLE_BUNDLE_STATUS="$(_mark_not_probed "$CONSOLE_BUNDLE_STATUS")"
-  DUAL_ACCOUNT_STATUS="not probed"
+  :
 elif [[ "$RUN_SMOKE" -eq 0 ]]; then
   if [[ "$RUN_SUITE" -eq 0 ]]; then
     if bash scripts/tbox_smoke_suite.sh >/dev/null 2>&1; then
@@ -181,6 +172,52 @@ TABLE=$(cat <<EOF
 | 备注 | release smoke 含 P2/chat apps；双账号见 \`docs/TBOX_SMOKE_ENV.md\` |
 EOF
 )
+
+if [[ "$SKIP_PROBE" -eq 1 ]]; then
+  _DOC="${ROOT}/docs/TBOX_VM_PRODUCTION_ACCEPTANCE.md"
+  if [[ -f "$_DOC" ]]; then
+    export TABLE _DOC
+    TABLE=$(python3 <<'PY'
+import os, re
+
+table = os.environ["TABLE"]
+doc = os.environ["_DOC"]
+text = open(doc, encoding="utf-8").read()
+m = re.search(r"<!-- tbox-vm-section5:start -->(.*?)<!-- tbox-vm-section5:end -->", text, flags=re.DOTALL)
+if not m:
+    print(table)
+    raise SystemExit(0)
+old: dict[str, str] = {}
+for line in m.group(1).strip().splitlines():
+    if not line.startswith("| `"):
+        continue
+    parts = [p.strip() for p in line.strip("|").split("|")]
+    if len(parts) >= 2:
+        old[parts[0].strip("`")] = parts[1]
+skip = {"", "not probed", "not run"}
+for key in (
+    "tbox_smoke_suite.sh",
+    "tbox_vm_production_acceptance.sh",
+    "tbox_web_tbox_check.sh",
+    "tbox_login_smoke.sh",
+    "tbox_console_bundle_smoke.sh",
+    "tbox_permissions_smoke.sh",
+    "tbox_dual_account_check.sh",
+):
+    val = old.get(key)
+    if not val or val in skip:
+        continue
+    table, n = re.subn(
+        rf"(\| `{re.escape(key)}` \| )([^|]*)( \|)",
+        lambda mo, v=val: mo.group(1) + v + mo.group(3),
+        table,
+        count=1,
+    )
+print(table)
+PY
+    )
+  fi
+fi
 
 if [[ "$WRITE_SECTION5" -eq 1 ]]; then
   DOC="${ROOT}/docs/TBOX_VM_PRODUCTION_ACCEPTANCE.md"

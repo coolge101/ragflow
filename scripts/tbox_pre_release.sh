@@ -16,18 +16,22 @@ echo "==> TBOX pre-release @ $(git rev-parse --short HEAD 2>/dev/null || echo un
 echo ""
 
 if [[ "${TBOX_SKIP_WEB_TBOX_CHECK:-0}" != "1" ]]; then
-  echo "==> [1/2] web-tbox check"
+  echo "==> [1/3] web-tbox check"
   bash scripts/tbox_web_tbox_check.sh
 else
-  echo "==> [1/2] SKIP web-tbox check (TBOX_SKIP_WEB_TBOX_CHECK=1)"
+  echo "==> [1/3] SKIP web-tbox check (TBOX_SKIP_WEB_TBOX_CHECK=1)"
 fi
 echo ""
 
+echo "==> [2/3] scripts unit check"
+bash scripts/tbox_scripts_unit_check.sh
+echo ""
+
 if [[ "${TBOX_PRE_RELEASE_VM:-0}" == "1" ]]; then
-  echo "==> [2/2] VM acceptance (7 steps) + write §5"
+  echo "==> [3/3] VM acceptance (7 steps) + write §5"
   TBOX_SKIP_WEB_TBOX_CHECK=1 bash scripts/tbox_record_vm_acceptance.sh --run-smoke --write-section5
 else
-  echo "==> [2/2] smoke suite + write §5"
+  echo "==> [3/3] smoke suite + write §5"
   TBOX_SKIP_WEB_TBOX_CHECK=1 bash scripts/tbox_record_vm_acceptance.sh --run-suite --write-section5
   echo ""
   echo "    (full VM: TBOX_PRE_RELEASE_VM=1 bash scripts/tbox_pre_release.sh)"

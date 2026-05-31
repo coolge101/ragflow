@@ -45,11 +45,12 @@
 | 脚本 | 用途 |
 |------|------|
 | **`tbox_web_tbox_check.sh`** | typecheck + Vitest + build |
-| **`tbox_record_vm_acceptance.sh`** | 生成 / **`--write-section5`** 钉扎 §5；**`--run-suite`** / **`--run-smoke`**；**`--no-probe`** 快速更新 |
+| **`tbox_scripts_unit_check.sh`** | console bundle smoke 纯 Python 单测 |
+| **`tbox_record_vm_acceptance.sh`** | 生成 / **`--write-section5`** 钉扎 §5；**`--run-suite`** / **`--run-smoke`**；**`--no-probe`** 保留已有 pass 行 |
 | **`tbox_record_upstream_drift.sh`** | Runbook §5 上游漂移快照 |
 
 ---
 
 ## 相关 Plan
 
-Phase 14–30：`docs/superpowers/plans/2026-05-30-tbox-phase14-plan.md` … `phase30-plan.md`
+Phase 14–31：`docs/superpowers/plans/2026-05-30-tbox-phase14-plan.md` … `phase31-plan.md`

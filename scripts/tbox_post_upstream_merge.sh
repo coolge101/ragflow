@@ -38,6 +38,10 @@ echo "==> web-tbox typecheck + test + build (host)"
 bash scripts/tbox_web_tbox_check.sh
 echo ""
 
+echo "==> scripts unit check"
+bash scripts/tbox_scripts_unit_check.sh
+echo ""
+
 # Force-recreate 5180 when web-tbox/ changed (compose build may reuse cached layers).
 # TBOX_REBUILD_CONSOLE=auto (default) | 1 | 0
 _rebuild_console="${TBOX_REBUILD_CONSOLE:-auto}"

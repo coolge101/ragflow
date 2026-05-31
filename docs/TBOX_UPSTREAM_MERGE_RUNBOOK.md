@@ -140,6 +140,17 @@ bash scripts/tbox_upstream_divergence.sh --fetch
 
 生成：`bash scripts/tbox_record_upstream_drift.sh --fetch`
 
+### 2026-05-31 快照（Phase 31 前 `--fetch`）（`tbox-deploy` @ `657aa19cd`）
+
+| 项 | 值 |
+|----|-----|
+| HEAD | `657aa19cd` — Phase 30 post-merge consolidate |
+| upstream | `origin/main` @ `cd18cfab7` |
+| merge-base | `cd18cfab7` |
+| behind | **0** |
+| ahead | **142** |
+| 结论 | behind 0；无缺失 upstream commit；下次 merge 前再 `--fetch` |
+
 ### 2026-05-31 快照（Phase 30 前 `--fetch`）（`tbox-deploy` @ `51ca57892`）
 
 | 项 | 值 |
