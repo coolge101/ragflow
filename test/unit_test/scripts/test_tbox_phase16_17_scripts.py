@@ -32,6 +32,9 @@ class TestPhase1617Scripts(unittest.TestCase):
         self.assertIn("/review/step/phase16-17", text)
         self.assertIn("tbox_phase16_17_finish.sh --archive", text)
         self.assertIn("tbox_print_release_next_steps.sh", text)
+        self.assertIn("TBOX_SYSTEM_USER_MANUAL.md", text)
+        self.assertIn("tbox_pre_release.sh --help", text)
+        self.assertIn("step D", text)
 
     def test_finish_bash_syntax(self) -> None:
         subprocess.run(["bash", "-n", str(FINISH)], check=True)

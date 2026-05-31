@@ -96,6 +96,14 @@ bash scripts/tbox_print_release_next_steps.sh
 bash scripts/tbox_print_release_next_steps.sh --with-compose-hint
 ```
 
+**Phase 16–17 浏览器**（`pre_release` 后 VM §5 仍可能 ☐；与 helper 输出一致）：
+
+1. `bash scripts/tbox_phase16_17_handtest.sh` — Walkthrough **步骤 D**「5180 准生产前置」（与 **C §7** 共用）
+2. 浏览器 **C §7 + D** 于 **5180**；可选 **`/review/step/phase16-17`**
+3. `bash scripts/tbox_phase16_17_finish.sh --archive`
+
+同一链亦见于：**`tbox_host_check.sh`** · **`tbox_pre_release.sh --help`** · **[`TBOX_ENV_AND_VERSIONS.md`](./TBOX_ENV_AND_VERSIONS.md) §6.1** · **[`TBOX_SYSTEM_USER_MANUAL.md`](./TBOX_SYSTEM_USER_MANUAL.md) §5.4**
+
 ## 2. 启动 RAGFlow API
 
 确保宿主可访问 **`http://127.0.0.1:9380`**（或你在 `.env` 中配置的 `SVR_HTTP_PORT`）。
@@ -244,7 +252,7 @@ bash scripts/tbox_pre_release.sh --help
 # 发版链 + Phase 16–17 浏览器手测（5180；pre_release 后 §5 仍可能 ☐）
 bash scripts/tbox_print_release_next_steps.sh
 bash scripts/tbox_phase16_17_handtest.sh
-# 浏览器 C §7 + D；可选 /review/step/phase16-17
+# Walkthrough 步骤 D 5180 准生产前置 + C §7 + D；可选 /review/step/phase16-17
 bash scripts/tbox_phase16_17_finish.sh --archive
 # S6 merge 后：bash scripts/tbox_post_upstream_merge.sh（见 TBOX_UPSTREAM_MERGE_RUNBOOK §3.2）
 

@@ -25,7 +25,7 @@ echo "==> [1/2] Console bundle smoke (must pass before UI hand-test)"
 bash scripts/tbox_console_bundle_smoke.sh
 echo ""
 
-echo "==> [2/2] Manual checklist (5180 — Walkthrough 步骤 C §7 + 步骤 D Phase 17)"
+echo "==> [2/2] Manual checklist (5180 — Walkthrough 步骤 D 准生产前置 + C §7 + D Phase 17)"
 cat <<EOF
 
 ┌─ Phase 16：Citation 侧栏联动 ─────────────────────────────────────
@@ -53,4 +53,6 @@ echo "==> HAND-TEST CHECKLIST PRINTED"
 echo "    Next: complete browser steps above, then:"
 echo "    bash scripts/tbox_phase16_17_finish.sh --archive"
 echo "    Full chain: bash scripts/tbox_print_release_next_steps.sh"
-echo "    Doc: docs/TBOX_CONSOLE_REBUILD.md · docs/TBOX_VM_PRODUCTION_ACCEPTANCE.md §5"
+echo "    pre_release: bash scripts/tbox_pre_release.sh --help"
+echo "    Doc: docs/TBOX_SYSTEM_USER_MANUAL.md §5.4 · docs/TBOX_UI_ACCEPTANCE_WALKTHROUGH.md (step D)"
+echo "         docs/TBOX_CONSOLE_REBUILD.md · docs/TBOX_VM_PRODUCTION_ACCEPTANCE.md §5"

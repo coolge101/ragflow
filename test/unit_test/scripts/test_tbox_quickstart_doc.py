@@ -26,7 +26,15 @@ class TestQuickstartDoc(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
         text = QUICKSTART.read_text(encoding="utf-8")
+        cls.section13 = text.split("### 1.3", 1)[1].split("## 2.", 1)[0]
         cls.section6 = text.split("## 6. PR 前自检", 1)[1].split("## ", 1)[0]
+
+    def test_section13_aligns_with_print_release_helper(self) -> None:
+        self.assertIn("tbox_print_release_next_steps.sh", self.section13)
+        self.assertIn("tbox_phase16_17_handtest.sh", self.section13)
+        self.assertIn("步骤 D", self.section13)
+        self.assertIn("tbox_host_check.sh", self.section13)
+        self.assertIn("TBOX_SYSTEM_USER_MANUAL.md", self.section13)
 
     def test_section6_includes_phase16_17_and_helper(self) -> None:
         self.assertIn("tbox_print_release_next_steps.sh", self.section6)
