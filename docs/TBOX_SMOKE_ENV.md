@@ -24,6 +24,17 @@ cp scripts/tbox_smoke.env.example scripts/tbox_smoke.env
 
 ---
 
+## 一键套件
+
+```bash
+bash scripts/tbox_smoke_suite.sh
+# 跳过 5180 bundle：TBOX_SKIP_CONSOLE_BUNDLE_SMOKE=1 bash scripts/tbox_smoke_suite.sh
+```
+
+顺序：**console bundle** → **login** → **release smoke**（含 permissions）。
+
+---
+
 ## 双账号权限（VM §3 D 自动化）
 
 1. 在 **`/users`** 创建普通用户（或已有 `coolge101@163.com` 等）。
@@ -38,6 +49,7 @@ TBOX_SMOKE_NORMAL_PASSWORD=你的密码
 
 ```bash
 bash scripts/tbox_permissions_smoke.sh
+bash scripts/tbox_dual_account_check.sh   # 仅检查 env 是否已填
 ```
 
 **须同时设置** EMAIL 与 PASSWORD；只填一项会报错。
@@ -45,8 +57,11 @@ bash scripts/tbox_permissions_smoke.sh
 **准生产强制双账号**（VM 验收 §3 D 全自动化）：
 
 ```bash
+bash scripts/tbox_dual_account_check.sh
 # scripts/tbox_smoke.env 已填 TBOX_SMOKE_NORMAL_* 后：
 TBOX_REQUIRE_DUAL_ACCOUNT=1 bash scripts/tbox_vm_production_acceptance.sh
+# 或一键套件：
+TBOX_REQUIRE_DUAL_ACCOUNT=1 bash scripts/tbox_smoke_suite.sh
 # 或单独 permissions：
 TBOX_REQUIRE_DUAL_ACCOUNT=1 bash scripts/tbox_permissions_smoke.sh
 ```

@@ -140,6 +140,17 @@ bash scripts/tbox_upstream_divergence.sh --fetch
 
 生成：`bash scripts/tbox_record_upstream_drift.sh --fetch`
 
+### 2026-05-31 快照（Phase 27 前 `--fetch`）（`tbox-deploy` @ `faf77913b`）
+
+| 项 | 值 |
+|----|-----|
+| HEAD | `faf77913b` — Phase 26 handtest helper + bundle unit tests |
+| upstream | `origin/main` @ `cd18cfab7` |
+| merge-base | `cd18cfab7` |
+| behind | **0** |
+| ahead | **134** |
+| 结论 | behind 0；无缺失 upstream commit；下次 merge 前再 `--fetch` |
+
 ### 2026-05-31 快照（Phase 26 前 `--fetch`）（`tbox-deploy` @ `a5cbfd66d`）
 
 | 项 | 值 |

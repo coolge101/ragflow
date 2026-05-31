@@ -54,6 +54,20 @@
 
 **通过标准**：浏览器能打开页面；未登录时一般会跳到 **登录页**。
 
+### 2.1 5180 准生产验收（Docker console，VM 发版）
+
+若使用 **`bash scripts/start-tbox-ragflow.sh --console`** 或 **`TBOX_CONSOLE=1`** 部署，浏览器基址改为 **`http://127.0.0.1:5180`**（内网用 **`http://<VM-LAN-IP>:5180`**），**不要**用 5174 dev 端口。
+
+| 步骤 | 命令 / 路径 | 说明 |
+|------|-------------|------|
+| 自动化套件 | `bash scripts/tbox_smoke_suite.sh` | bundle + 登录 + API release smoke |
+| 完整 VM 验收 | `bash scripts/tbox_vm_production_acceptance.sh` | 7 步（含 web-tbox check） |
+| UI 变更后 | `bash scripts/tbox_rebuild_console.sh` | 重建 5180 静态页 |
+| Phase 16–17 手测 | `bash scripts/tbox_phase16_17_handtest.sh` | Citation / 检索高亮清单 |
+| 双账号 API | `bash scripts/tbox_dual_account_check.sh` | 确认 `scripts/tbox_smoke.env` 已填 |
+
+下文步骤 A–P 在 5180 上验收时，将 **`5174` 全部替换为 `5180`**。Phase 16–17 要点见步骤 C 第 7 点、步骤 D 第 3 点；详见 **`docs/TBOX_CONSOLE_REBUILD.md`**。
+
 ---
 
 ## 三、三个「验收」入口分别是什么（先搞懂再点）

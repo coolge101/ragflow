@@ -28,6 +28,7 @@ bash scripts/start-tbox-ragflow.sh --console
 
 ```bash
 cd <REPO>
+bash scripts/tbox_smoke_suite.sh
 bash scripts/tbox_vm_production_acceptance.sh
 # 生成 §5 记录草稿（含 HEAD / LAN IP）：
 bash scripts/tbox_record_vm_acceptance.sh
@@ -115,5 +116,5 @@ LAN IP：`hostname -I | awk '{print $1}'`
 - Phase 13 plan：`docs/superpowers/plans/2026-05-30-tbox-phase13-plan.md`
 - Phase 14 plan：`docs/superpowers/plans/2026-05-30-tbox-phase14-plan.md`
 - Phase 15 plan：`docs/superpowers/plans/2026-05-30-tbox-phase15-plan.md`
-- Phase 16–26 plans：`docs/superpowers/plans/2026-05-30-tbox-phase16-plan.md` … `phase26-plan.md`
+- Phase 16–27 plans：`docs/superpowers/plans/2026-05-30-tbox-phase16-plan.md` … `phase27-plan.md`
 - Console 重建：`docs/TBOX_CONSOLE_REBUILD.md`
