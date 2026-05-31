@@ -321,8 +321,11 @@ bash scripts/tbox_pre_release.sh --help       # 模式矩阵
 | J 无权限/404 | | |
 | K 导出确认页（可选） | | |
 | L–P Phase3 P2（可选） | | |
+| Q 5180 VM / pre_release | | |
+| Phase 16–17 Citation+检索 | | |
 
-- **全部通过**：可以明确说「一期 + P1 矩阵项验收已通过」，再按 **[`2026-05-24-tbox-phase3-plan.md`](./superpowers/plans/2026-05-24-tbox-phase3-plan.md)** 进入 P2（Office 导出、爬取高级源等）。
+- **全部通过**（含 **Q** 与 **Phase 16–17**）：可运行 **`bash scripts/tbox_phase16_17_finish.sh --archive`** 更新 VM 验收 §5，并说明「准生产验收已通过」。
+- **仅 dev（5174）通过、未做 5180**：继续按 §2.1 在 **5180** 完成 **Q** 与 **C/D Phase 16–17** 后再归档。
 - **有未通过**：把 **步骤字母 + 现象 + 浏览器 F12 → Network 里失败请求的 URL 与状态码** 发给开发，先修再验。
 
 ---

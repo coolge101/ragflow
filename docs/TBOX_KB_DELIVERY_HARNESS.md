@@ -298,7 +298,8 @@
 | **Phase 37** | **Review 映射 + 手册发版节** | Walkthrough §2.2 + SYSTEM_USER_MANUAL §5.4 + smoke example — phase37 plan |
 | **Phase 38** | **README + GitHub 部署 + journey L–P** | web-tbox README + DEPLOY_FROM_GITHUB §6 + journeySteps — phase38 plan |
 | **Phase 39** | **deploy 提示 + 步骤 Q + 矩阵 §6** | **`deploy-on-new-server.sh`** + Walkthrough Q ↔ **`vm-5180`** — phase39 plan |
-| **矩阵/里程碑** | **Phase 0–39** | 后续：5180 Phase 16–17 浏览器手测 |
+| **Phase 40** | **start-tbox + §6 Q + G5-MATRIX** | **`start-tbox-ragflow.sh --console`** + Walkthrough §6 + 矩阵钉扎 — phase40 plan |
+| **矩阵/里程碑** | **Phase 0–40** | 后续：5180 Phase 16–17 浏览器手测 |
 
 ### 9.1 阶段总览
 

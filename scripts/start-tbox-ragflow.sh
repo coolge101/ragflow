@@ -8,7 +8,9 @@
 #   TBOX_START_WEB=1 ./scripts/start-tbox-ragflow.sh
 #   TBOX_CONSOLE=1 ./scripts/start-tbox-ragflow.sh
 #
-# 前置: 已配置 docker/.env；web-tbox 需 Node >=18.20.4。
+# After --console (5180 quasi-production):
+#   bash scripts/tbox_setup_smoke_env.sh
+#   bash scripts/tbox_pre_release.sh --help
 set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -19,12 +21,13 @@ for a in "$@"; do
     --web) WITH_WEB=1 ;;
     --console) WITH_CONSOLE=1 ;;
     -h|--help)
-      sed -n '2,25p' "$0"
+      sed -n '2,30p' "$0"
       exit 0
       ;;
   esac
 done
 [[ "${TBOX_START_WEB:-0}" == "1" ]] && WITH_WEB=1
+[[ "${TBOX_CONSOLE:-0}" == "1" ]] && WITH_CONSOLE=1
 
 echo "==> [start-tbox-ragflow] repo: $REPO_ROOT"
 if [[ "$WITH_CONSOLE" -eq 1 ]]; then
@@ -55,6 +58,18 @@ if [[ "$WITH_WEB" -eq 1 ]]; then
     nohup npm run dev >>"$LOG" 2>&1 &
     echo "==> [start-tbox-ragflow] web-tbox: npm run dev in background (log: $LOG) — open http://127.0.0.1:5174"
   fi
+fi
+
+if [[ "$WITH_CONSOLE" -eq 1 || "${TBOX_CONSOLE:-0}" == "1" ]]; then
+  echo ""
+  echo "==> [start-tbox-ragflow] quasi-production (5180 console):"
+  echo "    Console: http://127.0.0.1:\${TBOX_CONSOLE_PORT:-5180}/login"
+  echo "    bash scripts/tbox_setup_smoke_env.sh"
+  echo "    bash scripts/tbox_pre_release.sh --help"
+  echo "    bash scripts/tbox_pre_release.sh"
+  echo "    bash scripts/tbox_vm_production_acceptance.sh"
+  echo "    # Phase 16–17 browser: bash scripts/tbox_phase16_17_finish.sh --archive"
+  echo "    Doc: docs/TBOX_DEPLOY_RUNBOOK.md §8.1"
 fi
 
 echo "==> [start-tbox-ragflow] done."
