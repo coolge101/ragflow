@@ -311,8 +311,9 @@
 | **Phase 50** | **UPSTREAM Runbook §3.2 + helper SMOKE 链接** | merge Runbook + **`tbox_print_release_next_steps.sh`** — phase50 plan |
 | **Phase 51** | **QUICKSTART §6 + Harness 里程碑** | §6 phase16-17 链 + §9 Phase 42–50 摘要 — phase51 plan |
 | **Phase 52** | **ENV §6 + Walkthrough §六 反馈表** | CI 对号 + phase16-17 + §六 与 VM §5 — phase52 plan |
+| **Phase 53** | **web-tbox README + 手册 §5.4 ↔ ENV §6** | PR 门禁对齐 + §5.4 ENV 交叉引用 — phase53 plan |
 | **Phase 42–50** | **发版链文档闭环 ✅** | helper / SMOKE / VM §5 / UPSTREAM §3.2 交叉引用 — phase42–50 plans |
-| **矩阵/里程碑** | **Phase 0–52** | 后续：5180 Phase 16–17 浏览器手测 |
+| **矩阵/里程碑** | **Phase 0–53** | 后续：5180 Phase 16–17 浏览器手测 |
 
 ### 9.1 阶段总览
 

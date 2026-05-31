@@ -170,6 +170,7 @@
 | **50** | UPSTREAM §3.2 + helper SMOKE | 运维 | merge Runbook §3.2 + print_release SMOKE 链接 — phase50 plan |
 | **51** | QUICKSTART §6 + Harness §9 | 运维/产品 | §6 phase16-17 + §9 里程碑 — phase51 plan |
 | **52** | ENV §6 + Walkthrough §六 | 运维/产品 | CI 对号 + 反馈表与 VM §5 — phase52 plan |
+| **53** | web-tbox README + 手册 §5.4 | 运维/产品 | README PR 链 ↔ ENV §6.1 — phase53 plan |
 | **42–50** | 发版链文档闭环 | 运维/产品 | helper → SMOKE → VM §5 → UPSTREAM §3.2 — phase42–50 plans |
 
 详细 Task 见 **`docs/TBOX_KB_DELIVERY_HARNESS.md`** §9.0 与 `docs/superpowers/plans/2026-05-31-tbox-phase*-plan.md`。

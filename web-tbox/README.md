@@ -37,14 +37,25 @@ npm run build
 
 产物在 `dist/`，可由 Nginx 或静态资源服务托管；与 Docker 编排的衔接见 [`docs/TBOX_QUICKSTART.md`](../docs/TBOX_QUICKSTART.md) 与总纲 §9。
 
-PR / post-merge 门禁（仓库根）：
+PR / post-merge 门禁（仓库根；与 **`docs/TBOX_ENV_AND_VERSIONS.md` §6.1**、**`TBOX_QUICKSTART.md` §6** 一致）：
 
 ```bash
+# 本目录（≈ web-tbox.yml）
 bash scripts/tbox_web_tbox_check.sh
-bash scripts/tbox_host_check.sh    # web-tbox + scripts unit（CI 对号）
+# 或：cd web-tbox && npm ci && npm run typecheck && npm test && npm run build
+
+# scripts 单测 + web-tbox（≈ tbox-python-unit.yml scripts_smoke + web-tbox.yml）
+bash scripts/tbox_scripts_unit_check.sh
+bash scripts/tbox_host_check.sh
+
+# 发版前 + Phase 16–17 浏览器（5180；pre_release 后 VM §5 仍可能 ☐）
+bash scripts/tbox_pre_release.sh --help
+bash scripts/tbox_print_release_next_steps.sh
+bash scripts/tbox_phase16_17_handtest.sh
+bash scripts/tbox_phase16_17_finish.sh --archive
 ```
 
-CI：`.github/workflows/web-tbox.yml`（`npm ci` + `typecheck` + `test` + `build`）。
+CI：`.github/workflows/web-tbox.yml`（`npm ci` + `typecheck` + `test` + `build`）；scripts 单测见 **`tbox-python-unit.yml`** **`scripts_smoke`** 格。
 
 ## 界面验收与评审页
 
