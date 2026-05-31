@@ -46,7 +46,8 @@ bash scripts/tbox_console_bundle_smoke.sh
 
 ```bash
 bash scripts/tbox_phase16_17_handtest.sh          # 清单 + bundle 检查
-bash scripts/tbox_archive_phase16_17_handtest.sh  # 浏览器手测完成后
+bash scripts/tbox_phase16_17_finish.sh --archive  # 浏览器手测完成后归档 §5
+# 或：bash scripts/tbox_archive_phase16_17_handtest.sh --confirm
 ```
 
 ---

@@ -96,7 +96,7 @@ LAN IP：`hostname -I | awk '{print $1}'`
 | 日期 | 2026-05-31 |
 | VM / LAN IP | 10.40.92.240 |
 | Console | http://10.40.92.240:5180/login |
-| Git HEAD | `827f8316c` |
+| Git HEAD | `e42b2a1fc` |
 | `tbox_smoke_suite.sh` | pass |
 | `tbox_vm_production_acceptance.sh` | suite ok (see tbox_smoke_suite.sh) |
 | `tbox_web_tbox_check.sh` | skipped |
@@ -123,6 +123,6 @@ LAN IP：`hostname -I | awk '{print $1}'`
 - Phase 13 plan：`docs/superpowers/plans/2026-05-30-tbox-phase13-plan.md`
 - Phase 14 plan：`docs/superpowers/plans/2026-05-30-tbox-phase14-plan.md`
 - Phase 15 plan：`docs/superpowers/plans/2026-05-30-tbox-phase15-plan.md`
-- Phase 16–33 plans：`docs/superpowers/plans/2026-05-30-tbox-phase16-plan.md` … `phase33-plan.md`
+- Phase 16–34 plans：`docs/superpowers/plans/2026-05-30-tbox-phase16-plan.md` … `phase34-plan.md`
 - 冒烟脚本索引：`docs/TBOX_SMOKE_SCRIPTS.md`
 - Console 重建：`docs/TBOX_CONSOLE_REBUILD.md`

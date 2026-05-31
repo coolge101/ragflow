@@ -28,6 +28,8 @@ on:
       - "test/unit_test/common/test_ssrf_guard.py"
       - "test/unit_test/scripts/**"
       - "scripts/tbox_console_bundle_smoke.py"
+      - "scripts/tbox_require_dual_account_gate.sh"
+      - "scripts/tbox_setup_smoke_env.sh"
       - "pyproject.toml"
       - "uv.lock"
       - ".github/workflows/tbox-python-unit.yml"
@@ -57,6 +59,8 @@ on:
       - "test/unit_test/common/test_ssrf_guard.py"
       - "test/unit_test/scripts/**"
       - "scripts/tbox_console_bundle_smoke.py"
+      - "scripts/tbox_require_dual_account_gate.sh"
+      - "scripts/tbox_setup_smoke_env.sh"
       - "pyproject.toml"
       - "uv.lock"
       - ".github/workflows/tbox-python-unit.yml"
@@ -122,6 +126,8 @@ jobs:
               - '.github/workflows/tbox-python-unit.yml'
             scripts_smoke:
               - 'scripts/tbox_console_bundle_smoke.py'
+              - 'scripts/tbox_require_dual_account_gate.sh'
+              - 'scripts/tbox_setup_smoke_env.sh'
               - 'test/unit_test/scripts/**'
               - 'pyproject.toml'
               - 'uv.lock'
@@ -182,7 +188,7 @@ jobs:
                 -v --tb=short
               ;;
             scripts_smoke)
-              uv run pytest test/unit_test/scripts/test_tbox_console_bundle_smoke.py -v --tb=short
+              uv run pytest test/unit_test/scripts/ -v --tb=short
               ;;
             *)
               echo "unknown suite: ${{ matrix.suite }}" >&2

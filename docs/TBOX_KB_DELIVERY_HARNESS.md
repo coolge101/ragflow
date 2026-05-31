@@ -292,7 +292,8 @@
 | **Phase 31** | **Scripts 单测 + §5 保留** | **`tbox_scripts_unit_check.sh`** + CI `scripts_smoke` + record overlay — phase31 plan |
 | **Phase 32** | **Host 检查链 + smoke env 初始化** | **`tbox_host_check.sh`** + **`tbox_setup_smoke_env.sh`** — phase32 plan |
 | **Phase 33** | **双账号门禁链 + S6 preflight** | **`tbox_require_dual_account_gate.sh`** + **`tbox_s6_preflight.sh`** — phase33 plan |
-| **矩阵/里程碑** | **Phase 0–33** | 后续：5180 Phase 16–17 手测归档 |
+| **Phase 34** | **gate 单测 + 手测归档链** | **`test_tbox_smoke_env_gate.py`** + **`tbox_phase16_17_finish.sh`** + archive **`--confirm`** — phase34 plan |
+| **矩阵/里程碑** | **Phase 0–34** | 后续：5180 Phase 16–17 浏览器手测 |
 
 ### 9.1 阶段总览
 

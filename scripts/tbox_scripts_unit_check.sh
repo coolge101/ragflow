@@ -9,5 +9,5 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT"
 
 echo "==> TBOX scripts unit check"
-python3 test/unit_test/scripts/test_tbox_console_bundle_smoke.py -q
+python3 -m unittest discover -s test/unit_test/scripts -p 'test_*.py' -q
 echo "==> SCRIPTS UNIT CHECK OK"

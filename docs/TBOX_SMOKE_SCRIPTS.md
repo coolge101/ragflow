@@ -16,7 +16,8 @@
 | **`scripts/tbox_smoke_suite.sh`** | **bundle** → **login** → **release smoke** |
 | **`scripts/tbox_vm_production_acceptance.sh`** | 准生产 **7 步**（Docker + 5180 + web-tbox + release） |
 | **`scripts/tbox_post_upstream_merge.sh`** | S6 merge 后：重建 → **pre_release (VM+§5)** |
-| **`scripts/tbox_archive_phase16_17_handtest.sh`** | Phase 16–17 手测完成后写 §5 |
+| **`scripts/tbox_phase16_17_finish.sh`** | 手测清单 → 可选 **`--archive`** 写 §5 |
+| **`scripts/tbox_archive_phase16_17_handtest.sh`** | Phase 16–17 手测完成后写 §5（须 **`--confirm`**） |
 
 ---
 
@@ -27,7 +28,8 @@
 | **`tbox_rebuild_console.sh`** | UI 变更后重建 5180 镜像 |
 | **`tbox_console_bundle_smoke.sh`** | 检测 5180 JS 含 Phase 16–17 markers |
 | **`tbox_phase16_17_handtest.sh`** | bundle 通过后打印 Citation / 检索高亮手测清单 |
-| **`tbox_archive_phase16_17_handtest.sh`** | 手测完成后归档 §5 |
+| **`tbox_phase16_17_finish.sh`** | 手测清单 + 可选 **`--archive --confirm`** 链 |
+| **`tbox_archive_phase16_17_handtest.sh`** | 手测完成后归档 §5（须 **`--confirm`**；先跑 bundle smoke） |
 
 ---
 
@@ -57,4 +59,4 @@
 
 ## 相关 Plan
 
-Phase 14–33：`docs/superpowers/plans/2026-05-30-tbox-phase14-plan.md` … `phase33-plan.md`
+Phase 14–34：`docs/superpowers/plans/2026-05-30-tbox-phase14-plan.md` … `phase34-plan.md`

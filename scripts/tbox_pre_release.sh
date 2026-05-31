@@ -42,4 +42,4 @@ echo ""
 
 echo "==> PRE-RELEASE OK"
 echo "    Remaining manual: Phase 16–17 UI — bash scripts/tbox_phase16_17_handtest.sh"
-echo "    After hand-test: bash scripts/tbox_archive_phase16_17_handtest.sh"
+echo "    After hand-test: bash scripts/tbox_phase16_17_finish.sh --archive"

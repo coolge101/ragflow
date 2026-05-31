@@ -49,6 +49,7 @@ curl -sf http://127.0.0.1:9380/v1/tbox/health
 TBOX_SMOKE_RUNNER=docker bash scripts/tbox_release_smoke.sh
 # 或完整 post-merge（含 web-tbox check、console 重建、pre_release VM+§5）：
 bash scripts/tbox_post_upstream_merge.sh
+# 准生产须双账号 permissions：TBOX_REQUIRE_DUAL_ACCOUNT=1 bash scripts/tbox_post_upstream_merge.sh
 # post-merge 在 web-tbox/ 有变更时自动 force-recreate 5180（TBOX_REBUILD_CONSOLE=auto，默认）
 # 未重建时仍会跑 bundle smoke 防 stale 5180
 # 强制/跳过：TBOX_REBUILD_CONSOLE=1 | TBOX_REBUILD_CONSOLE=0

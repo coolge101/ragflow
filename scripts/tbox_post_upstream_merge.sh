@@ -6,6 +6,7 @@
 #   TBOX_CHINA_DOWNLOAD=1 bash scripts/tbox_post_upstream_merge.sh   # 国内网络
 #   TBOX_SKIP_BUILD=1 bash scripts/tbox_post_upstream_merge.sh       # 仅 smoke（镜像已重建）
 #   TBOX_REBUILD_CONSOLE=auto|1|0  # auto（默认）：web-tbox/ 有 diff 时 force-recreate 5180
+#   TBOX_REQUIRE_DUAL_ACCOUNT=1 bash scripts/tbox_post_upstream_merge.sh
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -70,6 +71,9 @@ echo "==> Pre-release gate (VM 7-step + §5; replaces separate release smoke + V
 export TBOX_SMOKE_RUNNER=docker
 export TBOX_SMOKE_CONTAINER="$CONTAINER"
 export TBOX_SMOKE_BASE_URL="http://127.0.0.1:${API_PORT}"
+if [[ "${TBOX_REQUIRE_DUAL_ACCOUNT:-0}" == "1" ]]; then
+  echo "    dual-account: required (TBOX_REQUIRE_DUAL_ACCOUNT=1)"
+fi
 TBOX_SKIP_WEB_TBOX_CHECK=1 TBOX_PRE_RELEASE_VM=1 bash scripts/tbox_pre_release.sh
 echo ""
 

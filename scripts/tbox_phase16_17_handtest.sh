@@ -42,8 +42,8 @@ cat <<EOF
 └──────────────────────────────────────────────────────────────────
 
 通过后：
-  1. bash scripts/tbox_archive_phase16_17_handtest.sh
-  2. 或：TBOX_PHASE16_17_HANDTEST_DONE=1 bash scripts/tbox_record_vm_acceptance.sh --no-probe --write-section5
+  1. bash scripts/tbox_phase16_17_finish.sh --archive
+  2. 或：bash scripts/tbox_archive_phase16_17_handtest.sh --confirm
 
 EOF
 
