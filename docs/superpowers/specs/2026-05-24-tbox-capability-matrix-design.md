@@ -123,7 +123,7 @@
 | G5-UI-USERS | 用户与 TBOX 权限 | ✅ team | ✅ `/users` | TBOX managed-users | ✅ | |
 | G5-UI-AUDIT | 入库/流水线日志 | ✅ ingestions | ✅ **`/audit`** 筛选+导出 | 官方 REST | P2 | 时间/状态/关键词；CSV/Excel |
 | G5-BRAND | 用户可见零 RAGFlow 品牌 | — | ✅ | — | P0 | 2026-05-24 阶段 1 文案清理 |
-| G5-MATRIX | 本能力矩阵维护 | — | 本文 | — | **P0** | Phase 59 @ pending；§6 Phase 0–59；Harness §9.0 同步 |
+| G5-MATRIX | 本能力矩阵维护 | — | 本文 | — | **P0** | Phase 59 @ `66bf43529`；§6 Phase 0–59；Harness §9.0 同步 |
 | G5-LICENSE | Apache 2.0 合规 | LICENSE | ✅ 分发包 | — | P0 | UI 不用商标 |
 
 ---
@@ -212,6 +212,7 @@
 | 2026-05-24 | 初版：G1–G5 矩阵、非目标、阶段 0–3 摘要；brainstorming 批准 |
 | 2026-05-24 | P1 行回写（G4/G3/G2）；§7 验收勾选；worker 策略见 `common/tbox_crawl_strategy.py` |
 | 2026-05-24 | Phase 0–7 里程碑完成（phase3–7 plan）；G3-MODEL-DEEPSEEK ✅；发版门禁 `tbox_release_smoke.sh` |
+| 2026-05-31 | §6 Phase 59；finish ↔ handtest + SMOKE_ENV QUICKSTART §1.3 — phase59 |
 | 2026-05-31 | §6 Phase 58；QUICKSTART §1.3 ↔ print_release + handtest 手册 §5.4 — phase58 |
 | 2026-05-31 | §6 Phase 57；手册 §5.4 ↔ README D + print_release helper — phase57 |
 | 2026-05-31 | §6 Phase 56；pre_release --help ↔ host_check + README 步骤 D — phase56 |

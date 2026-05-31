@@ -15,8 +15,8 @@
 | 字段 | 值 |
 |------|-----|
 | 记录日期 | 2026-05-31 |
-| 本 fork 工作区 `HEAD`（文档更新时钉扎） | `d881a9c09` |
-| 备注 | **Phase 58** @ `d881a9c09`。QUICKSTART §1.3 ↔ print_release + handtest 手册 §5.4 ✅。S6 merge @ `f9bd37fdd`；**behind 0 / ahead ~190**。 |
+| 本 fork 工作区 `HEAD`（文档更新时钉扎） | `66bf43529` |
+| 备注 | **Phase 59** @ `66bf43529`。finish ↔ handtest + SMOKE_ENV QUICKSTART §1.3 ✅。S6 merge @ `f9bd37fdd`；**behind 0 / ahead ~191**。 |
 
 ## 3. 常用端口（默认本地开发）
 
