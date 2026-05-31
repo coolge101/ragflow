@@ -15,8 +15,8 @@
 | 字段 | 值 |
 |------|-----|
 | 记录日期 | 2026-05-31 |
-| 本 fork 工作区 `HEAD`（文档更新时钉扎） | `e7b1b7ae6` |
-| 备注 | **Phase 47** @ `e7b1b7ae6`。SMOKE_SCRIPTS 专节 + Walkthrough §2.1 ✅。S6 merge @ `f9bd37fdd`；**behind 0 / ahead ~179**。 |
+| 本 fork 工作区 `HEAD`（文档更新时钉扎） | `ac6db5451` |
+| 备注 | **Phase 48** @ `ac6db5451`。SMOKE_ENV + pre_release --help ✅。S6 merge @ `f9bd37fdd`；**behind 0 / ahead ~180**。 |
 
 ## 3. 常用端口（默认本地开发）
 
