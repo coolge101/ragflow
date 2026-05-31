@@ -123,7 +123,7 @@
 | G5-UI-USERS | 用户与 TBOX 权限 | ✅ team | ✅ `/users` | TBOX managed-users | ✅ | |
 | G5-UI-AUDIT | 入库/流水线日志 | ✅ ingestions | ✅ **`/audit`** 筛选+导出 | 官方 REST | P2 | 时间/状态/关键词；CSV/Excel |
 | G5-BRAND | 用户可见零 RAGFlow 品牌 | — | ✅ | — | P0 | 2026-05-24 阶段 1 文案清理 |
-| G5-MATRIX | 本能力矩阵维护 | — | 本文 | — | **P0** | Phase 56 @ `b752e564a`；§6 Phase 0–56；Harness §9.0 同步 |
+| G5-MATRIX | 本能力矩阵维护 | — | 本文 | — | **P0** | Phase 57 @ pending；§6 Phase 0–57；Harness §9.0 同步 |
 | G5-LICENSE | Apache 2.0 合规 | LICENSE | ✅ 分发包 | — | P0 | UI 不用商标 |
 
 ---
@@ -174,6 +174,7 @@
 | **54** | web_tbox_check + Harness 51–53 | 运维/产品 | web_tbox_check 收尾 + §9 摘要 — phase54 plan |
 | **55** | host_check 对齐 + Walkthrough D | 运维/产品 | **`tbox_host_check.sh`** ↔ web_tbox_check + 步骤 D handtest — phase55 plan |
 | **56** | pre_release --help + README D | 运维/产品 | **`tbox_pre_release.sh --help`** ↔ host_check + README 步骤 D — phase56 plan |
+| **57** | 手册 §5.4 + print_release | 运维/产品 | SYSTEM_USER_MANUAL §5.4 ↔ README + **`tbox_print_release_next_steps.sh`** — phase57 plan |
 | **51–53** | CI/文档对齐 | 运维/产品 | QUICKSTART · ENV · Walkthrough · README · 手册 — phase51–53 plans |
 | **42–50** | 发版链文档闭环 | 运维/产品 | helper → SMOKE → VM §5 → UPSTREAM §3.2 — phase42–50 plans |
 

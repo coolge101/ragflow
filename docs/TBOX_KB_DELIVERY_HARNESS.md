@@ -246,6 +246,7 @@
 | 2026-05-02 | **§9.4.2**：**`extra_config.tbox_crawl_retry_statuses`** 任务级全量白名单（**`effective_retry_statuses`** 第二优先级） | **`TBOX_API_BOUNDARY` §1.2** 同步 |
 | 2026-05-24 | **§1** 升级为 G1–G5「咨询/决策/辅导」产品目标；新增能力矩阵 spec 与下一阶段 plan；§7.5 DeepSeek 手测仅 `web-tbox` |
 | 2026-05-30 | **Phase 11**：post-merge 全链路验收、Docker build 磁盘 recovery |
+| 2026-05-31 | **Phase 57**：手册 §5.4 ↔ README D + print_release helper — phase57 plan |
 | 2026-05-31 | **Phase 56**：pre_release --help ↔ host_check + README 步骤 D — phase56 plan |
 | 2026-05-31 | **Phase 55**：host_check ↔ web_tbox_check + Walkthrough D handtest — phase55 plan |
 | 2026-05-31 | **Phase 54**：web_tbox_check 收尾 + Harness Phase 51–53 摘要 — phase54 plan |
@@ -319,9 +320,10 @@
 | **Phase 54** | **web_tbox_check 收尾 + Harness 51–53 摘要** | **`tbox_web_tbox_check.sh`** + §9 文档对齐摘要 — phase54 plan |
 | **Phase 55** | **host_check 对齐 + Walkthrough D handtest** | **`tbox_host_check.sh`** 与 web_tbox_check 一致 + 步骤 D 前置 — phase55 plan |
 | **Phase 56** | **pre_release --help ↔ host_check + README D** | **`tbox_pre_release.sh --help`** 交叉引用 + web-tbox README 步骤 D — phase56 plan |
+| **Phase 57** | **手册 §5.4 ↔ README D + print_release** | SYSTEM_USER_MANUAL §5.4 + **`tbox_print_release_next_steps.sh`** — phase57 plan |
 | **Phase 51–53** | **CI/文档对齐 ✅** | QUICKSTART §6 · ENV §6 · Walkthrough · README · 手册 — phase51–53 plans |
 | **Phase 42–50** | **发版链文档闭环 ✅** | helper / SMOKE / VM §5 / UPSTREAM §3.2 交叉引用 — phase42–50 plans |
-| **矩阵/里程碑** | **Phase 0–56** | 后续：5180 Phase 16–17 浏览器手测 |
+| **矩阵/里程碑** | **Phase 0–57** | 后续：5180 Phase 16–17 浏览器手测 |
 
 ### 9.1 阶段总览
 

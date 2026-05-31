@@ -52,6 +52,12 @@ class TestSystemManualSection54(unittest.TestCase):
         self.assertIn("/review/step/phase16-17", self.section54)
         self.assertIn("finish --archive", self.section54)
 
+    def test_section54_aligns_with_readme_step_d_handtest(self) -> None:
+        self.assertIn("步骤 D", self.section54)
+        self.assertIn("5180 准生产前置", self.section54)
+        self.assertIn("C §7", self.section54)
+        self.assertIn("pre_release --help", self.section54)
+
 
 if __name__ == "__main__":
     unittest.main()
