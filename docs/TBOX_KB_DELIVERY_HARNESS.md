@@ -294,7 +294,8 @@
 | **Phase 33** | **双账号门禁链 + S6 preflight** | **`tbox_require_dual_account_gate.sh`** + **`tbox_s6_preflight.sh`** — phase33 plan |
 | **Phase 34** | **gate 单测 + 手测归档链** | **`test_tbox_smoke_env_gate.py`** + **`tbox_phase16_17_finish.sh`** + archive **`--confirm`** — phase34 plan |
 | **Phase 35** | **pre_release 矩阵 + CI 对号** | **`tbox_pre_release.sh --help`** + QUICKSTART §6 + Walkthrough 对齐 — phase35 plan |
-| **矩阵/里程碑** | **Phase 0–35** | 后续：5180 Phase 16–17 浏览器手测 |
+| **Phase 36** | **文档发版链统一** | SMOKE_ENV ↔ pre_release + Runbook §8.1 + Walkthrough C/D — phase36 plan |
+| **矩阵/里程碑** | **Phase 0–36** | 后续：5180 Phase 16–17 浏览器手测 |
 
 ### 9.1 阶段总览
 

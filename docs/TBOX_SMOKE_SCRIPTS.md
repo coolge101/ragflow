@@ -47,7 +47,7 @@ bash scripts/tbox_pre_release.sh --help
 | **`tbox_rebuild_console.sh`** | UI 变更后重建 5180 镜像 |
 | **`tbox_console_bundle_smoke.sh`** | 检测 5180 JS 含 Phase 16–17 markers |
 | **`tbox_phase16_17_handtest.sh`** | bundle 通过后打印 Citation / 检索高亮手测清单 |
-| **`tbox_phase16_17_finish.sh`** | 手测清单 + 可选 **`--archive --confirm`** 链 |
+| **`tbox_phase16_17_finish.sh`** | 手测清单 + 可选 **`--archive`** 链（内部 **`--confirm`**） |
 | **`tbox_archive_phase16_17_handtest.sh`** | 手测完成后归档 §5（须 **`--confirm`**；先跑 bundle smoke） |
 
 ---
@@ -78,4 +78,4 @@ bash scripts/tbox_pre_release.sh --help
 
 ## 相关 Plan
 
-Phase 14–35：`docs/superpowers/plans/2026-05-30-tbox-phase14-plan.md` … `phase35-plan.md`
+Phase 14–36：`docs/superpowers/plans/2026-05-30-tbox-phase14-plan.md` … `phase36-plan.md`

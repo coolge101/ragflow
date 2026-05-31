@@ -24,7 +24,7 @@ echo "==> [1/2] Console bundle smoke (must pass before UI hand-test)"
 bash scripts/tbox_console_bundle_smoke.sh
 echo ""
 
-echo "==> [2/2] Manual checklist (5180 — see docs/TBOX_UI_ACCEPTANCE_WALKTHROUGH.md §C/§G)"
+echo "==> [2/2] Manual checklist (5180 — Walkthrough 步骤 C §7 + 步骤 D Phase 17)"
 cat <<EOF
 
 ┌─ Phase 16：Citation 侧栏联动 ─────────────────────────────────────

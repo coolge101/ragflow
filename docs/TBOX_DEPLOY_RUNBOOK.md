@@ -341,7 +341,21 @@ cd <REPO>
 
 **已知产品边界（易误判为「坏了」）**：ZIP 等与官方 `web/` 差异、文档 **重解析/版本** 等若 REST 未暴露则控制台暂无、采集全自动化依赖 **worker** 与任务配置——详见 **`TBOX_QUICKSTART.md`** 与 **`TBOX_API_BOUNDARY.md`**。
 
-**自动化冒烟（发版 / VM 验收）**：发版前 **`bash scripts/tbox_pre_release.sh`**；或 **`bash scripts/tbox_smoke_suite.sh`** / `bash scripts/tbox_vm_production_acceptance.sh`；验收后 **`bash scripts/tbox_record_vm_acceptance.sh --write-section5`**。索引：**[`TBOX_SMOKE_SCRIPTS.md`](./TBOX_SMOKE_SCRIPTS.md)**。
+### 8.1 发版与验收脚本链（5180 准生产）
+
+**前置**：Docker API **9380** + **`tbox-console` @ 5180** 已起（`bash scripts/start-tbox-ragflow.sh --console`）。Smoke 凭据见 **[`TBOX_SMOKE_ENV.md`](./TBOX_SMOKE_ENV.md)**（`bash scripts/tbox_setup_smoke_env.sh`）。
+
+| 阶段 | 命令 | 说明 |
+|------|------|------|
+| **发版前（推荐）** | `bash scripts/tbox_pre_release.sh` | host check → suite + 钉扎 **`TBOX_VM_PRODUCTION_ACCEPTANCE.md` §5** |
+| 模式矩阵 | `bash scripts/tbox_pre_release.sh --help` | `TBOX_PRE_RELEASE_VM` / `TBOX_SKIP_HOST_CHECK` / `TBOX_REQUIRE_DUAL_ACCOUNT` |
+| 仅 API 冒烟 | `bash scripts/tbox_smoke_suite.sh` | bundle → login → release（不写 §5） |
+| 完整 VM 7 步 | `bash scripts/tbox_vm_production_acceptance.sh` | 含 web-tbox check；或 **`TBOX_PRE_RELEASE_VM=1`** pre_release |
+| S6 merge 后 | `bash scripts/tbox_post_upstream_merge.sh` | 重建 → host → pre_release VM+§5 |
+| Phase 16–17 手测 | `bash scripts/tbox_phase16_17_handtest.sh` | 5180 Citation + `/search` 高亮（Walkthrough **步骤 C/D**） |
+| 手测归档 §5 | `bash scripts/tbox_phase16_17_finish.sh --archive` | bundle 校验 + **`--confirm`** |
+
+双账号准生产：`TBOX_REQUIRE_DUAL_ACCOUNT=1` + `scripts/tbox_smoke.env` 中 **`TBOX_SMOKE_NORMAL_*`**。脚本索引：**[`TBOX_SMOKE_SCRIPTS.md`](./TBOX_SMOKE_SCRIPTS.md)** · 准生产清单：**[`TBOX_VM_PRODUCTION_ACCEPTANCE.md`](./TBOX_VM_PRODUCTION_ACCEPTANCE.md)**。
 
 ---
 
