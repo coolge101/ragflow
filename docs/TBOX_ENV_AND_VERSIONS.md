@@ -15,8 +15,8 @@
 | 字段 | 值 |
 |------|-----|
 | 记录日期 | 2026-05-31 |
-| 本 fork 工作区 `HEAD`（文档更新时钉扎） | `9b885e993` |
-| 备注 | **Phase 24** @ `9b885e993`。Post-merge console auto-rebuild ✅。S6 merge @ `f9bd37fdd`；**behind 0 / ahead ~128**。 |
+| 本 fork 工作区 `HEAD`（文档更新时钉扎） | `2bc992a8e` |
+| 备注 | **Phase 25** @ `2bc992a8e`。Console bundle smoke ✅。S6 merge @ `f9bd37fdd`；**behind 0 / ahead ~130**。 |
 
 ## 3. 常用端口（默认本地开发）
 
