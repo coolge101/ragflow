@@ -328,10 +328,16 @@ bash scripts/tbox_pre_release.sh --help       # 模式矩阵
 | K 导出确认页（可选） | | |
 | L–P Phase3 P2（可选） | | |
 | Q 5180 VM / pre_release | | |
-| Phase 16–17 Citation+检索 | | |
+| Phase 16–17（handtest → review → finish） | | |
 
-- **全部通过**（含 **Q** 与 **Phase 16–17**）：可运行 **`bash scripts/tbox_phase16_17_finish.sh --archive`** 更新 VM 验收 §5，并说明「准生产验收已通过」。
-- **仅 dev（5174）通过、未做 5180**：继续按 §2.1 在 **5180** 完成 **Q** 与 **C/D Phase 16–17** 后再归档。
+**Phase 16–17 归档**（与 VM 验收 §5 一致，须在 **5180** 浏览器完成 **C §7 + D** 后）：
+
+1. `bash scripts/tbox_phase16_17_handtest.sh`
+2. 可选确认页 **`/review/step/phase16-17`**
+3. `bash scripts/tbox_phase16_17_finish.sh --archive`
+
+- **全部通过**（含 **Q** 与 **Phase 16–17**）：执行上表第 3 步写 VM §5 ☑，并说明「准生产验收已通过」。
+- **仅 dev（5174）通过、未做 5180**：继续按 §2.1 在 **5180** 完成 **Q** 与 **C/D Phase 16–17** 后再 `finish --archive`。
 - **有未通过**：把 **步骤字母 + 现象 + 浏览器 F12 → Network 里失败请求的 URL 与状态码** 发给开发，先修再验。
 
 ---

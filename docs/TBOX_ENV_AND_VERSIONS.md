@@ -52,9 +52,26 @@ CI 中的重型对抗流程仍可通过 `python test/adversarial_tests.py --targ
 |----------|------------------|------|
 | **`web-tbox.yml`** | `web-tbox/**` | `npm ci` + **`npm run typecheck`** + **`npm test`** + **`npm run build`** |
 | **`harness-monitor-unit.yml`** | `common/harness_monitor.py`、`test/test_harness_monitor.py`、`test/adversarial_tests.py`、`pyproject.toml`、`uv.lock` 等 | **`uv sync --group test --frozen`** + **`pytest`** `test/test_harness_monitor.py` 与 **`test/adversarial_tests.py`**（后者 **live** 用例默认 **skip**，见 §5） |
-| **`tbox-python-unit.yml`** | 上述 Python 单测路径之**并集**（见 workflow **`on.pull_request.paths`**）；**`dorny/paths-filter@v3`** 将 diff 分到 **`app_routes`** / **`crawl_worker`** / **`task_service`** / **`crawl_common`** / **`scripts_smoke`** | **`strategy.matrix`** 五格并行；**`scripts_smoke`** 跑 **`test/unit_test/scripts/`**（含 gate 单测；本地等价：**`bash scripts/tbox_host_check.sh`**） |
+| **`tbox-python-unit.yml`** | 上述 Python 单测路径之**并集**（见 workflow **`on.pull_request.paths`**）；**`dorny/paths-filter@v3`** 将 diff 分到 **`app_routes`** / **`crawl_worker`** / **`task_service`** / **`crawl_common`** / **`scripts_smoke`** | **`strategy.matrix`** 五格并行；**`scripts_smoke`** 跑 **`test/unit_test/scripts/`**（含 gate / helper / post-merge 等单测；本地等价：**`bash scripts/tbox_scripts_unit_check.sh`** 或 **`bash scripts/tbox_host_check.sh`** = web-tbox + scripts unit） |
 
-与上表等价的 **本地对号命令** 见 **`docs/TBOX_QUICKSTART.md`** §6。
+### 6.1 本地对号（与 QUICKSTART §6 一致）
+
+```bash
+# scripts 单测（≈ tbox-python-unit.yml scripts_smoke 格）
+bash scripts/tbox_scripts_unit_check.sh
+bash scripts/tbox_host_check.sh
+
+# 发版前（Docker @ 9380 + 5180；见 TBOX_DEPLOY_RUNBOOK §8.1）
+bash scripts/tbox_pre_release.sh --help
+bash scripts/tbox_pre_release.sh
+
+# Phase 16–17 浏览器（pre_release 后 VM §5 仍可能 ☐）
+bash scripts/tbox_print_release_next_steps.sh
+bash scripts/tbox_phase16_17_handtest.sh
+bash scripts/tbox_phase16_17_finish.sh --archive
+```
+
+完整 PR 自检命令块见 **`docs/TBOX_QUICKSTART.md`** §6。5180 手测索引：**[`TBOX_SMOKE_SCRIPTS.md`](./TBOX_SMOKE_SCRIPTS.md)** · **[`TBOX_VM_PRODUCTION_ACCEPTANCE.md`](./TBOX_VM_PRODUCTION_ACCEPTANCE.md)** §5。
 
 ## 7. 相关文档
 
