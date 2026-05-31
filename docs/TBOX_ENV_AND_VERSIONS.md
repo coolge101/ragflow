@@ -15,8 +15,8 @@
 | 字段 | 值 |
 |------|-----|
 | 记录日期 | 2026-05-31 |
-| 本 fork 工作区 `HEAD`（文档更新时钉扎） | `c39814286` |
-| 备注 | **Phase 45** @ `c39814286`。CONSOLE_REBUILD + setup_smoke_env ✅。S6 merge @ `f9bd37fdd`；**behind 0 / ahead ~177**。 |
+| 本 fork 工作区 `HEAD`（文档更新时钉扎） | `913e956e5` |
+| 备注 | **Phase 46** @ `913e956e5`。phase16-17 脚本 + VM §5 ✅。S6 merge @ `f9bd37fdd`；**behind 0 / ahead ~178**。 |
 
 ## 3. 常用端口（默认本地开发）
 
