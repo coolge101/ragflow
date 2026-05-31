@@ -119,6 +119,18 @@ bash scripts/tbox_record_upstream_drift.sh --fetch --write-runbook
 | 结论 | behind 0；无缺失 upstream commit；下次 merge 前再 `--fetch` |
 
 生成：`bash scripts/tbox_record_upstream_drift.sh --fetch`
+### 2026-05-31 快照（`--fetch` 后）（`tbox-deploy` @ `a29337809`）
+
+| 项 | 值 |
+|----|-----|
+| HEAD | `a29337809` — TBOX Phase 49: post-merge phase16-17 hints, Runbook §8.1 smoke cross-refs |
+| upstream | `origin/main` @ `cd18cfab79578bc0e2797b2614afde44f1e0a411` |
+| merge-base | `cd18cfab79578bc0e2797b2614afde44f1e0a411` |
+| behind | **0** |
+| ahead | **181** |
+| 结论 | behind 0；无缺失 upstream commit；下次 merge 前再 `--fetch` |
+
+生成：`bash scripts/tbox_s6_preflight.sh --write-runbook`
 ### 2026-05-31 快照（`--fetch` 后）（`tbox-deploy` @ `ac6db5451`）
 
 | 项 | 值 |
