@@ -15,8 +15,8 @@
 | 字段 | 值 |
 |------|-----|
 | 记录日期 | 2026-05-31 |
-| 本 fork 工作区 `HEAD`（文档更新时钉扎） | `1db774b47` |
-| 备注 | **Phase 37** @ `1db774b47`。Review 映射 + 手册发版节 + smoke example ✅。S6 merge @ `f9bd37fdd`；**behind 0 / ahead ~153**。 |
+| 本 fork 工作区 `HEAD`（文档更新时钉扎） | `616691c75` |
+| 备注 | **Phase 38** @ `616691c75`。README + GitHub 部署 + journey L–P ✅。S6 merge @ `f9bd37fdd`；**behind 0 / ahead ~154**。 |
 
 ## 3. 常用端口（默认本地开发）
 
