@@ -52,7 +52,7 @@ CI 中的重型对抗流程仍可通过 `python test/adversarial_tests.py --targ
 |----------|------------------|------|
 | **`web-tbox.yml`** | `web-tbox/**` | `npm ci` + **`npm run typecheck`** + **`npm test`** + **`npm run build`** |
 | **`harness-monitor-unit.yml`** | `common/harness_monitor.py`、`test/test_harness_monitor.py`、`test/adversarial_tests.py`、`pyproject.toml`、`uv.lock` 等 | **`uv sync --group test --frozen`** + **`pytest`** `test/test_harness_monitor.py` 与 **`test/adversarial_tests.py`**（后者 **live** 用例默认 **skip**，见 §5） |
-| **`tbox-python-unit.yml`** | 上述 Python 单测路径之**并集**（见 workflow **`on.pull_request.paths`**）；**`dorny/paths-filter@v3`** 将 diff 分到 **`app_routes`** / **`crawl_worker`** / **`task_service`** / **`crawl_common`** / **`scripts_smoke`** | **`strategy.matrix`** 五格并行；**`scripts_smoke`** 跑 **`test/unit_test/scripts/test_tbox_console_bundle_smoke.py`**（本地等价：**`bash scripts/tbox_scripts_unit_check.sh`**） |
+| **`tbox-python-unit.yml`** | 上述 Python 单测路径之**并集**（见 workflow **`on.pull_request.paths`**）；**`dorny/paths-filter@v3`** 将 diff 分到 **`app_routes`** / **`crawl_worker`** / **`task_service`** / **`crawl_common`** / **`scripts_smoke`** | **`strategy.matrix`** 五格并行；**`scripts_smoke`** 跑 **`test/unit_test/scripts/test_tbox_console_bundle_smoke.py`**（本地等价：**`bash scripts/tbox_host_check.sh`** 或 **`bash scripts/tbox_scripts_unit_check.sh`**） |
 
 与上表等价的 **本地对号命令** 见 **`docs/TBOX_QUICKSTART.md`** §6。
 

@@ -4,6 +4,8 @@
 
 ```bash
 cp scripts/tbox_smoke.env.example scripts/tbox_smoke.env
+# 或一键初始化：
+bash scripts/tbox_setup_smoke_env.sh
 # 编辑 scripts/tbox_smoke.env（已 gitignore，勿提交密码）
 ```
 
