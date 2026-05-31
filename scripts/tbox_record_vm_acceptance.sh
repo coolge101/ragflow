@@ -8,6 +8,9 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT"
+# shellcheck source=scripts/tbox_load_smoke_env.sh
+source "$ROOT/scripts/tbox_load_smoke_env.sh"
+_tbox_load_smoke_env "$ROOT"
 
 RUN_SMOKE=0
 [[ "${1:-}" == "--run-smoke" ]] && RUN_SMOKE=1
@@ -19,10 +22,13 @@ CONSOLE_PORT="${TBOX_CONSOLE_PORT:-5180}"
 
 SMOKE_STATUS="not run"
 LOGIN_STATUS="not run"
+WEB_TBOX_STATUS="not run"
+PERMS_STATUS="not run"
 API="${TBOX_SMOKE_BASE_URL:-http://127.0.0.1:9380}"
+
 if [[ "$RUN_SMOKE" -eq 1 ]]; then
   if bash scripts/tbox_vm_production_acceptance.sh; then
-    SMOKE_STATUS="pass"
+    SMOKE_STATUS="pass (6/6)"
   else
     SMOKE_STATUS="FAIL"
   fi
@@ -42,6 +48,25 @@ else
   LOGIN_STATUS="FAIL"
 fi
 
+if [[ "${TBOX_SKIP_WEB_TBOX_CHECK:-0}" == "1" ]]; then
+  WEB_TBOX_STATUS="skipped"
+elif bash scripts/tbox_web_tbox_check.sh >/dev/null 2>&1; then
+  WEB_TBOX_STATUS="pass (12 tests)"
+else
+  WEB_TBOX_STATUS="FAIL"
+fi
+
+if bash scripts/tbox_permissions_smoke.sh >/dev/null 2>&1; then
+  PERMS_STATUS="pass"
+  if [[ -n "${TBOX_SMOKE_NORMAL_EMAIL:-}" && -n "${TBOX_SMOKE_NORMAL_PASSWORD:-}" ]]; then
+    PERMS_STATUS="pass (dual-account)"
+  else
+    PERMS_STATUS="pass (admin only; set scripts/tbox_smoke.env for dual)"
+  fi
+else
+  PERMS_STATUS="FAIL"
+fi
+
 HAND_TEST="${TBOX_HAND_TEST_DONE:-1}"
 hand_mark() { [[ "$HAND_TEST" == "1" ]] && echo "☑" || echo "☐ 待手测"; }
 
@@ -53,15 +78,16 @@ cat <<EOF
 | 日期 | ${DATE} |
 | VM / LAN IP | ${LAN} |
 | Console | http://${LAN}:${CONSOLE_PORT}/login |
-| Git HEAD | ${HEAD} |
+| Git HEAD | \`${HEAD}\` |
 | \`tbox_vm_production_acceptance.sh\` | ${SMOKE_STATUS} |
+| \`tbox_web_tbox_check.sh\` | ${WEB_TBOX_STATUS} |
 | \`tbox_login_smoke.sh\` | ${LOGIN_STATUS} |
-| §3 A 本机登录 | $([[ "$LOGIN_STATUS" == "pass" ]] && echo "☑" || echo "☐ 待手测") |
-| §3 B/D 内网与双账号 | $(hand_mark) |
-| §4 Walkthrough L–P | $(hand_mark) |
-| G1 向导 /documents | $(hand_mark) |
-| 备注 | |
+| \`tbox_permissions_smoke.sh\` | ${PERMS_STATUS} |
+| §3 内网与双账号 A–D | $(hand_mark) |
+| §4 产品动线 Walkthrough | $(hand_mark) |
+| Phase 16–17 UI（Citation / 检索高亮） | ☐ 5180 重建 console 后手测 |
+| 备注 | 双账号：\`docs/TBOX_SMOKE_ENV.md\` |
 
 手测清单：docs/TBOX_VM_PRODUCTION_ACCEPTANCE.md §3–4
-Walkthrough 5180：docs/TBOX_UI_ACCEPTANCE_WALKTHROUGH.md 步骤 Q
+Walkthrough 5180：docs/TBOX_UI_ACCEPTANCE_WALKTHROUGH.md
 EOF

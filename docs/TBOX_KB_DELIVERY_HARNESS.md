@@ -280,7 +280,8 @@
 | **Phase 19** | **ChunkListPanel 共用** | `chunkDisplay.ts` + 引用/检索薄包装 — phase19 plan |
 | **Phase 20** | **chunk/citation 单元测试** | `web-tbox` Vitest 12 cases — phase20 plan |
 | **Phase 21** | **test 纳入 CI** | `web-tbox.yml` + **`tbox_web_tbox_check.sh`** — phase21 plan |
-| **矩阵/里程碑** | **Phase 0–21** | 后续：5180 重建 console 手测 Phase 16–17 |
+| **Phase 22** | **VM 验收 6 步 + S6 漂移** | web-tbox check 纳入 VM acceptance；Runbook §5 @ ahead 124 — phase22 plan |
+| **矩阵/里程碑** | **Phase 0–22** | 后续：5180 重建 console 手测 Phase 16–17 |
 
 ### 9.1 阶段总览
 

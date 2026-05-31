@@ -98,6 +98,19 @@ bash scripts/tbox_upstream_divergence.sh
 bash scripts/tbox_upstream_divergence.sh --fetch
 ```
 
+### 2026-05-31 快照（`--fetch` 后）（`tbox-deploy` @ `c9a47d2a1`）
+
+| 项 | 值 |
+|----|-----|
+| HEAD | `c9a47d2a1` — docs: pin Phase 21 HEAD in TBOX_ENV_AND_VERSIONS |
+| upstream | `origin/main` @ `cd18cfab7` |
+| merge-base | `cd18cfab7` |
+| behind | **0** |
+| ahead | **124** |
+| 结论 | behind 0；无缺失 upstream commit；下次 merge 前再 `--fetch` |
+
+生成：`bash scripts/tbox_record_upstream_drift.sh --fetch`
+
 ### 2026-05-30 快照（`--fetch` 后）（`tbox-deploy` @ `373f5e1fe`）
 
 | 项 | 值 |

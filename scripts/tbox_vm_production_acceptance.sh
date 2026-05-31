@@ -6,6 +6,7 @@
 # Usage:
 #   bash scripts/tbox_vm_production_acceptance.sh
 #   TBOX_CONSOLE_PORT=5180 bash scripts/tbox_vm_production_acceptance.sh
+#   TBOX_SKIP_WEB_TBOX_CHECK=1 bash scripts/tbox_vm_production_acceptance.sh
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -30,7 +31,7 @@ if command -v hostname >/dev/null 2>&1; then
 fi
 echo ""
 
-echo "==> [1/5] Docker stack"
+echo "==> [1/6] Docker stack"
 if ! bash scripts/tbox_verify_stack_image.sh; then
   if [[ "${TBOX_ALLOW_STOCK_IMAGE:-0}" == "1" ]]; then
     echo "WARN: stack image check failed (allowed by TBOX_ALLOW_STOCK_IMAGE=1)"
@@ -52,7 +53,7 @@ else
 fi
 echo ""
 
-echo "==> [2/5] Console HTTP"
+echo "==> [2/6] Console HTTP"
 if curl -sf -o /dev/null -m 10 "${CONSOLE_URL}/login"; then
   echo "OK: ${CONSOLE_URL}/login"
 else
@@ -61,7 +62,7 @@ else
 fi
 echo ""
 
-echo "==> [3/5] API health"
+echo "==> [3/6] API health"
 if curl -sf "${API}/v1/tbox/health" | python3 -m json.tool >/dev/null; then
   curl -sf "${API}/v1/tbox/health" | python3 -m json.tool | head -6
   echo "OK: tbox health"
@@ -71,7 +72,7 @@ else
 fi
 echo ""
 
-echo "==> [4/5] Console login (5180 proxy + /v1/tbox/me)"
+echo "==> [4/6] Console login (5180 proxy + /v1/tbox/me)"
 if bash scripts/tbox_login_smoke.sh; then
   echo "OK: login smoke"
 else
@@ -79,7 +80,19 @@ else
 fi
 echo ""
 
-echo "==> [5/5] Release smoke (G1 + G3) + P2 regression"
+echo "==> [5/6] web-tbox check (typecheck + test + build)"
+if [[ "${TBOX_SKIP_WEB_TBOX_CHECK:-0}" == "1" ]]; then
+  echo "SKIP: TBOX_SKIP_WEB_TBOX_CHECK=1"
+else
+  if bash scripts/tbox_web_tbox_check.sh; then
+    echo "OK: web-tbox check"
+  else
+    fail=1
+  fi
+fi
+echo ""
+
+echo "==> [6/6] Release smoke (health + G1 + G3 + chat apps + P2 + permissions)"
 export TBOX_SMOKE_BASE_URL="${API}"
 export TBOX_SMOKE_RUNNER="${TBOX_SMOKE_RUNNER:-docker}"
 if bash scripts/tbox_release_smoke.sh; then
@@ -93,5 +106,5 @@ if [[ "$fail" -ne 0 ]]; then
   echo "==> VM ACCEPTANCE FAILED — see docs/TBOX_VM_PRODUCTION_ACCEPTANCE.md" >&2
   exit 1
 fi
-echo "==> VM ACCEPTANCE PASSED (API + console + smoke)"
+echo "==> VM ACCEPTANCE PASSED (API + console + web-tbox + smoke)"
 echo "Next: complete UI checklist in docs/TBOX_VM_PRODUCTION_ACCEPTANCE.md §3–4"

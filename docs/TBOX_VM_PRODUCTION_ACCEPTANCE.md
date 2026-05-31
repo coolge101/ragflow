@@ -43,7 +43,9 @@ bash scripts/tbox_chat_apps_smoke.sh
 bash scripts/tbox_permissions_smoke.sh
 ```
 
-**通过标准**：退出码 **0**（Docker 容器、5180/login、health、release smoke）。
+**通过标准**：退出码 **0**（Docker 容器、5180/login、health、**web-tbox check**、release smoke 6 步）。
+
+可选跳过前端检查（无 Node 环境）：`TBOX_SKIP_WEB_TBOX_CHECK=1 bash scripts/tbox_vm_production_acceptance.sh`
 
 ---
 
