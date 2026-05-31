@@ -15,8 +15,8 @@
 | 字段 | 值 |
 |------|-----|
 | 记录日期 | 2026-05-31 |
-| 本 fork 工作区 `HEAD`（文档更新时钉扎） | `f9c3e44f3` |
-| 备注 | **Phase 63** @ `f9c3e44f3`。Runbook §3.1.3/§8.1 ↔ Walkthrough §2.1 + Harness 54–62 摘要 ✅。S6 merge @ `f9bd37fdd`；**behind 0 / ahead ~195**。 |
+| 本 fork 工作区 `HEAD`（文档更新时钉扎） | `6551b96d0` |
+| 备注 | **Phase 64** @ `6551b96d0`。UPSTREAM §3.2 ↔ Runbook §8.1 + post_merge QUICKSTART §1.3 ✅。S6 merge @ `f9bd37fdd`；**behind 0 / ahead ~196**。 |
 
 ## 3. 常用端口（默认本地开发）
 

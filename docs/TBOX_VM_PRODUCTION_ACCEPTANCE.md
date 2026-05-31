@@ -110,7 +110,7 @@ LAN IP：`hostname -I | awk '{print $1}'`
 | 日期 | 2026-05-31 |
 | VM / LAN IP | 10.40.92.240 |
 | Console | http://10.40.92.240:5180/login |
-| Git HEAD | `f9c3e44f3` |
+| Git HEAD | `6551b96d0` |
 | `tbox_smoke_suite.sh` | pass |
 | `tbox_vm_production_acceptance.sh` | suite ok (see tbox_smoke_suite.sh) |
 | `tbox_web_tbox_check.sh` | skipped |
