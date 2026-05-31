@@ -140,6 +140,18 @@ bash scripts/tbox_record_upstream_drift.sh --fetch --write-runbook
 | 结论 | behind 0；无缺失 upstream commit；下次 merge 前再 `--fetch` |
 
 生成：`bash scripts/tbox_record_upstream_drift.sh --fetch`
+### 2026-05-31 快照（`--fetch` 后）（`tbox-deploy` @ `8e3ebc572`）
+
+| 项 | 值 |
+|----|-----|
+| HEAD | `8e3ebc572` — TBOX Phase 66: SMOKE_SCRIPTS S6 section + QUICKSTART §1.2 DEPLOY links |
+| upstream | `origin/main` @ `cd18cfab79578bc0e2797b2614afde44f1e0a411` |
+| merge-base | `cd18cfab79578bc0e2797b2614afde44f1e0a411` |
+| behind | **0** |
+| ahead | **200** |
+| 结论 | behind 0；无缺失 upstream commit；下次 merge 前再 `--fetch` |
+
+生成：`bash scripts/tbox_s6_preflight.sh --write-runbook`
 ### 2026-05-31 快照（`--fetch` 后）（`tbox-deploy` @ `af7596419`）
 
 | 项 | 值 |
