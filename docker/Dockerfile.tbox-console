@@ -5,7 +5,7 @@ WORKDIR /build
 COPY web-tbox/package.json web-tbox/package-lock.json ./
 RUN npm ci
 COPY web-tbox/ ./
-RUN npm run build
+RUN npm run typecheck && npm test && npm run build
 
 FROM nginx:1.27-alpine
 COPY docker/nginx/proxy.conf /etc/nginx/proxy.conf

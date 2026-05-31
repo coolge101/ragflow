@@ -38,11 +38,9 @@ TBOX_SMOKE_NORMAL_PASSWORD=你的密码
 
 ```bash
 bash scripts/tbox_permissions_smoke.sh
-# 或完整链：
-bash scripts/tbox_vm_production_acceptance.sh
 ```
 
-**通过标准**：JSON 中 `normal_checked: true` 且 `note` 含 `dual-account`。
+**须同时设置** EMAIL 与 PASSWORD；只填一项会报错。
 
 ---
 

@@ -155,6 +155,7 @@
 | **20** | chunk/citation 单元测试 | 产品 | **`npm test`** Vitest — phase20 plan |
 | **21** | test 纳入 CI / post-merge | 运维 | **`web-tbox.yml`** + **`tbox_web_tbox_check.sh`** — phase21 plan |
 | **22** | VM 验收 6 步 + 漂移 | 运维 | VM acceptance + Runbook §5 — phase22 plan |
+| **23** | Console 重建 | 运维/产品 | **`tbox_rebuild_console.sh`** — phase23 plan |
 
 详细 Task 见 implementation plan。
 

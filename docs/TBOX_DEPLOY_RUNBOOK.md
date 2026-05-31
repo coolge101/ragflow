@@ -318,6 +318,8 @@ cd <REPO>
 ./scripts/start-tbox-ragflow.sh --console
 ```
 
+**UI 变更后仅重建 5180 静态页**（Citation / 检索高亮等）：**[`TBOX_CONSOLE_REBUILD.md`](./TBOX_CONSOLE_REBUILD.md)** — `bash scripts/tbox_rebuild_console.sh`
+
 ---
 
 ## 8. 功能冒烟清单（对照「是否达到预期」）

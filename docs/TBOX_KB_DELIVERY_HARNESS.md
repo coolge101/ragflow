@@ -281,7 +281,8 @@
 | **Phase 20** | **chunk/citation 单元测试** | `web-tbox` Vitest 12 cases — phase20 plan |
 | **Phase 21** | **test 纳入 CI** | `web-tbox.yml` + **`tbox_web_tbox_check.sh`** — phase21 plan |
 | **Phase 22** | **VM 验收 6 步 + S6 漂移** | web-tbox check 纳入 VM acceptance；Runbook §5 @ ahead 124 — phase22 plan |
-| **矩阵/里程碑** | **Phase 0–22** | 后续：5180 重建 console 手测 Phase 16–17 |
+| **Phase 23** | **Console 重建 + 双账号校验** | **`tbox_rebuild_console.sh`** + permissions 半填 fail — phase23 plan |
+| **矩阵/里程碑** | **Phase 0–23** | 后续：5180 手测 Phase 16–17 归档 |
 
 ### 9.1 阶段总览
 

@@ -85,7 +85,7 @@ cat <<EOF
 | \`tbox_permissions_smoke.sh\` | ${PERMS_STATUS} |
 | §3 内网与双账号 A–D | $(hand_mark) |
 | §4 产品动线 Walkthrough | $(hand_mark) |
-| Phase 16–17 UI（Citation / 检索高亮） | ☐ 5180 重建 console 后手测 |
+| Phase 16–17 UI（Citation / 检索高亮） | ☐ 5180 重建 console 后手测 — docs/TBOX_CONSOLE_REBUILD.md |
 | 备注 | 双账号：\`docs/TBOX_SMOKE_ENV.md\` |
 
 手测清单：docs/TBOX_VM_PRODUCTION_ACCEPTANCE.md §3–4

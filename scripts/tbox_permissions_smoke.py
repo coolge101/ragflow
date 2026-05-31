@@ -77,6 +77,11 @@ def main() -> int:
     normal_perms: list[str] = []
     note = "admin only (set TBOX_SMOKE_NORMAL_EMAIL/PASSWORD for dual-account)"
 
+    has_normal_email = bool(NORMAL_EMAIL)
+    has_normal_password = bool(NORMAL_PASSWORD)
+    if has_normal_email ^ has_normal_password:
+        raise RuntimeError("partial dual-account config: set both TBOX_SMOKE_NORMAL_EMAIL and TBOX_SMOKE_NORMAL_PASSWORD (see docs/TBOX_SMOKE_ENV.md)")
+
     if NORMAL_EMAIL and NORMAL_PASSWORD:
         normal_auth = login(NORMAL_EMAIL, NORMAL_PASSWORD)
         normal_perms = fetch_permissions(normal_auth)
