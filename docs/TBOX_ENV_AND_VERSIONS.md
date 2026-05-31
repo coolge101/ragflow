@@ -15,8 +15,8 @@
 | 字段 | 值 |
 |------|-----|
 | 记录日期 | 2026-05-30 |
-| 本 fork 工作区 `HEAD`（文档更新时钉扎） | `26b35cf6c675ba133fb42fc97f09642dc8bb8442` |
-| 备注 | **Phase 20** @ `26b35cf6c`。Vitest 12 tests ✅。S6 merge @ `f9bd37fdd`；**behind 0 / ahead ~119**。 |
+| 本 fork 工作区 `HEAD`（文档更新时钉扎） | `48c863070ea1dc0b2ae4d621b4029fec2459173d` |
+| 备注 | **Phase 21** @ `48c863070`。`npm test` 纳入 CI + post-merge ✅。S6 merge @ `f9bd37fdd`；**behind 0 / ahead ~121**。 |
 
 ## 3. 常用端口（默认本地开发）
 
