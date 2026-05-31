@@ -36,14 +36,19 @@ Mode matrix (env vars):
 
 After pre_release pass (§5 automation ☑; Phase 16–17 UI still ☐):
 
+  Same chain printed by: bash scripts/tbox_host_check.sh · bash scripts/tbox_web_tbox_check.sh
+  CI parity: docs/TBOX_ENV_AND_VERSIONS.md §6.1 · web-tbox/README
+
   1. bash scripts/tbox_phase16_17_handtest.sh
+     (Walkthrough step D 5180 准生产前置; step C §7 uses same handtest)
   2. Browser: Walkthrough step C §7 + D on 5180
      Optional review: /review/step/phase16-17
   3. bash scripts/tbox_phase16_17_finish.sh --archive
 
 Full release chain: bash scripts/tbox_print_release_next_steps.sh
 
-See: docs/TBOX_SMOKE_SCRIPTS.md (Phase 16–17 section) · docs/TBOX_SMOKE_ENV.md
+See: docs/TBOX_UI_ACCEPTANCE_WALKTHROUGH.md (step D handtest)
+     docs/TBOX_SMOKE_SCRIPTS.md (Phase 16–17 section) · docs/TBOX_SMOKE_ENV.md
 EOF
   exit 0
 fi
@@ -83,3 +88,4 @@ echo "    1. bash scripts/tbox_phase16_17_handtest.sh"
 echo "    2. Browser C §7 + D on 5180 (optional /review/step/phase16-17)"
 echo "    3. bash scripts/tbox_phase16_17_finish.sh --archive"
 echo "    Full chain: bash scripts/tbox_print_release_next_steps.sh"
+echo "    CI parity: docs/TBOX_ENV_AND_VERSIONS.md §6.1 · web-tbox/README"

@@ -44,6 +44,12 @@ class TestPreReleaseHelp(unittest.TestCase):
         self.assertIn("tbox_phase16_17_finish.sh --archive", self.help_text)
         self.assertIn("tbox_print_release_next_steps.sh", self.help_text)
 
+    def test_help_cross_refs_host_check_and_walkthrough_step_d(self) -> None:
+        self.assertIn("tbox_host_check.sh", self.help_text)
+        self.assertIn("TBOX_ENV_AND_VERSIONS.md", self.help_text)
+        self.assertIn("TBOX_UI_ACCEPTANCE_WALKTHROUGH.md", self.help_text)
+        self.assertIn("step D", self.help_text)
+
     def test_smoke_env_has_phase16_17_section(self) -> None:
         text = SMOKE_ENV.read_text(encoding="utf-8")
         self.assertIn("## Phase 16–17 浏览器手测（5180）", text)

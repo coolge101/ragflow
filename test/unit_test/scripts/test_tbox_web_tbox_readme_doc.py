@@ -34,6 +34,11 @@ class TestWebTboxReadmeDoc(unittest.TestCase):
         self.assertIn("tbox_phase16_17_handtest.sh", self.readme)
         self.assertIn("tbox_print_release_next_steps.sh", self.readme)
 
+    def test_readme_documents_walkthrough_step_d_handtest(self) -> None:
+        self.assertIn("步骤 D", self.readme)
+        self.assertIn("5180 准生产前置", self.readme)
+        self.assertIn("C §7 + D", self.readme)
+
 
 class TestSystemManualSection54(unittest.TestCase):
     @classmethod

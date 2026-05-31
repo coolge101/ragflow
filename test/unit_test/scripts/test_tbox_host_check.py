@@ -47,10 +47,10 @@ class TestWalkthroughStepDHandtest(unittest.TestCase):
 
 
 class TestHarnessPhase55(unittest.TestCase):
-    def test_harness_documents_phase55(self) -> None:
+    def test_harness_documents_phase55_and_milestone(self) -> None:
         text = HARNESS.read_text(encoding="utf-8")
         self.assertIn("Phase 55", text)
-        self.assertIn("Phase 0–55", text)
+        self.assertIn("Phase 0–56", text)
 
 
 if __name__ == "__main__":
