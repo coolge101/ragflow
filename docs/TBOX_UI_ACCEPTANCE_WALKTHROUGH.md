@@ -68,7 +68,30 @@
 | 手测归档 §5 | `bash scripts/tbox_phase16_17_finish.sh --archive` | bundle + **`--confirm`** 写 VM 验收 §5 |
 | 双账号 API | `bash scripts/tbox_dual_account_check.sh` | 确认 `scripts/tbox_smoke.env` 已填 |
 
-下文步骤 A–P 在 5180 上验收时，将 **`5174` 全部替换为 `5180`**。Phase 16–17 要点见步骤 C 第 7 点、步骤 D 第 3 点；详见 **`docs/TBOX_CONSOLE_REBUILD.md`**。
+下文步骤 A–P 在 5180 上验收时，将 **`5174` 全部替换为 `5180`**。Phase 16–17 要点见步骤 C 第 7 点、步骤 D Phase 17；详见 **`docs/TBOX_CONSOLE_REBUILD.md`**。
+
+### 2.2 Walkthrough 步骤 ↔ `/review` 确认页
+
+开发环境（5174）或准生产（5180）下，右下角 **「本页验收」** 与 **`/review/step/:id`** 共用 `web-tbox/src/review/journeySteps.ts` 数据（生产须 **`VITE_REVIEW_PAGES=1`** 构建）。
+
+| Walkthrough | 业务路径 | journey `id` | 完整确认页（端口按环境替换） |
+|-------------|----------|--------------|------------------------------|
+| **A** 登录 | `/login` | `login` | `/review/step/login` |
+| **B** 壳层 | `/` | `shell` | `/review/step/shell` |
+| **C** 对话（Phase 16） | `/` | `chat` | `/review/step/chat` |
+| **C2** 对话应用 | `/apps` | `chat-apps` | `/review/step/chat-apps` |
+| **D** 检索（Phase 17） | `/search` | `search` | `/review/step/search` |
+| **E** 文档 | `/documents` | `documents` | `/review/step/documents` |
+| **F** 知识库配置 | `/kb` | `kb` | `/review/step/kb` |
+| **G** 采集 | `/crawl` | `crawl` | `/review/step/crawl` |
+| **H** 审计 | `/audit` | `audit` | `/review/step/audit` |
+| **I** 用户 | `/users` | `users` | `/review/step/users` |
+| **J** 无权限/404 | `/no-permission` 等 | `errors` | `/review/step/errors` |
+| **K** 一页纸 | `/review` | — | 索引页 `/review` |
+| **L–P** | 见各步路径 | 同上 id | 同上 |
+| **Q** 5180 VM | 5180 全站 | `vm-5180` | `/review/step/vm-5180` |
+
+Phase 16–17 浏览器通过后（步骤 **C §7** + **D**）：`bash scripts/tbox_phase16_17_finish.sh --archive`
 
 ---
 

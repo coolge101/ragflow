@@ -176,6 +176,7 @@ export const JOURNEY_STEPS: JourneyStep[] = [
       "admin 与普通用户侧栏随 permissions 不同",
       "/documents 可见 G1 多格式入库向导与 Excel/图片分块提示",
       "bash scripts/tbox_record_vm_acceptance.sh 生成 §5 记录草稿",
+      "Phase 16–17 通过后 bash scripts/tbox_phase16_17_finish.sh --archive",
     ],
   },
   {

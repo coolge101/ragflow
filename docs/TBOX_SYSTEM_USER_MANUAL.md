@@ -171,7 +171,20 @@ docker compose -f docker-compose-base.yml --profile elasticsearch down
 
 ### 5.3 界面验收与「一页纸」导出（可选）
 
-给测试或甲方**逐步点验**时，使用 **`docs/TBOX_UI_ACCEPTANCE_WALKTHROUGH.md`**（步骤 A–K）。各业务页右下角 **「本页验收」** 与 **`/review`**、**`/review/step/:id`** 使用同一浏览器存储；确认页支持 **下载 HTML** 与 **打印存 PDF**。生产环境若不需要评审入口，构建时不要设置 **`VITE_REVIEW_PAGES=1`**。
+给测试或甲方**逐步点验**时，使用 **`docs/TBOX_UI_ACCEPTANCE_WALKTHROUGH.md`**（步骤 A–P，5180 准生产见 §2.1）。各业务页右下角 **「本页验收」** 与 **`/review`**、**`/review/step/:id`** 使用同一浏览器存储（步骤与 id 对照见 Walkthrough **§2.2**）；确认页支持 **下载 HTML** 与 **打印存 PDF**。生产环境若不需要评审入口，构建时不要设置 **`VITE_REVIEW_PAGES=1`**。
+
+### 5.4 发版与自动化验收（运维 / 测试）
+
+在 **Docker API 9380 + tbox-console 5180** 已运行的 VM 或准生产机上：
+
+| 目的 | 命令 |
+|------|------|
+| **发版前（推荐）** | `bash scripts/tbox_pre_release.sh` |
+| 模式说明 | `bash scripts/tbox_pre_release.sh --help` |
+| Smoke 凭据 | `bash scripts/tbox_setup_smoke_env.sh` → 编辑 `scripts/tbox_smoke.env` |
+| Phase 16–17 手测归档 | `bash scripts/tbox_phase16_17_finish.sh --archive` |
+
+详 **[`TBOX_DEPLOY_RUNBOOK.md`](./TBOX_DEPLOY_RUNBOOK.md)** §8.1 · **[`TBOX_SMOKE_ENV.md`](./TBOX_SMOKE_ENV.md)** · **[`TBOX_VM_PRODUCTION_ACCEPTANCE.md`](./TBOX_VM_PRODUCTION_ACCEPTANCE.md)** · 脚本索引 **[`TBOX_SMOKE_SCRIPTS.md`](./TBOX_SMOKE_SCRIPTS.md)**。
 
 ---
 

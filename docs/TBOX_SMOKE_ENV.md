@@ -7,6 +7,7 @@ cp scripts/tbox_smoke.env.example scripts/tbox_smoke.env
 # 或一键初始化：
 bash scripts/tbox_setup_smoke_env.sh
 # 编辑 scripts/tbox_smoke.env（已 gitignore，勿提交密码）
+# example 内注释含 pre_release / 双账号 / Phase 16–17 变量说明
 ```
 
 各 `scripts/tbox_*_smoke.sh` 启动时会自动 `source scripts/tbox_smoke.env`（若存在）。
