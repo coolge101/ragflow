@@ -168,6 +168,8 @@
 | **48** | SMOKE_ENV + pre_release --help | 运维 | env 专节 + pre_release 三步链 — phase48 plan |
 | **49** | post-merge + Runbook §8.1 | 运维 | post-merge 收尾 + SMOKE 交叉引用 — phase49 plan |
 | **50** | UPSTREAM §3.2 + helper SMOKE | 运维 | merge Runbook §3.2 + print_release SMOKE 链接 — phase50 plan |
+| **51** | QUICKSTART §6 + Harness §9 | 运维/产品 | §6 phase16-17 + §9 里程碑 — phase51 plan |
+| **42–50** | 发版链文档闭环 | 运维/产品 | helper → SMOKE → VM §5 → UPSTREAM §3.2 — phase42–50 plans |
 
 详细 Task 见 **`docs/TBOX_KB_DELIVERY_HARNESS.md`** §9.0 与 `docs/superpowers/plans/2026-05-31-tbox-phase*-plan.md`。
 

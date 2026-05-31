@@ -245,8 +245,8 @@
 | 2026-05-02 | **§9.4.2**：**`effective_retry_statuses`** — 环境变量 **`TBOX_CRAWL_RETRY_STATUSES`** / **`TBOX_CRAWL_RETRY_EXTRA_STATUSES`** 与 **`extra_config.tbox_crawl_retry_extra_statuses`** 配置白名单；**`DEFAULT_RETRY_STATUS_CODES`**；**`TBOX_API_BOUNDARY` §1.2–1.3** 同步 |
 | 2026-05-02 | **§9.4.2**：**`extra_config.tbox_crawl_retry_statuses`** 任务级全量白名单（**`effective_retry_statuses`** 第二优先级） | **`TBOX_API_BOUNDARY` §1.2** 同步 |
 | 2026-05-24 | **§1** 升级为 G1–G5「咨询/决策/辅导」产品目标；新增能力矩阵 spec 与下一阶段 plan；§7.5 DeepSeek 手测仅 `web-tbox` |
-| 2026-05-30 | **Phase 11**：post-merge 全链路验收、Docker build 磁盘 recovery 文档 |
 | 2026-05-30 | **Phase 11**：post-merge 全链路验收、Docker build 磁盘 recovery |
+| 2026-05-31 | **Phase 42–50**：发版链文档闭环（helper → SMOKE 专节 → VM §5 → UPSTREAM §3.2）— phase42–50 plans |
 | 2026-05-30 | **Phase 10**：栈镜像校验、`scripts/` 打入 API 镜像 |
 | 2026-05-30 | **S6 merge**：`origin/main` @ `cd18cfab7` 合入 `tbox-deploy`；冲突 4 文件；behind **0** / ahead **93** |
 | 2026-05-24 | **Phase 9**：**`TBOX_VM_PRODUCTION_ACCEPTANCE.md`** + **`tbox_vm_production_acceptance.sh`**；**`G1IngestFormatGuide`**（`/documents`）；G1 冒烟 PNG 改用 **`picture`** 分块 |
@@ -309,7 +309,9 @@
 | **Phase 48** | **SMOKE_ENV 专节 + pre_release --help** | env 文档 + **`tbox_pre_release.sh`** 三步链 — phase48 plan |
 | **Phase 49** | **post-merge 收尾 + Runbook §8.1** | **`tbox_post_upstream_merge.sh`** + SMOKE 交叉引用 — phase49 plan |
 | **Phase 50** | **UPSTREAM Runbook §3.2 + helper SMOKE 链接** | merge Runbook + **`tbox_print_release_next_steps.sh`** — phase50 plan |
-| **矩阵/里程碑** | **Phase 0–50** | 后续：5180 Phase 16–17 浏览器手测 |
+| **Phase 51** | **QUICKSTART §6 + Harness 里程碑** | §6 phase16-17 链 + §9 Phase 42–50 摘要 — phase51 plan |
+| **Phase 42–50** | **发版链文档闭环 ✅** | helper / SMOKE / VM §5 / UPSTREAM §3.2 交叉引用 — phase42–50 plans |
+| **矩阵/里程碑** | **Phase 0–51** | 后续：5180 Phase 16–17 浏览器手测 |
 
 ### 9.1 阶段总览
 

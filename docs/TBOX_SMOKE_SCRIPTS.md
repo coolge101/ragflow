@@ -99,4 +99,4 @@ bash scripts/tbox_pre_release.sh --help
 
 ## 相关 Plan
 
-Phase 14–49：`docs/superpowers/plans/2026-05-30-tbox-phase14-plan.md` … `phase49-plan.md`
+Phase 14–50：`docs/superpowers/plans/2026-05-30-tbox-phase14-plan.md` … `phase50-plan.md`

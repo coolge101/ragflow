@@ -241,6 +241,13 @@ bash scripts/tbox_pre_release.sh --help
 # TBOX_PRE_RELEASE_VM=1 bash scripts/tbox_pre_release.sh
 # TBOX_REQUIRE_DUAL_ACCOUNT=1 bash scripts/tbox_pre_release.sh
 
+# 发版链 + Phase 16–17 浏览器手测（5180；pre_release 后 §5 仍可能 ☐）
+bash scripts/tbox_print_release_next_steps.sh
+bash scripts/tbox_phase16_17_handtest.sh
+# 浏览器 C §7 + D；可选 /review/step/phase16-17
+bash scripts/tbox_phase16_17_finish.sh --archive
+# S6 merge 后：bash scripts/tbox_post_upstream_merge.sh（见 TBOX_UPSTREAM_MERGE_RUNBOOK §3.2）
+
 # Harness + 对抗离线用例（与 harness-monitor-unit.yml 一致）
 uv run pytest test/test_harness_monitor.py test/adversarial_tests.py -v --tb=short
 
@@ -277,4 +284,4 @@ bash scripts/tbox_release_smoke.sh
 # uv run pytest test/adversarial_tests.py -v --tb=short
 ```
 
-**说明**：重型 **`harness_engineering`**（对抗 + Docker 等）**不**随 PR 触发，见 **`docs/TBOX_KB_DELIVERY_HARNESS.md`** §7.3；发版前仍按该 workflow 或运维流程执行。
+**说明**：重型 **`harness_engineering`**（对抗 + Docker 等）**不**随 PR 触发，见 **`docs/TBOX_KB_DELIVERY_HARNESS.md`** §7.3；发版前仍按该 workflow 或运维流程执行。**5180 Phase 16–17** 手测索引：**[`TBOX_SMOKE_SCRIPTS.md`](./TBOX_SMOKE_SCRIPTS.md)** · **[`TBOX_DEPLOY_RUNBOOK.md`](./TBOX_DEPLOY_RUNBOOK.md)** §8.1 · **[`TBOX_UPSTREAM_MERGE_RUNBOOK.md`](./TBOX_UPSTREAM_MERGE_RUNBOOK.md)** §3.2。
