@@ -11,7 +11,7 @@ cd "$ROOT"
 
 ARCHIVE=0
 for arg in "$@"; do
-  case "$arg in
+  case "$arg" in
     --archive) ARCHIVE=1 ;;
   esac
 done
@@ -21,4 +21,9 @@ bash scripts/tbox_phase16_17_handtest.sh
 if [[ "$ARCHIVE" -eq 1 ]]; then
   echo ""
   bash scripts/tbox_archive_phase16_17_handtest.sh --confirm
+else
+  echo ""
+  echo "==> When Citation + /search highlight pass on 5180:"
+  echo "    bash scripts/tbox_phase16_17_finish.sh --archive"
+  echo "    Full chain: bash scripts/tbox_print_release_next_steps.sh"
 fi

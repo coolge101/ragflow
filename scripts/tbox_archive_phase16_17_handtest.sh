@@ -46,3 +46,4 @@ bash scripts/tbox_record_vm_acceptance.sh --no-probe --write-section5
 
 echo ""
 echo "==> ARCHIVE OK — verify docs/TBOX_VM_PRODUCTION_ACCEPTANCE.md §5 Phase 16–17 row is ☑"
+echo "    Full chain: bash scripts/tbox_print_release_next_steps.sh"

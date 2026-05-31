@@ -4,8 +4,8 @@
 # Usage:
 #   bash scripts/tbox_phase16_17_handtest.sh
 #   TBOX_CONSOLE_URL=http://127.0.0.1:5180 bash scripts/tbox_phase16_17_handtest.sh
-# 手测完成后生成 §5 草稿：
-#   TBOX_PHASE16_17_HANDTEST_DONE=1 bash scripts/tbox_record_vm_acceptance.sh
+# 浏览器通过后归档 §5：
+#   bash scripts/tbox_phase16_17_finish.sh --archive
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -18,6 +18,7 @@ LAN="$(hostname -I 2>/dev/null | awk '{print $1}' || true)"
 echo "==> Phase 16–17 hand-test helper @ $(git rev-parse --short HEAD 2>/dev/null || echo unknown)"
 echo "    Console: ${CONSOLE_URL}"
 [[ -n "${LAN}" ]] && echo "    LAN:     http://${LAN}:${CONSOLE_PORT}"
+echo "    Review:  ${CONSOLE_URL}/review/step/phase16-17"
 echo ""
 
 echo "==> [1/2] Console bundle smoke (must pass before UI hand-test)"
@@ -41,10 +42,15 @@ cat <<EOF
 │ 3. 点击某条结果 → 条目高亮（scrollIntoView）
 └──────────────────────────────────────────────────────────────────
 
+确认页：${CONSOLE_URL}/review/step/phase16-17
+
 通过后：
-  1. bash scripts/tbox_phase16_17_finish.sh --archive
-  2. 或：bash scripts/tbox_archive_phase16_17_handtest.sh --confirm
+  bash scripts/tbox_phase16_17_finish.sh --archive
 
 EOF
 
 echo "==> HAND-TEST CHECKLIST PRINTED"
+echo "    Next: complete browser steps above, then:"
+echo "    bash scripts/tbox_phase16_17_finish.sh --archive"
+echo "    Full chain: bash scripts/tbox_print_release_next_steps.sh"
+echo "    Doc: docs/TBOX_CONSOLE_REBUILD.md · docs/TBOX_VM_PRODUCTION_ACCEPTANCE.md §5"

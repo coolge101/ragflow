@@ -53,8 +53,10 @@ bash scripts/tbox_permissions_smoke.sh
 bash scripts/tbox_rebuild_console.sh
 # 验证 bundle 含 Citation / 高亮代码（不重建时通常 FAIL）：
 bash scripts/tbox_console_bundle_smoke.sh
-# Phase 16–17 手测清单（bundle 通过后）：
+# Phase 16–17 手测（bundle 通过后；浏览器 C §7 + D）：
 bash scripts/tbox_phase16_17_handtest.sh
+# 确认页 /review/step/phase16-17 通过后归档 §5：
+bash scripts/tbox_phase16_17_finish.sh --archive
 ```
 
 **通过标准**：退出码 **0**（Docker 容器、5180/login、**console bundle**、health、**web-tbox check**、release smoke 7 步）。
@@ -94,13 +96,21 @@ LAN IP：`hostname -I | awk '{print $1}'`
 
 ## 5. 记录模板
 
+**Phase 16–17 UI**（Citation + `/search` 高亮）须 **5180 浏览器手测** 后归档，勿在未手测前设 `TBOX_PHASE16_17_HANDTEST_DONE=1`：
+
+1. `bash scripts/tbox_phase16_17_handtest.sh` — bundle + 清单
+2. 浏览器完成 Walkthrough **步骤 C §7 + D**；可选确认页 **`/review/step/phase16-17`**
+3. `bash scripts/tbox_phase16_17_finish.sh --archive` — 写 §5 ☑
+
+发版链：**`bash scripts/tbox_print_release_next_steps.sh`**（Runbook §3.1.3）。详 **`docs/TBOX_CONSOLE_REBUILD.md`**。
+
 <!-- tbox-vm-section5:start -->
 | 项 | 值 |
 |----|-----|
 | 日期 | 2026-05-31 |
 | VM / LAN IP | 10.40.92.240 |
 | Console | http://10.40.92.240:5180/login |
-| Git HEAD | `c39814286` |
+| Git HEAD | `1c074ec1d` |
 | `tbox_smoke_suite.sh` | pass |
 | `tbox_vm_production_acceptance.sh` | suite ok (see tbox_smoke_suite.sh) |
 | `tbox_web_tbox_check.sh` | skipped |
@@ -110,7 +120,7 @@ LAN IP：`hostname -I | awk '{print $1}'`
 | `tbox_dual_account_check.sh` | not configured (optional) |
 | §3 内网与双账号 A–D | ☑ 手测 2026-05-31 |
 | §4 产品动线 Walkthrough | ☑ 手测 2026-05-31 |
-| Phase 16–17 UI | ☐ Citation / 检索高亮 — `bash scripts/tbox_phase16_17_finish.sh --archive` |
+| Phase 16–17 UI | ☐ handtest → /review/step/phase16-17 → `bash scripts/tbox_phase16_17_finish.sh --archive` |
 | 备注 | release smoke 含 P2/chat apps；双账号见 `docs/TBOX_SMOKE_ENV.md` |
 <!-- tbox-vm-section5:end -->
 
@@ -127,6 +137,6 @@ LAN IP：`hostname -I | awk '{print $1}'`
 - Phase 13 plan：`docs/superpowers/plans/2026-05-30-tbox-phase13-plan.md`
 - Phase 14 plan：`docs/superpowers/plans/2026-05-30-tbox-phase14-plan.md`
 - Phase 15 plan：`docs/superpowers/plans/2026-05-30-tbox-phase15-plan.md`
-- Phase 16–41 plans：`docs/superpowers/plans/2026-05-30-tbox-phase16-plan.md` … `phase41-plan.md`
+- Phase 16–45 plans：`docs/superpowers/plans/2026-05-30-tbox-phase16-plan.md` … `phase45-plan.md`
 - 冒烟脚本索引：`docs/TBOX_SMOKE_SCRIPTS.md`
 - Console 重建：`docs/TBOX_CONSOLE_REBUILD.md`
