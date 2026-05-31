@@ -35,7 +35,14 @@ class TestSmokeScriptsDoc(unittest.TestCase):
         self.assertIn("tbox_phase16_17_handtest.sh", self.smoke_text)
         self.assertIn("/review/step/phase16-17", self.smoke_text)
         self.assertIn("tbox_print_release_next_steps.sh", self.smoke_text)
-        self.assertIn("phase58-plan.md", self.smoke_text)
+        self.assertIn("phase59-plan.md", self.smoke_text)
+
+    def test_smoke_scripts_phase16_17_aligns_with_smoke_env(self) -> None:
+        section = self.smoke_text.split("## Phase 16–17", 1)[1].split("## API", 1)[0]
+        self.assertIn("TBOX_SMOKE_ENV.md", section)
+        self.assertIn("§1.3", section)
+        self.assertIn("步骤 D", section)
+        self.assertIn("tbox_host_check.sh", section)
 
     def test_walkthrough_section21_aligns_with_vm_wording(self) -> None:
         self.assertIn("handtest` → 浏览器 **C §7 + D**", self.walk_text)
