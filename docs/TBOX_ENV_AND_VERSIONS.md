@@ -15,8 +15,8 @@
 | 字段 | 值 |
 |------|-----|
 | 记录日期 | 2026-05-31 |
-| 本 fork 工作区 `HEAD`（文档更新时钉扎） | `a345701fc` |
-| 备注 | **Phase 34** @ `a345701fc`。gate 单测 + 手测归档链 ✅。S6 merge @ `f9bd37fdd`；**behind 0 / ahead ~150**。 |
+| 本 fork 工作区 `HEAD`（文档更新时钉扎） | `8da18b8b3` |
+| 备注 | **Phase 35** @ `8da18b8b3`。pre_release 矩阵 + CI 对号 ✅。S6 merge @ `f9bd37fdd`；**behind 0 / ahead ~151**。 |
 
 ## 3. 常用端口（默认本地开发）
 
