@@ -5,6 +5,7 @@
 #   bash scripts/tbox_pre_release.sh
 #   TBOX_PRE_RELEASE_VM=1 bash scripts/tbox_pre_release.sh
 #   TBOX_SKIP_HOST_CHECK=1 bash scripts/tbox_pre_release.sh
+#   TBOX_REQUIRE_DUAL_ACCOUNT=1 bash scripts/tbox_pre_release.sh
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -13,6 +14,11 @@ cd "$ROOT"
 export TBOX_SMOKE_RUNNER="${TBOX_SMOKE_RUNNER:-docker}"
 
 echo "==> TBOX pre-release @ $(git rev-parse --short HEAD 2>/dev/null || echo unknown)"
+echo ""
+
+if [[ "${TBOX_REQUIRE_DUAL_ACCOUNT:-0}" == "1" ]]; then
+  echo "    dual-account: required (TBOX_REQUIRE_DUAL_ACCOUNT=1)"
+fi
 echo ""
 
 if [[ "${TBOX_SKIP_HOST_CHECK:-0}" != "1" ]]; then

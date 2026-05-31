@@ -291,7 +291,8 @@
 | **Phase 30** | **Post-merge 整合 + 手测归档** | post-merge → pre_release；**`tbox_archive_phase16_17_handtest.sh`** — phase30 plan |
 | **Phase 31** | **Scripts 单测 + §5 保留** | **`tbox_scripts_unit_check.sh`** + CI `scripts_smoke` + record overlay — phase31 plan |
 | **Phase 32** | **Host 检查链 + smoke env 初始化** | **`tbox_host_check.sh`** + **`tbox_setup_smoke_env.sh`** — phase32 plan |
-| **矩阵/里程碑** | **Phase 0–32** | 后续：5180 Phase 16–17 手测归档 |
+| **Phase 33** | **双账号门禁链 + S6 preflight** | **`tbox_require_dual_account_gate.sh`** + **`tbox_s6_preflight.sh`** — phase33 plan |
+| **矩阵/里程碑** | **Phase 0–33** | 后续：5180 Phase 16–17 手测归档 |
 
 ### 9.1 阶段总览
 

@@ -97,8 +97,13 @@ bash ../scripts/tbox_verify_stack_image.sh
 
 ```bash
 bash scripts/tbox_upstream_divergence.sh
-# 网络可用时刷新 upstream tip：
+# 网络可用时刷新 upstream tip（推荐 S6 例行）：
+bash scripts/tbox_s6_preflight.sh
+# 或写入 Runbook §5 快照：
+bash scripts/tbox_s6_preflight.sh --write-runbook
+# 低层等价：
 bash scripts/tbox_upstream_divergence.sh --fetch
+bash scripts/tbox_record_upstream_drift.sh --fetch --write-runbook
 ```
 
 ### 2026-05-31 快照（`--fetch` 后）（`tbox-deploy` @ `c9a47d2a1`）

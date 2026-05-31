@@ -15,7 +15,7 @@ CONTAINER="${TBOX_SMOKE_CONTAINER:-docker-ragflow-cpu-1}"
 API_PORT="${SVR_HTTP_PORT:-9380}"
 
 echo "==> TBOX post-upstream-merge @ $(git rev-parse --short HEAD)"
-bash scripts/tbox_upstream_divergence.sh || true
+bash scripts/tbox_s6_preflight.sh || true
 echo ""
 
 if [[ "${TBOX_SKIP_BUILD:-0}" != "1" ]]; then

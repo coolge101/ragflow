@@ -57,7 +57,7 @@ bash scripts/tbox_phase16_17_handtest.sh
 
 可选跳过：`TBOX_SKIP_WEB_TBOX_CHECK=1`；`TBOX_SKIP_CONSOLE_BUNDLE_SMOKE=1`（仅 API 栈验收时）
 
-强制双账号 permissions（须 `scripts/tbox_smoke.env` 含 `TBOX_SMOKE_NORMAL_*`）：`TBOX_REQUIRE_DUAL_ACCOUNT=1 bash scripts/tbox_vm_production_acceptance.sh`
+强制双账号 permissions（须 `scripts/tbox_smoke.env` 含 `TBOX_SMOKE_NORMAL_*`）：`TBOX_REQUIRE_DUAL_ACCOUNT=1 bash scripts/tbox_vm_production_acceptance.sh`（入口调用 **`tbox_require_dual_account_gate.sh`**）
 
 Post-merge 在 `web-tbox/` 变更时自动重建 5180：见 `scripts/tbox_post_upstream_merge.sh`（`TBOX_REBUILD_CONSOLE=auto`）。
 
@@ -96,7 +96,7 @@ LAN IP：`hostname -I | awk '{print $1}'`
 | 日期 | 2026-05-31 |
 | VM / LAN IP | 10.40.92.240 |
 | Console | http://10.40.92.240:5180/login |
-| Git HEAD | `00ef248c3` |
+| Git HEAD | `b098e4c1f` |
 | `tbox_smoke_suite.sh` | pass |
 | `tbox_vm_production_acceptance.sh` | suite ok (see tbox_smoke_suite.sh) |
 | `tbox_web_tbox_check.sh` | skipped |
@@ -123,6 +123,6 @@ LAN IP：`hostname -I | awk '{print $1}'`
 - Phase 13 plan：`docs/superpowers/plans/2026-05-30-tbox-phase13-plan.md`
 - Phase 14 plan：`docs/superpowers/plans/2026-05-30-tbox-phase14-plan.md`
 - Phase 15 plan：`docs/superpowers/plans/2026-05-30-tbox-phase15-plan.md`
-- Phase 16–32 plans：`docs/superpowers/plans/2026-05-30-tbox-phase16-plan.md` … `phase32-plan.md`
+- Phase 16–33 plans：`docs/superpowers/plans/2026-05-30-tbox-phase16-plan.md` … `phase33-plan.md`
 - 冒烟脚本索引：`docs/TBOX_SMOKE_SCRIPTS.md`
 - Console 重建：`docs/TBOX_CONSOLE_REBUILD.md`

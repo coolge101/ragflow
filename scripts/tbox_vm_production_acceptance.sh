@@ -7,6 +7,7 @@
 #   bash scripts/tbox_vm_production_acceptance.sh
 #   TBOX_CONSOLE_PORT=5180 bash scripts/tbox_vm_production_acceptance.sh
 #   TBOX_SKIP_WEB_TBOX_CHECK=1 bash scripts/tbox_vm_production_acceptance.sh
+#   TBOX_REQUIRE_DUAL_ACCOUNT=1 bash scripts/tbox_vm_production_acceptance.sh
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -22,6 +23,8 @@ echo "==> TBOX VM production acceptance"
 echo "    API:     ${API}"
 echo "    Console: ${CONSOLE_URL}"
 echo ""
+
+bash scripts/tbox_require_dual_account_gate.sh
 
 if command -v hostname >/dev/null 2>&1; then
   LAN="$(hostname -I 2>/dev/null | awk '{print $1}' || true)"
@@ -111,13 +114,6 @@ export TBOX_SMOKE_RUNNER="${TBOX_SMOKE_RUNNER:-docker}"
 # shellcheck source=scripts/tbox_load_smoke_env.sh
 source "$ROOT/scripts/tbox_load_smoke_env.sh"
 _tbox_load_smoke_env "$ROOT"
-if [[ "${TBOX_REQUIRE_DUAL_ACCOUNT:-0}" == "1" ]]; then
-  if bash scripts/tbox_dual_account_check.sh; then
-    echo "    (dual-account required — permissions smoke will assert normal_checked)"
-  else
-    fail=1
-  fi
-fi
 if [[ "$fail" -eq 0 ]] && bash scripts/tbox_release_smoke.sh; then
   echo "OK: release smoke"
 else

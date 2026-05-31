@@ -4,13 +4,20 @@
 # Usage:
 #   bash scripts/tbox_record_upstream_drift.sh
 #   bash scripts/tbox_record_upstream_drift.sh --fetch
+#   bash scripts/tbox_record_upstream_drift.sh --fetch --write-runbook
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT"
 
 FETCH=0
-[[ "${1:-}" == "--fetch" ]] && FETCH=1
+WRITE_RUNBOOK=0
+for arg in "$@"; do
+  case "$arg" in
+    --fetch) FETCH=1 ;;
+    --write-runbook) WRITE_RUNBOOK=1; FETCH=1 ;;
+  esac
+done
 
 TMP="$(mktemp)"
 trap 'rm -f "$TMP"' EXIT
@@ -57,3 +64,39 @@ cat <<EOF
 
 生成命令：\`bash scripts/tbox_record_upstream_drift.sh$([[ "$FETCH" -eq 1 ]] && echo ' --fetch' || echo '')\`
 EOF
+
+if [[ "$WRITE_RUNBOOK" -eq 1 ]]; then
+  SNAPSHOT=$(cat <<EOF
+
+### ${DATE} 快照${FETCH_NOTE}（\`${BRANCH}\` @ \`${HEAD_SHORT}\`）
+
+| 项 | 值 |
+|----|-----|
+| HEAD | \`${HEAD_SHORT}\` — ${HEAD_ONELINE} |
+| upstream | \`${FULL_REF}\` @ \`${UP_SHA}\` |
+| merge-base | \`${MERGE_BASE}\` |
+| behind | **${BEHIND}** |
+| ahead | **${AHEAD}** |
+| 结论 | ${CONCLUSION} |
+
+生成：\`bash scripts/tbox_s6_preflight.sh --write-runbook\`
+EOF
+)
+  RUNBOOK="${ROOT}/docs/TBOX_UPSTREAM_MERGE_RUNBOOK.md"
+  export SNAPSHOT RUNBOOK
+  python3 <<'PY'
+import os
+
+snapshot = os.environ["SNAPSHOT"].lstrip("\n")
+path = os.environ["RUNBOOK"]
+text = open(path, encoding="utf-8").read()
+anchor = "生成：`bash scripts/tbox_record_upstream_drift.sh --fetch`"
+idx = text.find(anchor)
+if idx == -1:
+    raise SystemExit(f"anchor not found in {path}")
+insert_at = idx + len(anchor)
+new_text = text[:insert_at] + "\n" + snapshot + text[insert_at:]
+open(path, "w", encoding="utf-8").write(new_text)
+print(f"==> wrote Runbook §5 snapshot to {path}")
+PY
+fi

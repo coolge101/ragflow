@@ -70,6 +70,23 @@ TBOX_REQUIRE_DUAL_ACCOUNT=1 bash scripts/tbox_permissions_smoke.sh
 
 未配置双账号时 `TBOX_REQUIRE_DUAL_ACCOUNT=1` 会失败并提示填写 `scripts/tbox_smoke.env`。
 
+统一门禁脚本（suite / VM / pre_release 入口均会调用）：
+
+```bash
+bash scripts/tbox_require_dual_account_gate.sh   # 仅当 TBOX_REQUIRE_DUAL_ACCOUNT=1 时校验
+```
+
+### `TBOX_REQUIRE_DUAL_ACCOUNT` 矩阵
+
+| 场景 | 命令 | 双账号 |
+|------|------|--------|
+| 默认 admin-only | `bash scripts/tbox_smoke_suite.sh` | 可选 |
+| 准生产全量 | `TBOX_REQUIRE_DUAL_ACCOUNT=1 bash scripts/tbox_vm_production_acceptance.sh` | **必填** |
+| 发版前（suite + §5） | `TBOX_REQUIRE_DUAL_ACCOUNT=1 bash scripts/tbox_pre_release.sh` | **必填** |
+| S6 merge 后 | `TBOX_REQUIRE_DUAL_ACCOUNT=1 bash scripts/tbox_post_upstream_merge.sh` | **必填**（若设 env） |
+
+初始化 env：`bash scripts/tbox_setup_smoke_env.sh` → 编辑 `TBOX_SMOKE_NORMAL_*` → `bash scripts/tbox_setup_smoke_env.sh --check-only`
+
 当 `--run-suite` 或 `--run-smoke` 已执行对应检查时，不会重复跑相同 probe。
 
 ---

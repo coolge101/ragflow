@@ -11,6 +11,8 @@
 | **`scripts/tbox_pre_release.sh`** | 发版前：**host check** → **smoke suite** → **§5 钉扎**（可选 `TBOX_PRE_RELEASE_VM=1`） |
 | **`scripts/tbox_host_check.sh`** | 宿主机：**web-tbox check** + **scripts unit** |
 | **`scripts/tbox_setup_smoke_env.sh`** | 从 example 创建 `tbox_smoke.env` 并校验双账号 |
+| **`scripts/tbox_require_dual_account_gate.sh`** | `TBOX_REQUIRE_DUAL_ACCOUNT=1` 时统一校验 smoke env + 双账号 |
+| **`scripts/tbox_s6_preflight.sh`** | S6 merge 前：`--fetch` 漂移快照（可选 `--write-runbook`） |
 | **`scripts/tbox_smoke_suite.sh`** | **bundle** → **login** → **release smoke** |
 | **`scripts/tbox_vm_production_acceptance.sh`** | 准生产 **7 步**（Docker + 5180 + web-tbox + release） |
 | **`scripts/tbox_post_upstream_merge.sh`** | S6 merge 后：重建 → **pre_release (VM+§5)** |
@@ -55,4 +57,4 @@
 
 ## 相关 Plan
 
-Phase 14–32：`docs/superpowers/plans/2026-05-30-tbox-phase14-plan.md` … `phase32-plan.md`
+Phase 14–33：`docs/superpowers/plans/2026-05-30-tbox-phase14-plan.md` … `phase33-plan.md`

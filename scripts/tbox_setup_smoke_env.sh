@@ -31,7 +31,7 @@ fi
 if bash scripts/tbox_dual_account_check.sh; then
   echo ""
   echo "==> SMOKE ENV OK (dual-account configured)"
-  echo "    TBOX_REQUIRE_DUAL_ACCOUNT=1 bash scripts/tbox_permissions_smoke.sh"
+  echo "    TBOX_REQUIRE_DUAL_ACCOUNT=1 bash scripts/tbox_pre_release.sh"
   exit 0
 fi
 

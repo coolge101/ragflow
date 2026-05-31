@@ -21,12 +21,7 @@ echo "    API:     ${TBOX_SMOKE_BASE_URL:-http://127.0.0.1:9380}"
 echo "    Console: ${TBOX_CONSOLE_URL:-http://127.0.0.1:5180}"
 echo ""
 
-if [[ "${TBOX_REQUIRE_DUAL_ACCOUNT:-0}" == "1" ]]; then
-  if ! bash scripts/tbox_dual_account_check.sh; then
-    exit 1
-  fi
-  echo ""
-fi
+bash scripts/tbox_require_dual_account_gate.sh
 
 step=0
 total=3
