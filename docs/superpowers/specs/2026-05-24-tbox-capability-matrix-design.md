@@ -152,6 +152,8 @@
 | **17** | S6 漂移 + 检索高亮 | 运维/产品 | Runbook §5 **`--fetch`**；**`SearchResultList`** — phase17 plan |
 | **18** | 双账号 smoke env | 运维 | **`scripts/tbox_smoke.env.example`** + Walkthrough 16–17 — phase18 plan |
 | **19** | ChunkListPanel 共用 | 产品 | **`ChunkListPanel`** 统一引用/检索 UI — phase19 plan |
+| **20** | chunk/citation 单元测试 | 产品 | **`npm test`** Vitest — phase20 plan |
+| **21** | test 纳入 CI / post-merge | 运维 | **`web-tbox.yml`** + **`tbox_web_tbox_check.sh`** — phase21 plan |
 
 详细 Task 见 implementation plan。
 

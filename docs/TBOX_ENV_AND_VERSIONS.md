@@ -50,7 +50,7 @@ CI 中的重型对抗流程仍可通过 `python test/adversarial_tests.py --targ
 
 | Workflow | 触发路径（节选） | 作用 |
 |----------|------------------|------|
-| **`web-tbox.yml`** | `web-tbox/**` | `npm ci` + **`npm run typecheck`** + **`npm run build`** |
+| **`web-tbox.yml`** | `web-tbox/**` | `npm ci` + **`npm run typecheck`** + **`npm test`** + **`npm run build`** |
 | **`harness-monitor-unit.yml`** | `common/harness_monitor.py`、`test/test_harness_monitor.py`、`test/adversarial_tests.py`、`pyproject.toml`、`uv.lock` 等 | **`uv sync --group test --frozen`** + **`pytest`** `test/test_harness_monitor.py` 与 **`test/adversarial_tests.py`**（后者 **live** 用例默认 **skip**，见 §5） |
 | **`tbox-python-unit.yml`** | 上述四套 Python 单测所涉路径之**并集**（见 workflow 内 **`on.pull_request.paths`**）；**`dorny/paths-filter@v3`** 将 diff 分到 **`app_routes`** / **`crawl_worker`** / **`task_service`** / **`crawl_common`** | **`strategy.matrix`** 四格并行；**`job.if`** 仅对命中路径的格执行 **`uv sync --group test --frozen`** + **`pytest`**：**`tbox_app_isolated`** **`-m tbox_app_isolated`**（子 marker 见 **`pyproject.toml`** / 包 **`conftest.py`**）；**`test_tbox_crawl_worker`**；**`test_tbox_crawl_task_service`**；**`test_tbox_crawl_*.py`** + **`test_ssrf_guard`**（与旧四套 workflow 命令一致）。**`pyproject.toml`** / **`uv.lock`** / 本 workflow 变更时四套均可能运行 |
 

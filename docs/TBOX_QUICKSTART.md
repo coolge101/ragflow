@@ -57,7 +57,7 @@ bash docker/tbox-compose-up.sh
 合并 `origin/main` 后须 **重建 API 镜像**（容器内代码不会自动更新）：
 
 ```bash
-# 一键：重建 + typecheck/build + release smoke
+# 一键：重建 + typecheck/test/build + release smoke
 bash scripts/tbox_post_upstream_merge.sh
 # 国内网络可加：TBOX_CHINA_DOWNLOAD=1
 # 镜像已重建仅验 smoke：TBOX_SKIP_BUILD=1 bash scripts/tbox_post_upstream_merge.sh
@@ -112,7 +112,11 @@ npm run dev
 | 爬取策略 + worker | **`/crawl`** | 关键词/深度/域名 → `extra_config` |
 | 多格式入库手测 | — | **`TBOX_INGEST_FORMAT_SMOKE.md`** |
 
-提交或发版前建议在 `web-tbox/` 下执行 **`npm run typecheck`** 与 **`npm run build`**。
+提交或发版前建议在 `web-tbox/` 下执行 **`bash scripts/tbox_web_tbox_check.sh`**（typecheck + test + build），或：
+
+```bash
+cd web-tbox && npm run typecheck && npm test && npm run build
+```
 
 ### 3.0 没有邮箱/密码（首次账号）
 
@@ -200,7 +204,7 @@ Workflow 名称、路径触发与职责见 **`docs/TBOX_ENV_AND_VERSIONS.md` §6
 
 ```bash
 # 独立前端（与 .github/workflows/web-tbox.yml 一致）
-(cd web-tbox && npm ci && npm run typecheck && npm run build)
+(cd web-tbox && npm ci && npm run typecheck && npm test && npm run build)
 
 # Harness + 对抗离线用例（与 harness-monitor-unit.yml 一致）
 uv run pytest test/test_harness_monitor.py test/adversarial_tests.py -v --tb=short

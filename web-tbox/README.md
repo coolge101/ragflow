@@ -35,7 +35,15 @@ npm test          # chunkDisplay + citationUtils（Phase 20）
 npm run build
 ```
 
-产物在 `dist/`，可由 Nginx 或静态资源服务托管；与 Docker 编排的衔接见 [`docs/TBOX_QUICKSTART.md`](../docs/TBOX_QUICKSTART.md) 与总纲 §9。CI：`.github/workflows/web-tbox.yml`（`npm ci` + `typecheck` + `build`）。
+产物在 `dist/`，可由 Nginx 或静态资源服务托管；与 Docker 编排的衔接见 [`docs/TBOX_QUICKSTART.md`](../docs/TBOX_QUICKSTART.md) 与总纲 §9。
+
+PR / post-merge 门禁（仓库根）：
+
+```bash
+bash scripts/tbox_web_tbox_check.sh
+```
+
+CI：`.github/workflows/web-tbox.yml`（`npm ci` + `typecheck` + `test` + `build`）。
 
 ## 文档
 

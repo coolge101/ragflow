@@ -33,8 +33,8 @@ if [[ "${TBOX_SKIP_BUILD:-0}" != "1" ]]; then
   echo ""
 fi
 
-echo "==> web-tbox typecheck + build (host)"
-(cd web-tbox && npm run typecheck && npm run build)
+echo "==> web-tbox typecheck + test + build (host)"
+bash scripts/tbox_web_tbox_check.sh
 echo ""
 
 echo "==> Release smoke (docker runner — avoids host uv/spacy when GitHub times out)"

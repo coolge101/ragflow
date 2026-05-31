@@ -41,7 +41,7 @@ git merge upstream/main              # 或：git rebase upstream/main（团队�
 ```bash
 # 推荐：重建镜像 + smoke（见 scripts/tbox_post_upstream_merge.sh）
 TBOX_BUILD_RAGFLOW=1 TBOX_CONSOLE=1 bash docker/tbox-compose-up.sh
-cd web-tbox && npm run typecheck && npm run build
+cd web-tbox && npm run typecheck && npm test && npm run build
 
 # API 冒烟（Docker 栈运行中）
 curl -sf http://127.0.0.1:9380/v1/tbox/health

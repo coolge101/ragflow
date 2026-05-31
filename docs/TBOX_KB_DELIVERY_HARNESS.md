@@ -278,7 +278,9 @@
 | **Phase 17** | **S6 漂移例行 + 检索高亮** | Runbook §5 @ ahead 114；`SearchResultList` — phase17 plan |
 | **Phase 18** | **双账号 smoke env** | `tbox_smoke.env.example` + **`TBOX_SMOKE_ENV.md`** — phase18 plan |
 | **Phase 19** | **ChunkListPanel 共用** | `chunkDisplay.ts` + 引用/检索薄包装 — phase19 plan |
-| **矩阵/里程碑** | **Phase 0–19** | 后续：5180 重建 console 手测 Phase 16–17 |
+| **Phase 20** | **chunk/citation 单元测试** | `web-tbox` Vitest 12 cases — phase20 plan |
+| **Phase 21** | **test 纳入 CI** | `web-tbox.yml` + **`tbox_web_tbox_check.sh`** — phase21 plan |
+| **矩阵/里程碑** | **Phase 0–21** | 后续：5180 重建 console 手测 Phase 16–17 |
 
 ### 9.1 阶段总览
 
