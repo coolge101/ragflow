@@ -8,7 +8,26 @@
 
 | 脚本 | 用途 |
 |------|------|
-| **`scripts/tbox_pre_release.sh`** | 发版前：**host check** → **smoke suite** → **§5 钉扎**（可选 `TBOX_PRE_RELEASE_VM=1`） |
+| **`scripts/tbox_pre_release.sh`** | 发版前：**host check** → **smoke suite** → **§5 钉扎**（`--help` 见模式矩阵） |
+
+### `tbox_pre_release.sh` 模式矩阵
+
+```bash
+bash scripts/tbox_pre_release.sh --help
+```
+
+| 模式 | 命令 | 步骤 [1/2] | 步骤 [2/2] | 双账号 |
+|------|------|-------------|------------|--------|
+| **默认** | `bash scripts/tbox_pre_release.sh` | host check | smoke suite + §5 | 可选 |
+| **完整 VM** | `TBOX_PRE_RELEASE_VM=1 bash scripts/tbox_pre_release.sh` | host check | VM 7 步 + §5 | 可选 |
+| **跳过 host** | `TBOX_SKIP_HOST_CHECK=1 bash scripts/tbox_pre_release.sh` | skip | smoke suite + §5 | 可选 |
+| **强制双账号** | `TBOX_REQUIRE_DUAL_ACCOUNT=1 bash scripts/tbox_pre_release.sh` | host check | suite + §5 | **必填** |
+| **post-merge** | `TBOX_SKIP_WEB_TBOX_CHECK=1 TBOX_PRE_RELEASE_VM=1 …` | （merge 已跑 host） | VM + §5 | 可选 |
+
+本地 CI 对号：**`bash scripts/tbox_host_check.sh`**（= web-tbox.yml + `scripts_smoke` 矩阵格，见 **`TBOX_QUICKSTART.md`** §6）。
+
+| 脚本 | 用途 |
+|------|------|
 | **`scripts/tbox_host_check.sh`** | 宿主机：**web-tbox check** + **scripts unit** |
 | **`scripts/tbox_setup_smoke_env.sh`** | 从 example 创建 `tbox_smoke.env` 并校验双账号 |
 | **`scripts/tbox_require_dual_account_gate.sh`** | `TBOX_REQUIRE_DUAL_ACCOUNT=1` 时统一校验 smoke env + 双账号 |
@@ -59,4 +78,4 @@
 
 ## 相关 Plan
 
-Phase 14–34：`docs/superpowers/plans/2026-05-30-tbox-phase14-plan.md` … `phase34-plan.md`
+Phase 14–35：`docs/superpowers/plans/2026-05-30-tbox-phase14-plan.md` … `phase35-plan.md`

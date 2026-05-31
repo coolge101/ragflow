@@ -148,7 +148,7 @@ phase16_17_mark() {
   if [[ "$PHASE16_17_HAND" == "1" ]]; then
     echo "☑ 手测 ${DATE}"
   else
-    echo "☐ Citation / 检索高亮 — \`bash scripts/tbox_phase16_17_handtest.sh\`"
+    echo "☐ Citation / 检索高亮 — \`bash scripts/tbox_phase16_17_finish.sh --archive\`"
   fi
 }
 

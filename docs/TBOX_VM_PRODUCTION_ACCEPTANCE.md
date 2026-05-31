@@ -28,7 +28,11 @@ bash scripts/start-tbox-ragflow.sh --console
 
 ```bash
 cd <REPO>
+# 发版前（推荐；模式矩阵：bash scripts/tbox_pre_release.sh --help）
 bash scripts/tbox_pre_release.sh
+# 完整 VM + §5：TBOX_PRE_RELEASE_VM=1 bash scripts/tbox_pre_release.sh
+# 双账号：TBOX_REQUIRE_DUAL_ACCOUNT=1 bash scripts/tbox_pre_release.sh
+# 一键套件（不含 §5）：bash scripts/tbox_smoke_suite.sh
 bash scripts/tbox_smoke_suite.sh
 bash scripts/tbox_vm_production_acceptance.sh
 # 生成 §5 记录草稿（含 HEAD / LAN IP）：
@@ -106,7 +110,7 @@ LAN IP：`hostname -I | awk '{print $1}'`
 | `tbox_dual_account_check.sh` | not configured (optional) |
 | §3 内网与双账号 A–D | ☑ 手测 2026-05-31 |
 | §4 产品动线 Walkthrough | ☑ 手测 2026-05-31 |
-| Phase 16–17 UI | ☐ Citation / 检索高亮 — `bash scripts/tbox_phase16_17_handtest.sh` |
+| Phase 16–17 UI | ☐ Citation / 检索高亮 — `bash scripts/tbox_phase16_17_finish.sh --archive` |
 | 备注 | release smoke 含 P2/chat apps；双账号见 `docs/TBOX_SMOKE_ENV.md` |
 <!-- tbox-vm-section5:end -->
 
@@ -123,6 +127,6 @@ LAN IP：`hostname -I | awk '{print $1}'`
 - Phase 13 plan：`docs/superpowers/plans/2026-05-30-tbox-phase13-plan.md`
 - Phase 14 plan：`docs/superpowers/plans/2026-05-30-tbox-phase14-plan.md`
 - Phase 15 plan：`docs/superpowers/plans/2026-05-30-tbox-phase15-plan.md`
-- Phase 16–34 plans：`docs/superpowers/plans/2026-05-30-tbox-phase16-plan.md` … `phase34-plan.md`
+- Phase 16–35 plans：`docs/superpowers/plans/2026-05-30-tbox-phase16-plan.md` … `phase35-plan.md`
 - 冒烟脚本索引：`docs/TBOX_SMOKE_SCRIPTS.md`
 - Console 重建：`docs/TBOX_CONSOLE_REBUILD.md`

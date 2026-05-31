@@ -19,7 +19,7 @@ bash scripts/start-tbox-ragflow.sh --console
 bash scripts/tbox_vm_production_acceptance.sh
 ```
 
-验收清单：**[`TBOX_VM_PRODUCTION_ACCEPTANCE.md`](./TBOX_VM_PRODUCTION_ACCEPTANCE.md)**（5180 + 内网双账号 + Walkthrough）。发版前：**`bash scripts/tbox_pre_release.sh`**。脚本索引：**[`TBOX_SMOKE_SCRIPTS.md`](./TBOX_SMOKE_SCRIPTS.md)**。
+验收清单：**[`TBOX_VM_PRODUCTION_ACCEPTANCE.md`](./TBOX_VM_PRODUCTION_ACCEPTANCE.md)**（5180 + 内网双账号 + Walkthrough）。发版前：**`bash scripts/tbox_pre_release.sh`**（模式矩阵：**`bash scripts/tbox_pre_release.sh --help`**）。脚本索引：**[`TBOX_SMOKE_SCRIPTS.md`](./TBOX_SMOKE_SCRIPTS.md)**。
 
 ## 1. 前置
 
@@ -205,6 +205,16 @@ Workflow 名称、路径触发与职责见 **`docs/TBOX_ENV_AND_VERSIONS.md` §6
 ```bash
 # 独立前端（与 .github/workflows/web-tbox.yml 一致）
 (cd web-tbox && npm ci && npm run typecheck && npm test && npm run build)
+
+# scripts 单测 + web-tbox（与 tbox-python-unit.yml scripts_smoke + web-tbox.yml 本地对号）
+bash scripts/tbox_scripts_unit_check.sh
+bash scripts/tbox_host_check.sh
+
+# 发版前门禁（Docker @ 9380 + tbox-console @ 5180；模式见 --help）
+bash scripts/tbox_pre_release.sh
+bash scripts/tbox_pre_release.sh --help
+# TBOX_PRE_RELEASE_VM=1 bash scripts/tbox_pre_release.sh
+# TBOX_REQUIRE_DUAL_ACCOUNT=1 bash scripts/tbox_pre_release.sh
 
 # Harness + 对抗离线用例（与 harness-monitor-unit.yml 一致）
 uv run pytest test/test_harness_monitor.py test/adversarial_tests.py -v --tb=short

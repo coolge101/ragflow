@@ -6,10 +6,41 @@
 #   TBOX_PRE_RELEASE_VM=1 bash scripts/tbox_pre_release.sh
 #   TBOX_SKIP_HOST_CHECK=1 bash scripts/tbox_pre_release.sh
 #   TBOX_REQUIRE_DUAL_ACCOUNT=1 bash scripts/tbox_pre_release.sh
+#   bash scripts/tbox_pre_release.sh --help
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT"
+
+if [[ "${1:-}" == "--help" || "${1:-}" == "-h" ]]; then
+  cat <<'EOF'
+TBOX pre-release gate (repo root; Docker @ 9380 + tbox-console @ 5180)
+
+Steps:
+  [1/2] host check — web-tbox typecheck/test/build + scripts unit (unless skipped)
+  [2/2] smoke suite OR VM 7-step + write docs/TBOX_VM_PRODUCTION_ACCEPTANCE.md §5
+
+Mode matrix (env vars):
+
+| 模式 | 命令 | [1/2] | [2/2] | 双账号 |
+|------|------|-------|-------|--------|
+| 默认（发版前） | bash scripts/tbox_pre_release.sh | host check | smoke suite + §5 | 可选 |
+| 完整 VM | TBOX_PRE_RELEASE_VM=1 bash scripts/tbox_pre_release.sh | host check | VM 7-step + §5 | 可选 |
+| 跳过 host | TBOX_SKIP_HOST_CHECK=1 bash scripts/tbox_pre_release.sh | skip | smoke suite + §5 | 可选 |
+| 强制双账号 | TBOX_REQUIRE_DUAL_ACCOUNT=1 bash scripts/tbox_pre_release.sh | host check | suite + §5 | 必填 |
+| post-merge | TBOX_SKIP_WEB_TBOX_CHECK=1 TBOX_PRE_RELEASE_VM=1 … | (post-merge 已跑 host) | VM + §5 | 可选 |
+
+组合示例:
+  TBOX_SKIP_HOST_CHECK=1 TBOX_PRE_RELEASE_VM=1 bash scripts/tbox_pre_release.sh
+  TBOX_REQUIRE_DUAL_ACCOUNT=1 TBOX_PRE_RELEASE_VM=1 bash scripts/tbox_pre_release.sh
+
+After pass (browser still required):
+  bash scripts/tbox_phase16_17_finish.sh --archive
+
+See: docs/TBOX_SMOKE_SCRIPTS.md · docs/TBOX_SMOKE_ENV.md
+EOF
+  exit 0
+fi
 
 export TBOX_SMOKE_RUNNER="${TBOX_SMOKE_RUNNER:-docker}"
 
