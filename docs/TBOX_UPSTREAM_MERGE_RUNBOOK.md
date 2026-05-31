@@ -140,6 +140,17 @@ bash scripts/tbox_upstream_divergence.sh --fetch
 
 生成：`bash scripts/tbox_record_upstream_drift.sh --fetch`
 
+### 2026-05-31 快照（Phase 32 后 `--fetch`）（`tbox-deploy` @ `817d2ac94`）
+
+| 项 | 值 |
+|----|-----|
+| HEAD | `817d2ac94` — Phase 32 host check + smoke env setup |
+| upstream | `origin/main` @ `cd18cfab7` |
+| merge-base | `cd18cfab7` |
+| behind | **0** |
+| ahead | **145** |
+| 结论 | behind 0；无缺失 upstream commit；下次 merge 前再 `--fetch` |
+
 ### 2026-05-31 快照（Phase 32 前 `--fetch`）（`tbox-deploy` @ `ef17c062d`）
 
 | 项 | 值 |

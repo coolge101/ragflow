@@ -15,8 +15,8 @@
 | 字段 | 值 |
 |------|-----|
 | 记录日期 | 2026-05-31 |
-| 本 fork 工作区 `HEAD`（文档更新时钉扎） | `b572ec4de` |
-| 备注 | **Phase 31** @ `b572ec4de`。Scripts 单测门禁 + §5 保留 ✅。S6 merge @ `f9bd37fdd`；**behind 0 / ahead ~142**。 |
+| 本 fork 工作区 `HEAD`（文档更新时钉扎） | `817d2ac94` |
+| 备注 | **Phase 32** @ `817d2ac94`。Host check 链 + smoke env 初始化 ✅。S6 merge @ `f9bd37fdd`；**behind 0 / ahead ~145**。 |
 
 ## 3. 常用端口（默认本地开发）
 
