@@ -78,4 +78,9 @@ TBOX_SKIP_WEB_TBOX_CHECK=1 TBOX_PRE_RELEASE_VM=1 bash scripts/tbox_pre_release.s
 echo ""
 
 echo "==> POST-MERGE OK — see docs/TBOX_UPSTREAM_MERGE_RUNBOOK.md §3–4"
-echo "    Optional UI checklist: docs/TBOX_VM_PRODUCTION_ACCEPTANCE.md §3–4 (5180)"
+echo "    VM §5 automation updated; Phase 16–17 UI may still be ☐"
+echo "    1. bash scripts/tbox_phase16_17_handtest.sh"
+echo "    2. Browser C §7 + D on 5180 (optional /review/step/phase16-17)"
+echo "    3. bash scripts/tbox_phase16_17_finish.sh --archive"
+echo "    Full chain: bash scripts/tbox_print_release_next_steps.sh"
+echo "    Docs: docs/TBOX_SMOKE_SCRIPTS.md · docs/TBOX_SMOKE_ENV.md · Runbook §8.1"

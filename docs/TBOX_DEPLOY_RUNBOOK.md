@@ -366,13 +366,24 @@ cd <REPO>
 |------|------|------|
 | **发版前（推荐）** | `bash scripts/tbox_pre_release.sh` | host check → suite + 钉扎 **`TBOX_VM_PRODUCTION_ACCEPTANCE.md` §5** |
 | 模式矩阵 | `bash scripts/tbox_pre_release.sh --help` | `TBOX_PRE_RELEASE_VM` / `TBOX_SKIP_HOST_CHECK` / `TBOX_REQUIRE_DUAL_ACCOUNT` |
+| 发版链（三脚本） | `bash scripts/tbox_print_release_next_steps.sh` | 5180 + setup + pre_release（§3.1.3 · QUICKSTART §1.3） |
 | 仅 API 冒烟 | `bash scripts/tbox_smoke_suite.sh` | bundle → login → release（不写 §5） |
 | 完整 VM 7 步 | `bash scripts/tbox_vm_production_acceptance.sh` | 含 web-tbox check；或 **`TBOX_PRE_RELEASE_VM=1`** pre_release |
 | S6 merge 后 | `bash scripts/tbox_post_upstream_merge.sh` | 重建 → host → pre_release VM+§5 |
-| Phase 16–17 手测 | `bash scripts/tbox_phase16_17_handtest.sh` | 5180 Citation + `/search` 高亮（Walkthrough **步骤 C/D**） |
-| 手测归档 §5 | `bash scripts/tbox_phase16_17_finish.sh --archive` | bundle 校验 + **`--confirm`** |
+| UI 变更后 | `bash scripts/tbox_rebuild_console.sh` | 重建 5180 静态页 |
 
-双账号准生产：`TBOX_REQUIRE_DUAL_ACCOUNT=1` + `scripts/tbox_smoke.env` 中 **`TBOX_SMOKE_NORMAL_*`**。脚本索引：**[`TBOX_SMOKE_SCRIPTS.md`](./TBOX_SMOKE_SCRIPTS.md)** · 准生产清单：**[`TBOX_VM_PRODUCTION_ACCEPTANCE.md`](./TBOX_VM_PRODUCTION_ACCEPTANCE.md)**。
+**Phase 16–17 浏览器手测**（与 VM §5、Walkthrough §2.1 一致；详 **[`TBOX_SMOKE_SCRIPTS.md`](./TBOX_SMOKE_SCRIPTS.md)** 专节 · **[`TBOX_SMOKE_ENV.md`](./TBOX_SMOKE_ENV.md)** 环境变量）：
+
+| 顺序 | 命令 / 路径 | 说明 |
+|------|-------------|------|
+| 1 | `bash scripts/tbox_phase16_17_handtest.sh` | bundle + C/D 清单 |
+| 2 | 浏览器 Walkthrough **C §7 + D** | Citation + 检索高亮 |
+| 2b（可选） | **`/review/step/phase16-17`** | 确认页（Walkthrough §2.2） |
+| 3 | `bash scripts/tbox_phase16_17_finish.sh --archive` | 写 §5 ☑ |
+
+双账号准生产：`TBOX_REQUIRE_DUAL_ACCOUNT=1` + `scripts/tbox_smoke.env` 中 **`TBOX_SMOKE_NORMAL_*`**。
+
+**文档索引**：脚本 **[`TBOX_SMOKE_SCRIPTS.md`](./TBOX_SMOKE_SCRIPTS.md)** · 环境 **[`TBOX_SMOKE_ENV.md`](./TBOX_SMOKE_ENV.md)** · 准生产 **[`TBOX_VM_PRODUCTION_ACCEPTANCE.md`](./TBOX_VM_PRODUCTION_ACCEPTANCE.md)** · Console 重建 **[`TBOX_CONSOLE_REBUILD.md`](./TBOX_CONSOLE_REBUILD.md)**。
 
 ---
 

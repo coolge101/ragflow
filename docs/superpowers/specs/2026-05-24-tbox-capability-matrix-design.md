@@ -166,6 +166,7 @@
 | **46** | phase16-17 脚本 + VM §5 | 运维 | **`handtest`/`finish`** + **`TBOX_VM_PRODUCTION_ACCEPTANCE.md`** §5 — phase46 plan |
 | **47** | SMOKE_SCRIPTS + Walkthrough §2.1 | 运维/产品 | Phase 16–17 专节 + §2.1 与 VM §5 — phase47 plan |
 | **48** | SMOKE_ENV + pre_release --help | 运维 | env 专节 + pre_release 三步链 — phase48 plan |
+| **49** | post-merge + Runbook §8.1 | 运维 | post-merge 收尾 + SMOKE 交叉引用 — phase49 plan |
 
 详细 Task 见 **`docs/TBOX_KB_DELIVERY_HARNESS.md`** §9.0 与 `docs/superpowers/plans/2026-05-31-tbox-phase*-plan.md`。
 

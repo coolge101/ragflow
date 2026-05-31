@@ -307,7 +307,8 @@
 | **Phase 46** | **phase16-17 脚本 + VM §5 文案** | **`handtest`/`finish`** + review/helper + §5 统一 — phase46 plan |
 | **Phase 47** | **SMOKE_SCRIPTS 专节 + Walkthrough §2.1** | Phase 16–17 脚本索引 + §2.1 与 VM §5 对齐 — phase47 plan |
 | **Phase 48** | **SMOKE_ENV 专节 + pre_release --help** | env 文档 + **`tbox_pre_release.sh`** 三步链 — phase48 plan |
-| **矩阵/里程碑** | **Phase 0–48** | 后续：5180 Phase 16–17 浏览器手测 |
+| **Phase 49** | **post-merge 收尾 + Runbook §8.1** | **`tbox_post_upstream_merge.sh`** + SMOKE 交叉引用 — phase49 plan |
+| **矩阵/里程碑** | **Phase 0–49** | 后续：5180 Phase 16–17 浏览器手测 |
 
 ### 9.1 阶段总览
 
