@@ -15,8 +15,8 @@
 | 字段 | 值 |
 |------|-----|
 | 记录日期 | 2026-05-31 |
-| 本 fork 工作区 `HEAD`（文档更新时钉扎） | `9d2961fb6` |
-| 备注 | **Phase 52** @ `9d2961fb6`。ENV §6 + Walkthrough §六 ✅。S6 merge @ `f9bd37fdd`；**behind 0 / ahead ~184**。 |
+| 本 fork 工作区 `HEAD`（文档更新时钉扎） | `61d1695cf` |
+| 备注 | **Phase 53** @ `61d1695cf`。web-tbox README + 手册 §5.4 ↔ ENV §6 ✅。S6 merge @ `f9bd37fdd`；**behind 0 / ahead ~185**。 |
 
 ## 3. 常用端口（默认本地开发）
 
