@@ -32,6 +32,8 @@ bash scripts/tbox_smoke_suite.sh
 bash scripts/tbox_vm_production_acceptance.sh
 # 生成 §5 记录草稿（含 HEAD / LAN IP）：
 bash scripts/tbox_record_vm_acceptance.sh
+# 写入 §5 锚点（自动化钉扎）：
+bash scripts/tbox_record_vm_acceptance.sh --write-section5
 # 含完整 smoke：
 bash scripts/tbox_record_vm_acceptance.sh --run-smoke
 # 上游漂移快照（Runbook §5）：
@@ -87,23 +89,27 @@ LAN IP：`hostname -I | awk '{print $1}'`
 
 ## 5. 记录模板
 
+<!-- tbox-vm-section5:start -->
 | 项 | 值 |
 |----|-----|
-| 日期 | 2026-05-30 |
+| 日期 | 2026-05-31 |
 | VM / LAN IP | 10.40.92.240 |
 | Console | http://10.40.92.240:5180/login |
-| Git HEAD | `dbb941c56` |
-| `tbox_vm_production_acceptance.sh` | ☑ pass |
-| `tbox_login_smoke.sh` | ☑ pass |
-| `tbox_p2_regression_smoke.sh` | ☑ pass |
-| `tbox_chat_apps_smoke.sh` | ☑ pass |
-| `tbox_permissions_smoke.sh` | ☑ pass（admin；双账号见 `TBOX_SMOKE_ENV.md`） |
-| `tbox_console_bundle_smoke.sh` | ☑ pass（`tbox_rebuild_console.sh` 后；检测 minified markers） |
-| `web-tbox npm test` | ☑ 12 tests（chunkDisplay + citationUtils） |
-| §3 内网与双账号 A–D | ☑ 手测 2026-05-30 |
-| §4 产品动线 Walkthrough | ☑ 手测 2026-05-30 |
-| Phase 16–17 UI | ☐ Citation / 检索高亮 — **`bash scripts/tbox_phase16_17_handtest.sh`** |
-| 备注 | Phase 14–20 自动化 ✅；`docs/TBOX_SMOKE_ENV.md` 双账号 optional |
+| Git HEAD | `32e50c876` |
+| `tbox_smoke_suite.sh` | pass |
+| `tbox_vm_production_acceptance.sh` | quick-check ok (run tbox_vm_production_acceptance.sh for full) |
+| `tbox_web_tbox_check.sh` | pass (12 tests) |
+| `tbox_login_smoke.sh` | pass |
+| `tbox_console_bundle_smoke.sh` | pass (Phase 16–17 markers) |
+| `tbox_permissions_smoke.sh` | pass (admin only; set scripts/tbox_smoke.env for dual) |
+| `tbox_dual_account_check.sh` | not configured (optional) |
+| §3 内网与双账号 A–D | ☑ 手测 2026-05-31 |
+| §4 产品动线 Walkthrough | ☑ 手测 2026-05-31 |
+| Phase 16–17 UI | ☐ Citation / 检索高亮 — `bash scripts/tbox_phase16_17_handtest.sh` |
+| 备注 | release smoke 含 P2/chat apps；双账号见 `docs/TBOX_SMOKE_ENV.md` |
+<!-- tbox-vm-section5:end -->
+
+自动刷新：`bash scripts/tbox_record_vm_acceptance.sh --write-section5`（可选 `--run-suite` / `--run-smoke`）。
 
 ---
 
@@ -116,5 +122,5 @@ LAN IP：`hostname -I | awk '{print $1}'`
 - Phase 13 plan：`docs/superpowers/plans/2026-05-30-tbox-phase13-plan.md`
 - Phase 14 plan：`docs/superpowers/plans/2026-05-30-tbox-phase14-plan.md`
 - Phase 15 plan：`docs/superpowers/plans/2026-05-30-tbox-phase15-plan.md`
-- Phase 16–27 plans：`docs/superpowers/plans/2026-05-30-tbox-phase16-plan.md` … `phase27-plan.md`
+- Phase 16–28 plans：`docs/superpowers/plans/2026-05-30-tbox-phase16-plan.md` … `phase28-plan.md`
 - Console 重建：`docs/TBOX_CONSOLE_REBUILD.md`

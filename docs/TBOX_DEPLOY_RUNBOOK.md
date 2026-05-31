@@ -341,7 +341,7 @@ cd <REPO>
 
 **已知产品边界（易误判为「坏了」）**：ZIP 等与官方 `web/` 差异、文档 **重解析/版本** 等若 REST 未暴露则控制台暂无、采集全自动化依赖 **worker** 与任务配置——详见 **`TBOX_QUICKSTART.md`** 与 **`TBOX_API_BOUNDARY.md`**。
 
-**自动化冒烟（发版 / VM 验收）**：仓库根执行 **`bash scripts/tbox_smoke_suite.sh`**（bundle + login + release）、`bash scripts/tbox_release_smoke.sh` 或 `bash scripts/tbox_vm_production_acceptance.sh`。双账号权限等环境变量见 **[`TBOX_SMOKE_ENV.md`](./TBOX_SMOKE_ENV.md)**（`cp scripts/tbox_smoke.env.example scripts/tbox_smoke.env`；`bash scripts/tbox_dual_account_check.sh` 校验）。
+**自动化冒烟（发版 / VM 验收）**：仓库根执行 **`bash scripts/tbox_smoke_suite.sh`**（bundle + login + release）、`bash scripts/tbox_release_smoke.sh` 或 `bash scripts/tbox_vm_production_acceptance.sh`；验收后 **`bash scripts/tbox_record_vm_acceptance.sh --write-section5`** 钉扎 §5。双账号等见 **[`TBOX_SMOKE_ENV.md`](./TBOX_SMOKE_ENV.md)**。
 
 ---
 

@@ -77,5 +77,11 @@ echo "==> VM production acceptance"
 bash scripts/tbox_vm_production_acceptance.sh
 
 echo ""
+if [[ "${TBOX_RECORD_WRITE_SECTION5:-1}" == "1" ]]; then
+  echo "==> Update VM acceptance §5"
+  bash scripts/tbox_record_vm_acceptance.sh --write-section5
+  echo ""
+fi
+
 echo "==> POST-MERGE OK — see docs/TBOX_UPSTREAM_MERGE_RUNBOOK.md §3–4"
 echo "    Optional UI checklist: docs/TBOX_VM_PRODUCTION_ACCEPTANCE.md §3–4 (5180)"
