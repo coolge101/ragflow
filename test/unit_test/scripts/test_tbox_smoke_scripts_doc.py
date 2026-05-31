@@ -35,7 +35,7 @@ class TestSmokeScriptsDoc(unittest.TestCase):
         self.assertIn("tbox_phase16_17_handtest.sh", self.smoke_text)
         self.assertIn("/review/step/phase16-17", self.smoke_text)
         self.assertIn("tbox_print_release_next_steps.sh", self.smoke_text)
-        self.assertIn("phase63-plan.md", self.smoke_text)
+        self.assertIn("phase66-plan.md", self.smoke_text)
 
     def test_smoke_scripts_phase16_17_aligns_with_smoke_env(self) -> None:
         section = self.smoke_text.split("## Phase 16–17", 1)[1].split("## API", 1)[0]
@@ -43,6 +43,15 @@ class TestSmokeScriptsDoc(unittest.TestCase):
         self.assertIn("§1.3", section)
         self.assertIn("步骤 D", section)
         self.assertIn("tbox_host_check.sh", section)
+
+    def test_smoke_scripts_s6_section_aligns_with_deploy_and_quickstart(self) -> None:
+        section = self.smoke_text.split("## S6 upstream merge", 1)[1].split("## 5180 Console", 1)[0]
+        self.assertIn("tbox_s6_preflight.sh", section)
+        self.assertIn("tbox_post_upstream_merge.sh", section)
+        self.assertIn("tbox_phase16_17_finish.sh --archive", section)
+        self.assertIn("TBOX_DEPLOY_FROM_GITHUB.md", section)
+        self.assertIn("§1.2", section)
+        self.assertIn("phase66-plan.md", self.smoke_text)
 
     def test_walkthrough_section21_aligns_with_vm_wording(self) -> None:
         self.assertIn("handtest` → 浏览器 **C §7 + D**", self.walk_text)

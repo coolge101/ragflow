@@ -26,8 +26,19 @@ class TestQuickstartDoc(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
         text = QUICKSTART.read_text(encoding="utf-8")
+        cls.section12 = text.split("### 1.2 S6 上游 merge 后（必做）", 1)[1].split("### 1.3", 1)[0]
         cls.section13 = text.split("### 1.3", 1)[1].split("## 2.", 1)[0]
         cls.section6 = text.split("## 6. PR 前自检", 1)[1].split("## ", 1)[0]
+
+    def test_section12_aligns_with_deploy_github_and_smoke_scripts(self) -> None:
+        self.assertIn("tbox_post_upstream_merge.sh", self.section12)
+        self.assertIn("tbox_s6_preflight.sh", self.section12)
+        self.assertIn("TBOX_DEPLOY_FROM_GITHUB.md", self.section12)
+        self.assertIn("§6", self.section12)
+        self.assertIn("§8", self.section12)
+        self.assertIn("TBOX_SMOKE_SCRIPTS.md", self.section12)
+        self.assertIn("tbox_phase16_17_handtest.sh", self.section12)
+        self.assertIn("tbox_phase16_17_finish.sh --archive", self.section12)
 
     def test_section13_aligns_with_print_release_helper(self) -> None:
         self.assertIn("tbox_print_release_next_steps.sh", self.section13)

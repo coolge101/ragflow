@@ -73,11 +73,20 @@ bash scripts/tbox_post_upstream_merge.sh
 |----|------|
 | Python | merge 后 **`>=3.13`**（`pyproject.toml`）；宿主机 `uv sync` 若 GitHub spacy 超时，用 **`TBOX_SMOKE_RUNNER=docker`** |
 | 记录 | [`TBOX_UPSTREAM_MERGE_RUNBOOK.md`](./TBOX_UPSTREAM_MERGE_RUNBOOK.md) §4 |
-| 漂移 | **`bash scripts/tbox_s6_preflight.sh`**（或 `tbox_upstream_divergence.sh --fetch`） |
+| 漂移 | **`bash scripts/tbox_s6_preflight.sh`**（或 `tbox_upstream_divergence.sh --fetch`）；脚本索引 **[`TBOX_SMOKE_SCRIPTS.md`](./TBOX_SMOKE_SCRIPTS.md)** S6 专节 |
+| GitHub 部署 | **[`TBOX_DEPLOY_FROM_GITHUB.md`](./TBOX_DEPLOY_FROM_GITHUB.md)** §6 验收 · §8 日常 upstream merge |
 | 发版 | post-merge 末尾 **`tbox_pre_release.sh`**（VM+§5）；模式 **`bash scripts/tbox_pre_release.sh --help`** |
 | 5180 | **`bash scripts/start-tbox-ragflow.sh --console`** 或 **`TBOX_CONSOLE=1 bash scripts/tbox-up.sh`** |
 | 磁盘 | build 后 **no space left on device**：镜像可能已成功 → `docker builder prune -af` 再 `--force-recreate ragflow-cpu`（Runbook §3.1） |
 | 日常清理 | `bash scripts/tbox_disk_cleanup.sh`（不删 DB volume）；Docker 数据应在 **`/data/docker`** |
+
+**Phase 16–17 浏览器**（post-merge / pre_release 后 VM §5 仍可能 ☐；与 **§1.3** · DEPLOY **§6** 典型顺序一致）：
+
+1. `bash scripts/tbox_phase16_17_handtest.sh` — Walkthrough **步骤 D**「5180 准生产前置」（与 **C §7** 共用）
+2. 浏览器 **C §7 + D** 于 **5180**；可选 **`/review/step/phase16-17`**
+3. `bash scripts/tbox_phase16_17_finish.sh --archive`
+
+同一链亦见于：**[`TBOX_SMOKE_SCRIPTS.md`](./TBOX_SMOKE_SCRIPTS.md)** S6 专节 · **`tbox_host_check.sh`** · **`tbox_pre_release.sh --help`**
 
 ### 1.3 启动脚本与发版提示（5180 / pre_release）
 

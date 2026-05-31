@@ -41,6 +41,28 @@ bash scripts/tbox_pre_release.sh --help
 
 ---
 
+## S6 upstream merge
+
+与 **[`TBOX_UPSTREAM_MERGE_RUNBOOK.md`](./TBOX_UPSTREAM_MERGE_RUNBOOK.md)** §3.2 · **[`TBOX_DEPLOY_FROM_GITHUB.md`](./TBOX_DEPLOY_FROM_GITHUB.md)** §6 / §8 · **[`TBOX_QUICKSTART.md`](./TBOX_QUICKSTART.md)** §1.2 文案一致：
+
+| 阶段 | 脚本 | 说明 |
+|------|------|------|
+| merge 前 | **`bash scripts/tbox_s6_preflight.sh`** | `--fetch` 漂移；钉扎 Runbook §5：`--write-runbook` |
+| merge 后 | **`bash scripts/tbox_post_upstream_merge.sh`** | 重建 → host check → pre_release (VM+§5) |
+| Phase 16–17 | 下节「5180 浏览器手测」三步 | Walkthrough **步骤 C §7 + D**；VM §5 仍可能 ☐ |
+
+```bash
+bash scripts/tbox_s6_preflight.sh
+# git merge origin/main …
+bash scripts/tbox_post_upstream_merge.sh
+bash scripts/tbox_phase16_17_handtest.sh
+bash scripts/tbox_phase16_17_finish.sh --archive
+```
+
+**同一链亦见于**：**`bash scripts/tbox_print_release_next_steps.sh`** · **`bash scripts/tbox_pre_release.sh --help`**
+
+---
+
 ## 5180 Console
 
 | 脚本 | 用途 |
@@ -101,4 +123,4 @@ bash scripts/tbox_pre_release.sh --help
 
 ## 相关 Plan
 
-Phase 14–63：`docs/superpowers/plans/2026-05-30-tbox-phase14-plan.md` … `phase63-plan.md`
+Phase 14–66：`docs/superpowers/plans/2026-05-30-tbox-phase14-plan.md` … `phase66-plan.md`
