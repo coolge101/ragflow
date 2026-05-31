@@ -246,6 +246,7 @@
 | 2026-05-02 | **§9.4.2**：**`extra_config.tbox_crawl_retry_statuses`** 任务级全量白名单（**`effective_retry_statuses`** 第二优先级） | **`TBOX_API_BOUNDARY` §1.2** 同步 |
 | 2026-05-24 | **§1** 升级为 G1–G5「咨询/决策/辅导」产品目标；新增能力矩阵 spec 与下一阶段 plan；§7.5 DeepSeek 手测仅 `web-tbox` |
 | 2026-05-30 | **Phase 11**：post-merge 全链路验收、Docker build 磁盘 recovery |
+| 2026-05-31 | **Phase 61**：VM §5 ↔ SMOKE_SCRIPTS + smoke.env.example 三步链 — phase61 plan |
 | 2026-05-31 | **Phase 60**：SMOKE_SCRIPTS ↔ SMOKE_ENV + archive QUICKSTART §1.3 — phase60 plan |
 | 2026-05-31 | **Phase 59**：finish ↔ handtest + SMOKE_ENV QUICKSTART §1.3 — phase59 plan |
 | 2026-05-31 | **Phase 58**：QUICKSTART §1.3 ↔ print_release + handtest 手册 §5.4 — phase58 plan |
@@ -327,9 +328,10 @@
 | **Phase 58** | **QUICKSTART §1.3 ↔ print_release + handtest 手册** | §1.3 对齐 helper + **`tbox_phase16_17_handtest.sh`** §5.4 链接 — phase58 plan |
 | **Phase 59** | **finish ↔ handtest + SMOKE_ENV §1.3** | **`tbox_phase16_17_finish.sh`** + SMOKE_ENV Phase 16–17 — phase59 plan |
 | **Phase 60** | **SMOKE_SCRIPTS ↔ SMOKE_ENV + archive §1.3** | 脚本索引专节 + **`tbox_archive_phase16_17_handtest.sh`** — phase60 plan |
+| **Phase 61** | **VM §5 ↔ SMOKE_SCRIPTS + smoke.example** | VM acceptance §5 + **`tbox_smoke.env.example`** 三步链 — phase61 plan |
 | **Phase 51–53** | **CI/文档对齐 ✅** | QUICKSTART §6 · ENV §6 · Walkthrough · README · 手册 — phase51–53 plans |
 | **Phase 42–50** | **发版链文档闭环 ✅** | helper / SMOKE / VM §5 / UPSTREAM §3.2 交叉引用 — phase42–50 plans |
-| **矩阵/里程碑** | **Phase 0–60** | 后续：5180 Phase 16–17 浏览器手测 |
+| **矩阵/里程碑** | **Phase 0–61** | 后续：5180 Phase 16–17 浏览器手测 |
 
 ### 9.1 阶段总览
 

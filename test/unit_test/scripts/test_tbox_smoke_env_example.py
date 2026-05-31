@@ -38,6 +38,9 @@ class TestSmokeEnvExample(unittest.TestCase):
         self.assertIn("tbox_phase16_17_finish.sh --archive", self.text)
         self.assertIn("/review/step/phase16-17", self.text)
         self.assertIn("tbox_print_release_next_steps.sh", self.text)
+        self.assertIn("QUICKSTART", self.text)
+        self.assertIn("步骤 D", self.text)
+        self.assertIn("finish --archive", self.text)
 
 
 if __name__ == "__main__":

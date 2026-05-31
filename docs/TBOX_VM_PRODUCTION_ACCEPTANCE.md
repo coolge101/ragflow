@@ -53,7 +53,7 @@ bash scripts/tbox_permissions_smoke.sh
 bash scripts/tbox_rebuild_console.sh
 # 验证 bundle 含 Citation / 高亮代码（不重建时通常 FAIL）：
 bash scripts/tbox_console_bundle_smoke.sh
-# Phase 16–17 手测（bundle 通过后；浏览器 C §7 + D）：
+# Phase 16–17 手测（Walkthrough 步骤 D 5180 准生产前置 + C §7 + D）：
 bash scripts/tbox_phase16_17_handtest.sh
 # 确认页 /review/step/phase16-17 通过后归档 §5：
 bash scripts/tbox_phase16_17_finish.sh --archive
@@ -98,11 +98,11 @@ LAN IP：`hostname -I | awk '{print $1}'`
 
 **Phase 16–17 UI**（Citation + `/search` 高亮）须 **5180 浏览器手测** 后归档，勿在未手测前设 `TBOX_PHASE16_17_HANDTEST_DONE=1`：
 
-1. `bash scripts/tbox_phase16_17_handtest.sh` — bundle + 清单
+1. `bash scripts/tbox_phase16_17_handtest.sh` — bundle + 清单（Walkthrough **步骤 D**「5180 准生产前置」与 **C §7** 共用）
 2. 浏览器完成 Walkthrough **步骤 C §7 + D**；可选确认页 **`/review/step/phase16-17`**
 3. `bash scripts/tbox_phase16_17_finish.sh --archive` — 写 §5 ☑
 
-发版链：**`bash scripts/tbox_print_release_next_steps.sh`**（Runbook §3.1.3）。详 **`docs/TBOX_CONSOLE_REBUILD.md`**。
+发版链：**`bash scripts/tbox_print_release_next_steps.sh`**（Runbook §3.1.3 · QUICKSTART **§1.3**）。同一链见 **[`TBOX_SMOKE_SCRIPTS.md`](./TBOX_SMOKE_SCRIPTS.md)** · **[`TBOX_SMOKE_ENV.md`](./TBOX_SMOKE_ENV.md)** · **`docs/TBOX_CONSOLE_REBUILD.md`**。
 
 <!-- tbox-vm-section5:start -->
 | 项 | 值 |
