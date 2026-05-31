@@ -21,9 +21,15 @@ bash scripts/tbox_phase16_17_handtest.sh
 if [[ "$ARCHIVE" -eq 1 ]]; then
   echo ""
   bash scripts/tbox_archive_phase16_17_handtest.sh --confirm
+  echo ""
+  echo "    Doc: docs/TBOX_QUICKSTART.md §1.3 · docs/TBOX_SMOKE_ENV.md"
+  echo "         docs/TBOX_SYSTEM_USER_MANUAL.md §5.4"
 else
   echo ""
-  echo "==> When Citation + /search highlight pass on 5180:"
+  echo "==> When Citation + /search highlight pass on 5180 (Walkthrough C §7 + D):"
   echo "    bash scripts/tbox_phase16_17_finish.sh --archive"
   echo "    Full chain: bash scripts/tbox_print_release_next_steps.sh"
+  echo "    pre_release: bash scripts/tbox_pre_release.sh --help"
+  echo "    Doc: docs/TBOX_QUICKSTART.md §1.3 · docs/TBOX_SYSTEM_USER_MANUAL.md §5.4"
+  echo "         docs/TBOX_UI_ACCEPTANCE_WALKTHROUGH.md (step D) · docs/TBOX_SMOKE_ENV.md"
 fi

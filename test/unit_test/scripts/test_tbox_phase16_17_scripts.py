@@ -43,6 +43,10 @@ class TestPhase1617Scripts(unittest.TestCase):
         text = FINISH.read_text(encoding="utf-8")
         self.assertIn("--archive", text)
         self.assertIn("tbox_print_release_next_steps.sh", text)
+        self.assertIn("TBOX_QUICKSTART.md", text)
+        self.assertIn("TBOX_SMOKE_ENV.md", text)
+        self.assertIn("tbox_pre_release.sh --help", text)
+        self.assertIn("step D", text)
 
     def test_archive_prints_helper_on_success(self) -> None:
         text = ARCHIVE.read_text(encoding="utf-8")

@@ -118,11 +118,11 @@ TBOX_SKIP_HOST_CHECK=1 TBOX_PRE_RELEASE_VM=1 bash scripts/tbox_pre_release.sh
 
 ## Phase 16–17 浏览器手测（5180）
 
-与 VM 验收 **§5**、Walkthrough **§2.1**、脚本索引 **「Phase 16–17 浏览器手测」** 专节（**[`TBOX_SMOKE_SCRIPTS.md`](./TBOX_SMOKE_SCRIPTS.md)**）文案一致。
+与 VM 验收 **§5**、Walkthrough **§2.1** / **步骤 D**「5180 准生产前置」、**[`TBOX_QUICKSTART.md`](./TBOX_QUICKSTART.md) §1.3**、脚本索引 **「Phase 16–17 浏览器手测」** 专节（**[`TBOX_SMOKE_SCRIPTS.md`](./TBOX_SMOKE_SCRIPTS.md)**）文案一致。
 
 | 顺序 | 操作 | 说明 |
 |------|------|------|
-| 1 | `bash scripts/tbox_phase16_17_handtest.sh` | bundle + 打印 C/D 清单 |
+| 1 | `bash scripts/tbox_phase16_17_handtest.sh` | bundle + 打印 C/D 清单（Walkthrough **步骤 D** 前置与 **C §7** 共用） |
 | 2 | 浏览器 Walkthrough **步骤 C §7 + D** | Citation（`/`）+ 检索高亮（`/search`） |
 | 2b（可选） | **`/review/step/phase16-17`** | 确认页（journey **`phase16-17`**） |
 | 3 | `bash scripts/tbox_phase16_17_finish.sh --archive` | 写 VM §5 ☑（内部 **`--confirm`**） |
@@ -136,7 +136,9 @@ TBOX_SKIP_HOST_CHECK=1 TBOX_PRE_RELEASE_VM=1 bash scripts/tbox_pre_release.sh
 
 勿在未手测前设 **`TBOX_PHASE16_17_HANDTEST_DONE=1`**（由 `finish --archive` / `record` 写入 §5）。
 
-**发版链**：**`bash scripts/tbox_print_release_next_steps.sh`**（Runbook **§3.1.3**）。
+**发版链**：**`bash scripts/tbox_print_release_next_steps.sh`**（Runbook **§3.1.3** · QUICKSTART **§1.3**）。
+
+**同一链亦见于**：**[`TBOX_QUICKSTART.md`](./TBOX_QUICKSTART.md) §1.3** · **[`TBOX_SYSTEM_USER_MANUAL.md`](./TBOX_SYSTEM_USER_MANUAL.md) §5.4** · **`bash scripts/tbox_pre_release.sh --help`** · **`bash scripts/tbox_host_check.sh`**
 
 当 `--run-suite` 或 `--run-smoke` 已执行对应检查时，不会重复跑相同 probe。
 

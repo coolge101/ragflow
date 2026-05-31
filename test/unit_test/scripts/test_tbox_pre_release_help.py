@@ -55,6 +55,14 @@ class TestPreReleaseHelp(unittest.TestCase):
         self.assertIn("## Phase 16–17 浏览器手测（5180）", text)
         self.assertIn("TBOX_SMOKE_SCRIPTS.md", text)
 
+    def test_smoke_env_phase16_17_refs_quickstart_section13(self) -> None:
+        text = SMOKE_ENV.read_text(encoding="utf-8")
+        section = text.split("## Phase 16–17", 1)[1].split("## 相关", 1)[0]
+        self.assertIn("TBOX_QUICKSTART.md", section)
+        self.assertIn("§1.3", section)
+        self.assertIn("步骤 D", section)
+        self.assertIn("tbox_host_check.sh", section)
+
 
 if __name__ == "__main__":
     unittest.main()
