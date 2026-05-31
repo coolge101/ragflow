@@ -7,6 +7,7 @@
 #   bash scripts/tbox_record_vm_acceptance.sh --run-smoke              # 先跑完整 VM 验收
 #   bash scripts/tbox_record_vm_acceptance.sh --run-suite                # 先跑 smoke 套件
 #   bash scripts/tbox_record_vm_acceptance.sh --run-suite --write-section5
+#   bash scripts/tbox_record_vm_acceptance.sh --no-probe --write-section5   # 仅 HEAD/日期/手测 env
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -18,11 +19,13 @@ _tbox_load_smoke_env "$ROOT"
 RUN_SMOKE=0
 RUN_SUITE=0
 WRITE_SECTION5=0
+SKIP_PROBE=0
 for arg in "$@"; do
   case "$arg" in
     --run-smoke) RUN_SMOKE=1 ;;
     --run-suite) RUN_SUITE=1 ;;
     --write-section5) WRITE_SECTION5=1 ;;
+    --no-probe) SKIP_PROBE=1 ;;
   esac
 done
 
@@ -43,13 +46,22 @@ API="${TBOX_SMOKE_BASE_URL:-http://127.0.0.1:9380}"
 if [[ "$RUN_SMOKE" -eq 1 ]]; then
   if bash scripts/tbox_vm_production_acceptance.sh; then
     SMOKE_STATUS="pass (7/7)"
+    SMOKE_SUITE_STATUS="pass (via VM 7-step)"
+    LOGIN_STATUS="pass (via VM)"
+    WEB_TBOX_STATUS="pass (via VM)"
+    CONSOLE_BUNDLE_STATUS="pass (via VM)"
+    PERMS_STATUS="pass (via VM)"
   else
     SMOKE_STATUS="FAIL"
+    SMOKE_SUITE_STATUS="FAIL (VM)"
   fi
 elif [[ "$RUN_SUITE" -eq 1 ]]; then
   if bash scripts/tbox_smoke_suite.sh; then
     SMOKE_SUITE_STATUS="pass"
     SMOKE_STATUS="suite ok (see tbox_smoke_suite.sh)"
+    LOGIN_STATUS="pass (via suite)"
+    CONSOLE_BUNDLE_STATUS="pass (via suite)"
+    PERMS_STATUS="pass (via suite)"
   else
     SMOKE_SUITE_STATUS="FAIL"
     SMOKE_STATUS="suite FAIL"
@@ -64,51 +76,78 @@ else
   fi
 fi
 
-if [[ "$RUN_SUITE" -eq 0 ]]; then
-  if bash scripts/tbox_smoke_suite.sh >/dev/null 2>&1; then
-    SMOKE_SUITE_STATUS="pass"
+_mark_not_probed() {
+  [[ "$1" == "not run" ]] && echo "not probed" || echo "$1"
+}
+
+if [[ "$SKIP_PROBE" -eq 1 ]]; then
+  SMOKE_SUITE_STATUS="$(_mark_not_probed "$SMOKE_SUITE_STATUS")"
+  LOGIN_STATUS="$(_mark_not_probed "$LOGIN_STATUS")"
+  WEB_TBOX_STATUS="$(_mark_not_probed "$WEB_TBOX_STATUS")"
+  PERMS_STATUS="$(_mark_not_probed "$PERMS_STATUS")"
+  CONSOLE_BUNDLE_STATUS="$(_mark_not_probed "$CONSOLE_BUNDLE_STATUS")"
+  DUAL_ACCOUNT_STATUS="not probed"
+elif [[ "$RUN_SMOKE" -eq 0 ]]; then
+  if [[ "$RUN_SUITE" -eq 0 ]]; then
+    if bash scripts/tbox_smoke_suite.sh >/dev/null 2>&1; then
+      SMOKE_SUITE_STATUS="pass"
+    else
+      SMOKE_SUITE_STATUS="FAIL or stack down"
+    fi
+  fi
+
+  if [[ "$RUN_SUITE" -eq 0 ]]; then
+    if bash scripts/tbox_login_smoke.sh >/dev/null 2>&1; then
+      LOGIN_STATUS="pass"
+    else
+      LOGIN_STATUS="FAIL"
+    fi
+  fi
+
+  if [[ "${TBOX_SKIP_WEB_TBOX_CHECK:-0}" == "1" ]]; then
+    WEB_TBOX_STATUS="skipped"
+  elif bash scripts/tbox_web_tbox_check.sh >/dev/null 2>&1; then
+    WEB_TBOX_STATUS="pass (12 tests)"
   else
-    SMOKE_SUITE_STATUS="FAIL or stack down"
+    WEB_TBOX_STATUS="FAIL"
+  fi
+
+  if [[ "$RUN_SUITE" -eq 0 ]]; then
+    if bash scripts/tbox_permissions_smoke.sh >/dev/null 2>&1; then
+      PERMS_STATUS="pass"
+      if [[ -n "${TBOX_SMOKE_NORMAL_EMAIL:-}" && -n "${TBOX_SMOKE_NORMAL_PASSWORD:-}" ]]; then
+        PERMS_STATUS="pass (dual-account)"
+      else
+        PERMS_STATUS="pass (admin only; set scripts/tbox_smoke.env for dual)"
+      fi
+    else
+      PERMS_STATUS="FAIL"
+    fi
+  fi
+
+  if bash scripts/tbox_dual_account_check.sh >/dev/null 2>&1; then
+    DUAL_ACCOUNT_STATUS="configured"
+  else
+    DUAL_ACCOUNT_STATUS="not configured (optional)"
+  fi
+
+  if [[ "$RUN_SUITE" -eq 0 ]]; then
+    if [[ "${TBOX_SKIP_CONSOLE_BUNDLE_SMOKE:-0}" == "1" ]]; then
+      CONSOLE_BUNDLE_STATUS="skipped"
+    elif bash scripts/tbox_console_bundle_smoke.sh >/dev/null 2>&1; then
+      CONSOLE_BUNDLE_STATUS="pass (Phase 16–17 markers)"
+    else
+      CONSOLE_BUNDLE_STATUS="FAIL — run tbox_rebuild_console.sh"
+    fi
   fi
 fi
 
-if bash scripts/tbox_login_smoke.sh >/dev/null 2>&1; then
-  LOGIN_STATUS="pass"
-else
-  LOGIN_STATUS="FAIL"
-fi
-
-if [[ "${TBOX_SKIP_WEB_TBOX_CHECK:-0}" == "1" ]]; then
-  WEB_TBOX_STATUS="skipped"
-elif bash scripts/tbox_web_tbox_check.sh >/dev/null 2>&1; then
-  WEB_TBOX_STATUS="pass (12 tests)"
-else
-  WEB_TBOX_STATUS="FAIL"
-fi
-
-if bash scripts/tbox_permissions_smoke.sh >/dev/null 2>&1; then
-  PERMS_STATUS="pass"
-  if [[ -n "${TBOX_SMOKE_NORMAL_EMAIL:-}" && -n "${TBOX_SMOKE_NORMAL_PASSWORD:-}" ]]; then
-    PERMS_STATUS="pass (dual-account)"
+if [[ "$RUN_SMOKE" -eq 1 && "$SMOKE_STATUS" == pass* ]]; then
+  if bash scripts/tbox_dual_account_check.sh >/dev/null 2>&1; then
+    DUAL_ACCOUNT_STATUS="configured"
   else
-    PERMS_STATUS="pass (admin only; set scripts/tbox_smoke.env for dual)"
+    DUAL_ACCOUNT_STATUS="not configured (optional)"
   fi
-else
-  PERMS_STATUS="FAIL"
-fi
-
-if bash scripts/tbox_dual_account_check.sh >/dev/null 2>&1; then
-  DUAL_ACCOUNT_STATUS="configured"
-else
-  DUAL_ACCOUNT_STATUS="not configured (optional)"
-fi
-
-if [[ "${TBOX_SKIP_CONSOLE_BUNDLE_SMOKE:-0}" == "1" ]]; then
-  CONSOLE_BUNDLE_STATUS="skipped"
-elif bash scripts/tbox_console_bundle_smoke.sh >/dev/null 2>&1; then
-  CONSOLE_BUNDLE_STATUS="pass (Phase 16–17 markers)"
-else
-  CONSOLE_BUNDLE_STATUS="FAIL — run tbox_rebuild_console.sh"
 fi
 
 HAND_TEST="${TBOX_HAND_TEST_DONE:-1}"

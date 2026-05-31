@@ -68,10 +68,13 @@ TBOX_REQUIRE_DUAL_ACCOUNT=1 bash scripts/tbox_permissions_smoke.sh
 
 未配置双账号时 `TBOX_REQUIRE_DUAL_ACCOUNT=1` 会失败并提示填写 `scripts/tbox_smoke.env`。
 
+当 `--run-suite` 或 `--run-smoke` 已执行对应检查时，不会重复跑相同 probe。
+
 ---
 
 ## 相关文档
 
+- 脚本索引：**[`TBOX_SMOKE_SCRIPTS.md`](./TBOX_SMOKE_SCRIPTS.md)**
 - [`TBOX_VM_PRODUCTION_ACCEPTANCE.md`](./TBOX_VM_PRODUCTION_ACCEPTANCE.md) §2
 - [`TBOX_DEPLOY_RUNBOOK.md`](./TBOX_DEPLOY_RUNBOOK.md) §9（冒烟）
 - Phase 18 plan：`docs/superpowers/plans/2026-05-30-tbox-phase18-plan.md`

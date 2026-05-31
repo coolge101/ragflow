@@ -141,6 +141,17 @@ bash scripts/tbox_upstream_divergence.sh --fetch
 
 生成：`bash scripts/tbox_record_upstream_drift.sh --fetch`
 
+### 2026-05-31 快照（Phase 29 前 `--fetch`）（`tbox-deploy` @ `1b0da8c8d`）
+
+| 项 | 值 |
+|----|-----|
+| HEAD | `1b0da8c8d` — Phase 28 §5 auto-write |
+| upstream | `origin/main` @ `cd18cfab7` |
+| merge-base | `cd18cfab7` |
+| behind | **0** |
+| ahead | **138** |
+| 结论 | behind 0；无缺失 upstream commit；下次 merge 前再 `--fetch` |
+
 ### 2026-05-31 快照（Phase 28 前 `--fetch`）（`tbox-deploy` @ `32e50c876`）
 
 | 项 | 值 |

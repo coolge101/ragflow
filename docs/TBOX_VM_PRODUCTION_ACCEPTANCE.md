@@ -28,6 +28,7 @@ bash scripts/start-tbox-ragflow.sh --console
 
 ```bash
 cd <REPO>
+bash scripts/tbox_pre_release.sh
 bash scripts/tbox_smoke_suite.sh
 bash scripts/tbox_vm_production_acceptance.sh
 # 生成 §5 记录草稿（含 HEAD / LAN IP）：
@@ -95,13 +96,13 @@ LAN IP：`hostname -I | awk '{print $1}'`
 | 日期 | 2026-05-31 |
 | VM / LAN IP | 10.40.92.240 |
 | Console | http://10.40.92.240:5180/login |
-| Git HEAD | `32e50c876` |
-| `tbox_smoke_suite.sh` | pass |
-| `tbox_vm_production_acceptance.sh` | quick-check ok (run tbox_vm_production_acceptance.sh for full) |
-| `tbox_web_tbox_check.sh` | pass (12 tests) |
-| `tbox_login_smoke.sh` | pass |
-| `tbox_console_bundle_smoke.sh` | pass (Phase 16–17 markers) |
-| `tbox_permissions_smoke.sh` | pass (admin only; set scripts/tbox_smoke.env for dual) |
+| Git HEAD | `1b0da8c8d` |
+| `tbox_smoke_suite.sh` | FAIL |
+| `tbox_vm_production_acceptance.sh` | suite FAIL |
+| `tbox_web_tbox_check.sh` | skipped |
+| `tbox_login_smoke.sh` | not run |
+| `tbox_console_bundle_smoke.sh` | not run |
+| `tbox_permissions_smoke.sh` | not run |
 | `tbox_dual_account_check.sh` | not configured (optional) |
 | §3 内网与双账号 A–D | ☑ 手测 2026-05-31 |
 | §4 产品动线 Walkthrough | ☑ 手测 2026-05-31 |
@@ -122,5 +123,6 @@ LAN IP：`hostname -I | awk '{print $1}'`
 - Phase 13 plan：`docs/superpowers/plans/2026-05-30-tbox-phase13-plan.md`
 - Phase 14 plan：`docs/superpowers/plans/2026-05-30-tbox-phase14-plan.md`
 - Phase 15 plan：`docs/superpowers/plans/2026-05-30-tbox-phase15-plan.md`
-- Phase 16–28 plans：`docs/superpowers/plans/2026-05-30-tbox-phase16-plan.md` … `phase28-plan.md`
+- Phase 16–29 plans：`docs/superpowers/plans/2026-05-30-tbox-phase16-plan.md` … `phase29-plan.md`
+- 冒烟脚本索引：`docs/TBOX_SMOKE_SCRIPTS.md`
 - Console 重建：`docs/TBOX_CONSOLE_REBUILD.md`
