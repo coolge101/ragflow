@@ -15,8 +15,8 @@
 | 字段 | 值 |
 |------|-----|
 | 记录日期 | 2026-05-31 |
-| 本 fork 工作区 `HEAD`（文档更新时钉扎） | `817d2ac94` |
-| 备注 | **Phase 32** @ `817d2ac94`。Host check 链 + smoke env 初始化 ✅。S6 merge @ `f9bd37fdd`；**behind 0 / ahead ~145**。 |
+| 本 fork 工作区 `HEAD`（文档更新时钉扎） | `3ea471c83` |
+| 备注 | **Phase 33** @ `3ea471c83`。双账号门禁链 + S6 preflight ✅。S6 merge @ `f9bd37fdd`；**behind 0 / ahead ~149**。 |
 
 ## 3. 常用端口（默认本地开发）
 
