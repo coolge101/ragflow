@@ -115,6 +115,23 @@ bash scripts/pull-local-deps-for-docker.sh
 
 脚本末尾会 **`docker build -f Dockerfile.deps -t infiniflow/ragflow_deps:latest .`**。之后在本机构建主镜像时，**`Dockerfile`** 通过 **`--mount=from=infiniflow/ragflow_deps:latest`** 拷贝上述资源到镜像内的 **`/ragflow/rag/res/deepdoc`** 等路径，**无需在构建主镜像时再访问 Hugging Face**。换机离线部署时：携带含已下载文件的仓库目录与已 **`docker save`** 的 **`infiniflow/ragflow_deps:latest` / 自建 RAGFlow 镜像 / `ragflow-tbox-console:local`**，目标机 **`docker load`** 后设置 **`TBOX_COMPOSE_PULL=never`** 再起 Compose。
 
+### 3.1.3 启动脚本与 5180 / pre_release 提示（Phase 42）
+
+三脚本在栈就绪后共用 **`scripts/tbox_print_release_next_steps.sh`**，打印 **5180 console + smoke env + pre_release + VM 验收 + Phase 16–17 归档** 链；详见 **§8.1**。
+
+| 脚本 | 典型场景 | 何时打印 pre_release 链 |
+|------|----------|---------------------------|
+| **`scripts/tbox-up.sh`** | 仓库根一键 **`docker/tbox-compose-up.sh`** | 环境变量 **`TBOX_CONSOLE=1`** 时 |
+| **`scripts/start-tbox-ragflow.sh`** | Docker + 可选 **`--web` / `--console`** | **`--console`** 或 **`TBOX_CONSOLE=1`** 时 |
+| **`scripts/deploy-on-new-server.sh`** | 新服务器克隆 + 构建 + 部署 | 部署成功后（含 **`--with-compose-hint`**：`TBOX_CONSOLE=1 bash docker/tbox-compose-up.sh`） |
+
+手动查看：
+
+```bash
+bash scripts/tbox_print_release_next_steps.sh
+bash scripts/tbox_print_release_next_steps.sh --with-compose-hint
+```
+
 ### 3.2 启动依赖（`docker-compose-base.yml`）
 
 按你在 `.env` 里选的**文档引擎**启动对应 profile（**不要**同时起冲突的引擎，以团队约定为准）。

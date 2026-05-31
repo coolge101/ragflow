@@ -36,6 +36,7 @@ bash scripts/tbox_pre_release.sh --help
 | **`scripts/tbox_vm_production_acceptance.sh`** | 准生产 **7 步**（Docker + 5180 + web-tbox + release） |
 | **`scripts/tbox_post_upstream_merge.sh`** | S6 merge 后：重建 → **pre_release (VM+§5)** |
 | **`scripts/tbox_phase16_17_finish.sh`** | 手测清单 → 可选 **`--archive`** 写 §5 |
+| **`scripts/tbox_print_release_next_steps.sh`** | 5180 + pre_release 下一步（`tbox-up` / `start-tbox` / `deploy` 共用） |
 | **`scripts/tbox_archive_phase16_17_handtest.sh`** | Phase 16–17 手测完成后写 §5（须 **`--confirm`**） |
 
 ---

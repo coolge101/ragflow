@@ -300,7 +300,8 @@
 | **Phase 39** | **deploy 提示 + 步骤 Q + 矩阵 §6** | **`deploy-on-new-server.sh`** + Walkthrough Q ↔ **`vm-5180`** — phase39 plan |
 | **Phase 40** | **start-tbox + §6 Q + G5-MATRIX** | **`start-tbox-ragflow.sh --console`** + Walkthrough §6 + 矩阵钉扎 — phase40 plan |
 | **Phase 41** | **tbox-up + QUICKSTART + global 手测** | **`tbox-up.sh`** + §1.2 s6/pre_release + **`journeySteps` global** — phase41 plan |
-| **矩阵/里程碑** | **Phase 0–41** | 后续：5180 Phase 16–17 浏览器手测 |
+| **Phase 42** | **发版提示 helper + phase16-17 journey** | **`tbox_print_release_next_steps.sh`** + Runbook §3.1.3 + Walkthrough §2.2 — phase42 plan |
+| **矩阵/里程碑** | **Phase 0–42** | 后续：5180 Phase 16–17 浏览器手测 |
 
 ### 9.1 阶段总览
 

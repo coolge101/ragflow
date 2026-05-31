@@ -90,8 +90,9 @@
 | **K** 一页纸 | `/review` | — | 索引页 `/review` |
 | **L–P** | 见各步路径 | 同上 id | 同上 |
 | **Q** 5180 VM | 5180 全站 | `vm-5180` | `/review/step/vm-5180` |
+| **Phase 16–17** | `/` Citation + `/search` 高亮 | `phase16-17` | `/review/step/phase16-17` |
 
-Phase 16–17 浏览器通过后（步骤 **C §7** + **D**）：`bash scripts/tbox_phase16_17_finish.sh --archive`
+Phase 16–17 浏览器通过后（步骤 **C §7** + **D**）：`bash scripts/tbox_phase16_17_finish.sh --archive`（完整清单见 **`/review/step/phase16-17`**）
 
 ---
 

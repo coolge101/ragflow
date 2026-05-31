@@ -61,15 +61,7 @@ if [[ "$WITH_WEB" -eq 1 ]]; then
 fi
 
 if [[ "$WITH_CONSOLE" -eq 1 || "${TBOX_CONSOLE:-0}" == "1" ]]; then
-  echo ""
-  echo "==> [start-tbox-ragflow] quasi-production (5180 console):"
-  echo "    Console: http://127.0.0.1:\${TBOX_CONSOLE_PORT:-5180}/login"
-  echo "    bash scripts/tbox_setup_smoke_env.sh"
-  echo "    bash scripts/tbox_pre_release.sh --help"
-  echo "    bash scripts/tbox_pre_release.sh"
-  echo "    bash scripts/tbox_vm_production_acceptance.sh"
-  echo "    # Phase 16–17 browser: bash scripts/tbox_phase16_17_finish.sh --archive"
-  echo "    Doc: docs/TBOX_DEPLOY_RUNBOOK.md §8.1"
+  TBOX_RELEASE_STEPS_PREFIX="[start-tbox-ragflow]" bash "$REPO_ROOT/scripts/tbox_print_release_next_steps.sh"
 fi
 
 echo "==> [start-tbox-ragflow] done."
