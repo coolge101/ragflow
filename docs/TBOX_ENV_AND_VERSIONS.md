@@ -15,8 +15,8 @@
 | 字段 | 值 |
 |------|-----|
 | 记录日期 | 2026-05-31 |
-| 本 fork 工作区 `HEAD`（文档更新时钉扎） | `86b240298` |
-| 备注 | **Phase 60** @ `86b240298`。SMOKE_SCRIPTS ↔ SMOKE_ENV + archive QUICKSTART §1.3 ✅。S6 merge @ `f9bd37fdd`；**behind 0 / ahead ~192**。 |
+| 本 fork 工作区 `HEAD`（文档更新时钉扎） | `713bb5f14` |
+| 备注 | **Phase 61** @ `713bb5f14`。VM §5 ↔ SMOKE_SCRIPTS + smoke.env.example 三步链 ✅。S6 merge @ `f9bd37fdd`；**behind 0 / ahead ~193**。 |
 
 ## 3. 常用端口（默认本地开发）
 
