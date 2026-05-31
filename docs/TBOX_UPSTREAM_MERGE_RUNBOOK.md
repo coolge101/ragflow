@@ -47,9 +47,8 @@ cd web-tbox && npm run typecheck && npm test && npm run build
 curl -sf http://127.0.0.1:9380/v1/tbox/health
 # 宿主机 uv 因 spacy/GitHub 超时时：
 TBOX_SMOKE_RUNNER=docker bash scripts/tbox_release_smoke.sh
-# 或完整 post-merge：
+# 或完整 post-merge（含 web-tbox check、console 重建、pre_release VM+§5）：
 bash scripts/tbox_post_upstream_merge.sh
-# post-merge 默认写 docs/TBOX_VM_PRODUCTION_ACCEPTANCE.md §5（TBOX_RECORD_WRITE_SECTION5=0 可跳过）
 # post-merge 在 web-tbox/ 有变更时自动 force-recreate 5180（TBOX_REBUILD_CONSOLE=auto，默认）
 # 未重建时仍会跑 bundle smoke 防 stale 5180
 # 强制/跳过：TBOX_REBUILD_CONSOLE=1 | TBOX_REBUILD_CONSOLE=0
@@ -140,6 +139,17 @@ bash scripts/tbox_upstream_divergence.sh --fetch
 | 结论 | behind 0；无缺失 upstream commit；下次 merge 前再 `--fetch` |
 
 生成：`bash scripts/tbox_record_upstream_drift.sh --fetch`
+
+### 2026-05-31 快照（Phase 30 前 `--fetch`）（`tbox-deploy` @ `51ca57892`）
+
+| 项 | 值 |
+|----|-----|
+| HEAD | `51ca57892` — Phase 29 pre-release gate |
+| upstream | `origin/main` @ `cd18cfab7` |
+| merge-base | `cd18cfab7` |
+| behind | **0** |
+| ahead | **140** |
+| 结论 | behind 0；无缺失 upstream commit；下次 merge 前再 `--fetch` |
 
 ### 2026-05-31 快照（Phase 29 前 `--fetch`）（`tbox-deploy` @ `1b0da8c8d`）
 

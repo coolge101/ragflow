@@ -42,14 +42,11 @@ bash scripts/tbox_console_bundle_smoke.sh
 | **`/`** | 绑定知识库的应用提问 → 点击 `[ID:n]` ↔ 右侧引用侧栏高亮 |
 | **`/search`** | 检索有结果 → 点击条目高亮 |
 
-通过后更新 **`docs/TBOX_VM_PRODUCTION_ACCEPTANCE.md`** §5「Phase 16–17 UI」为 ☑。
-
-一键辅助（先 bundle smoke，再打印清单）：
+通过后归档 §5：
 
 ```bash
-bash scripts/tbox_phase16_17_handtest.sh
-# 手测完成后：
-TBOX_PHASE16_17_HANDTEST_DONE=1 bash scripts/tbox_record_vm_acceptance.sh
+bash scripts/tbox_phase16_17_handtest.sh          # 清单 + bundle 检查
+bash scripts/tbox_archive_phase16_17_handtest.sh  # 浏览器手测完成后
 ```
 
 ---
@@ -60,4 +57,4 @@ TBOX_PHASE16_17_HANDTEST_DONE=1 bash scripts/tbox_record_vm_acceptance.sh
 - VM 验收：`bash scripts/tbox_vm_production_acceptance.sh`
 - 开发联调（5174，无需重建镜像）：`cd web-tbox && npm run dev`
 
-**Plan:** `docs/superpowers/plans/2026-05-31-tbox-phase26-plan.md`
+**Plan:** `docs/superpowers/plans/2026-05-31-tbox-phase30-plan.md`

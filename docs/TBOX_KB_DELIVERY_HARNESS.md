@@ -288,7 +288,8 @@
 | **Phase 27** | **Smoke 套件 + 双账号校验** | **`tbox_smoke_suite.sh`** + **`tbox_dual_account_check.sh`** + 5180 Walkthrough — phase27 plan |
 | **Phase 28** | **§5 自动钉扎** | **`tbox_record_vm_acceptance.sh --write-section5`** + post-merge 收尾 — phase28 plan |
 | **Phase 29** | **发版门禁 + 脚本索引** | **`tbox_pre_release.sh`** + **`TBOX_SMOKE_SCRIPTS.md`** + record `--no-probe` — phase29 plan |
-| **矩阵/里程碑** | **Phase 0–29** | 后续：5180 Phase 16–17 手测归档 |
+| **Phase 30** | **Post-merge 整合 + 手测归档** | post-merge → pre_release；**`tbox_archive_phase16_17_handtest.sh`** — phase30 plan |
+| **矩阵/里程碑** | **Phase 0–30** | 后续：5180 Phase 16–17 手测归档 |
 
 ### 9.1 阶段总览
 

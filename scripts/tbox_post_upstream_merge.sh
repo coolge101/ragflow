@@ -60,28 +60,18 @@ else
   echo ""
 fi
 
-echo "==> Release smoke (docker runner — avoids host uv/spacy when GitHub times out)"
-export TBOX_SMOKE_RUNNER=docker
-export TBOX_SMOKE_CONTAINER="$CONTAINER"
-export TBOX_SMOKE_BASE_URL="http://127.0.0.1:${API_PORT}"
-bash scripts/tbox_release_smoke.sh
-
-echo ""
 echo "==> Verify API image + bundled scripts"
 bash scripts/tbox_verify_stack_image.sh
 docker exec "$CONTAINER" test -f /ragflow/scripts/tbox_release_smoke.sh
 echo "OK: /ragflow/scripts in container"
-
 echo ""
-echo "==> VM production acceptance"
-bash scripts/tbox_vm_production_acceptance.sh
 
+echo "==> Pre-release gate (VM 7-step + §5; replaces separate release smoke + VM + record)"
+export TBOX_SMOKE_RUNNER=docker
+export TBOX_SMOKE_CONTAINER="$CONTAINER"
+export TBOX_SMOKE_BASE_URL="http://127.0.0.1:${API_PORT}"
+TBOX_SKIP_WEB_TBOX_CHECK=1 TBOX_PRE_RELEASE_VM=1 bash scripts/tbox_pre_release.sh
 echo ""
-if [[ "${TBOX_RECORD_WRITE_SECTION5:-1}" == "1" ]]; then
-  echo "==> Update VM acceptance §5"
-  bash scripts/tbox_record_vm_acceptance.sh --write-section5
-  echo ""
-fi
 
 echo "==> POST-MERGE OK — see docs/TBOX_UPSTREAM_MERGE_RUNBOOK.md §3–4"
 echo "    Optional UI checklist: docs/TBOX_VM_PRODUCTION_ACCEPTANCE.md §3–4 (5180)"
