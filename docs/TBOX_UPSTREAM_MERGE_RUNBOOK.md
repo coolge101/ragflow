@@ -138,6 +138,18 @@ bash scripts/tbox_record_upstream_drift.sh --fetch --write-runbook
 | 结论 | behind 0；无缺失 upstream commit；下次 merge 前再 `--fetch` |
 
 生成：`bash scripts/tbox_record_upstream_drift.sh --fetch`
+### 2026-05-31 快照（`--fetch` 后）（`tbox-deploy` @ `9d2961fb6`）
+
+| 项 | 值 |
+|----|-----|
+| HEAD | `9d2961fb6` — TBOX Phase 52: ENV §6 CI parity, Walkthrough §6 feedback VM align |
+| upstream | `origin/main` @ `cd18cfab79578bc0e2797b2614afde44f1e0a411` |
+| merge-base | `cd18cfab79578bc0e2797b2614afde44f1e0a411` |
+| behind | **0** |
+| ahead | **184** |
+| 结论 | behind 0；无缺失 upstream commit；下次 merge 前再 `--fetch` |
+
+生成：`bash scripts/tbox_s6_preflight.sh --write-runbook`
 ### 2026-05-31 快照（`--fetch` 后）（`tbox-deploy` @ `50b9c6476`）
 
 | 项 | 值 |
