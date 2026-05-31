@@ -65,6 +65,7 @@ export const JOURNEY_STEPS: JourneyStep[] = [
       "流式输出可中止；中止不红错、不删已发用户句",
       "「仅模型」模式不传 chat_id",
       "有消息时可「导出 Markdown / PDF / Word / PPT」",
+      "（Walkthrough L）Word/PPT 导出可用；大结果导出可有确认弹窗",
       "窄屏下引用区在消息区下方全宽展示",
       "新消息与流式输出时消息区自动滚到底部",
       "绑定知识库时点击 [ID:n] 与引用侧栏双向高亮",
@@ -97,6 +98,7 @@ export const JOURNEY_STEPS: JourneyStep[] = [
       "无知识库时有说明；首次进入有操作引导",
       "检索成功但 0 条时有提示，并可「清空条件」",
       "有命中结果时可「导出 Markdown / PDF / Excel / PPT」",
+      "（Walkthrough L）Excel/PPT 导出可用；大结果导出可有确认弹窗",
       "点击检索结果条目可高亮并滚动到可见区域",
       "修改问题或知识库后，旧结果自动清除",
       "错误可重试",
@@ -115,7 +117,7 @@ export const JOURNEY_STEPS: JourneyStep[] = [
       "有权限时可点击或拖入卡片上传；删文档含二次确认；删整库需 kb.dangerous",
       "切换知识库展开时文档页码回到第 1 页",
       "可展开 G1 多格式入库向导；Excel/图片上传时若分块方式不匹配有黄色提示",
-      "（待办）重解析、版本、导出等以 API 与排期为准",
+      "（Walkthrough N/P）有 doc.reparse 时可重新解析；有 export.data 时可 ZIP 导入/导出",
     ],
   },
   {
@@ -140,6 +142,7 @@ export const JOURNEY_STEPS: JourneyStep[] = [
       "列表、新建、编辑、删除、执行一次可用",
       "可选「专项 / 定时」任务类型；可填关键词、深度、允许域名",
       "extra_config 勾选与 JSON 与后端契约一致；策略键由 worker 消费",
+      "（Walkthrough M）可选 HTTP API 种子、认证 Header 配置名；任务可创建并执行一次",
     ],
   },
   {
@@ -150,7 +153,7 @@ export const JOURNEY_STEPS: JourneyStep[] = [
     summary: "入库/流水线 ingestions 日志。",
     acceptance: [
       "可切换知识库与 log_type 查看日志",
-      "（待办）时间范围等筛选视接口支持",
+      "（Walkthrough O）时间/类型/状态/关键词筛选；有 export.data 时可导出 CSV/Excel",
     ],
   },
   {

@@ -217,6 +217,19 @@ curl -sf "$API/v1/tbox/health" | python3 -m json.tool
 
 **发版冒烟（Phase 6+）**：`bash scripts/deploy-on-new-server.sh` 在栈启动后会自动执行 **`bash scripts/tbox_release_smoke.sh`**（health + G1 + G3）。跳过：`TBOX_SKIP_RELEASE_SMOKE=1 bash scripts/deploy-on-new-server.sh`。单独复跑：`bash scripts/tbox_release_smoke.sh`。
 
+**准生产发版链（5180 console，推荐）**：
+
+```bash
+cd <REPO>
+bash scripts/tbox_setup_smoke_env.sh    # 可选：编辑 scripts/tbox_smoke.env
+bash scripts/tbox_pre_release.sh        # host check → suite + §5
+bash scripts/tbox_pre_release.sh --help # 模式：TBOX_PRE_RELEASE_VM / TBOX_REQUIRE_DUAL_ACCOUNT 等
+# Phase 16–17 浏览器手测后：
+bash scripts/tbox_phase16_17_finish.sh --archive
+```
+
+详 **[`TBOX_DEPLOY_RUNBOOK.md`](./TBOX_DEPLOY_RUNBOOK.md)** §8.1 · **[`TBOX_VM_PRODUCTION_ACCEPTANCE.md`](./TBOX_VM_PRODUCTION_ACCEPTANCE.md)** · **[`TBOX_SMOKE_ENV.md`](./TBOX_SMOKE_ENV.md)**。
+
 ---
 
 ## 7. web-tbox 前端

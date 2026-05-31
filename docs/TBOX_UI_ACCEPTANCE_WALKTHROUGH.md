@@ -257,13 +257,13 @@ Phase 16–17 浏览器通过后（步骤 **C §7** + **D**）：`bash scripts/t
 
 > 对应 [`2026-05-24-tbox-phase3-plan.md`](./superpowers/plans/2026-05-24-tbox-phase3-plan.md) Task 11–15。无对应权限时跳过并记录。
 
-| 步骤 | 路径 | 验收要点 |
-|------|------|----------|
-| **L Office 导出** | `/`、`/search` | 对话 **导出 Word/PPT**；检索 **导出 Excel/PPT**；大结果有确认弹窗 |
-| **M 爬取高级源** | `/crawl` | 可选 **HTTP API 种子**、**认证 Header 配置名**；任务可创建并执行一次 |
-| **N 文档高级** | `/documents` | 有 `doc.reparse` 时 **重新解析**；有 `export.data` / `doc.upload` 时 **导出/导入 ZIP** |
-| **O 审计筛选** | `/audit` | 时间/类型/状态/关键词筛选；**导出 CSV/Excel**（需 `export.data`） |
-| **P 多格式入库** | `/documents`、`/search` | 展开 **G1 多格式入库向导**；上传图片/Excel 时有分块提示；或跑 `scripts/tbox_g1_ingest_format_smoke.py` |
+| 步骤 | 路径 | 验收要点 | `/review/step/:id` |
+|------|------|----------|----------------------|
+| **L Office 导出** | `/`、`/search` | 对话 **导出 Word/PPT**；检索 **导出 Excel/PPT**；大结果有确认弹窗 | `chat` · `search` |
+| **M 爬取高级源** | `/crawl` | 可选 **HTTP API 种子**、**认证 Header 配置名**；任务可创建并执行一次 | `crawl` |
+| **N 文档高级** | `/documents` | 有 `doc.reparse` 时 **重新解析**；有 `export.data` / `doc.upload` 时 **导出/导入 ZIP** | `documents` |
+| **O 审计筛选** | `/audit` | 时间/类型/状态/关键词筛选；**导出 CSV/Excel**（需 `export.data`） | `audit` |
+| **P 多格式入库** | `/documents`、`/search` | 展开 **G1 多格式入库向导**；上传图片/Excel 时有分块提示；或跑 `scripts/tbox_g1_ingest_format_smoke.py` | `documents` |
 
 **通过标准**：各步无 5xx；导出文件可打开；G1 四格式检索命中（见 smoke §5）。
 

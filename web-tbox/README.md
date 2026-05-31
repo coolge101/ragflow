@@ -41,9 +41,18 @@ PR / post-merge 门禁（仓库根）：
 
 ```bash
 bash scripts/tbox_web_tbox_check.sh
+bash scripts/tbox_host_check.sh    # web-tbox + scripts unit（CI 对号）
 ```
 
 CI：`.github/workflows/web-tbox.yml`（`npm ci` + `typecheck` + `test` + `build`）。
+
+## 界面验收与评审页
+
+- **按步 Walkthrough**：[`docs/TBOX_UI_ACCEPTANCE_WALKTHROUGH.md`](../docs/TBOX_UI_ACCEPTANCE_WALKTHROUGH.md) — **§2.2** 对照本目录 `src/review/journeySteps.ts` 与 **`/review/step/:id`**
+- **5180 准生产**：Citation（`/`）+ 检索高亮（`/search`）手测后 — `bash scripts/tbox_phase16_17_finish.sh --archive`
+- **发版前**：`bash scripts/tbox_pre_release.sh --help`（模式矩阵见 [`TBOX_SMOKE_SCRIPTS.md`](../docs/TBOX_SMOKE_SCRIPTS.md)）
+
+生产构建需 **`/review`** 时：`.env` 设 **`VITE_REVIEW_PAGES=1`** 后 `npm run build`（见 `docs/TBOX_SYSTEM_USER_MANUAL.md` §5.3）。
 
 ## 文档
 
