@@ -35,11 +35,13 @@ class TestWebTboxCheckScript(unittest.TestCase):
         self.assertIn("TBOX_ENV_AND_VERSIONS.md", self.text)
 
 
-class TestHarnessPhase5153Summary(unittest.TestCase):
-    def test_harness_documents_phase51_53_summary(self) -> None:
+class TestHarnessPhase5462Summary(unittest.TestCase):
+    def test_harness_documents_phase54_62_summary(self) -> None:
         text = HARNESS.read_text(encoding="utf-8")
         self.assertIn("Phase 51–53", text)
-        self.assertIn("Phase 54", text)
+        self.assertIn("Phase 54–62", text)
+        self.assertIn("Phase 63", text)
+        self.assertIn("Phase 0–63", text)
 
 
 if __name__ == "__main__":

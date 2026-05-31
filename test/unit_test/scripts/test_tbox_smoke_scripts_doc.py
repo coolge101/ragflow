@@ -35,7 +35,7 @@ class TestSmokeScriptsDoc(unittest.TestCase):
         self.assertIn("tbox_phase16_17_handtest.sh", self.smoke_text)
         self.assertIn("/review/step/phase16-17", self.smoke_text)
         self.assertIn("tbox_print_release_next_steps.sh", self.smoke_text)
-        self.assertIn("phase61-plan.md", self.smoke_text)
+        self.assertIn("phase62-plan.md", self.smoke_text)
 
     def test_smoke_scripts_phase16_17_aligns_with_smoke_env(self) -> None:
         section = self.smoke_text.split("## Phase 16–17", 1)[1].split("## API", 1)[0]

@@ -123,7 +123,7 @@
 | G5-UI-USERS | 用户与 TBOX 权限 | ✅ team | ✅ `/users` | TBOX managed-users | ✅ | |
 | G5-UI-AUDIT | 入库/流水线日志 | ✅ ingestions | ✅ **`/audit`** 筛选+导出 | 官方 REST | P2 | 时间/状态/关键词；CSV/Excel |
 | G5-BRAND | 用户可见零 RAGFlow 品牌 | — | ✅ | — | P0 | 2026-05-24 阶段 1 文案清理 |
-| G5-MATRIX | 本能力矩阵维护 | — | 本文 | — | **P0** | Phase 62 @ `6e6f4e501`；§6 Phase 0–62；Harness §9.0 同步 |
+| G5-MATRIX | 本能力矩阵维护 | — | 本文 | — | **P0** | Phase 63 @ pending；§6 Phase 0–63；Harness §9.0 同步 |
 | G5-LICENSE | Apache 2.0 合规 | LICENSE | ✅ 分发包 | — | P0 | UI 不用商标 |
 
 ---
@@ -180,6 +180,8 @@
 | **60** | SMOKE_SCRIPTS + archive §1.3 | 运维/产品 | 脚本索引 ↔ SMOKE_ENV + **`tbox_archive_phase16_17_handtest.sh`** — phase60 plan |
 | **61** | VM §5 + smoke.example | 运维/产品 | VM acceptance §5 ↔ SMOKE_SCRIPTS + **`tbox_smoke.env.example`** — phase61 plan |
 | **62** | setup_smoke_env + Walkthrough §2.1 | 运维/产品 | **`tbox_setup_smoke_env.sh`** + §2.1 VM/SMOKE 链接 — phase62 plan |
+| **63** | Runbook §8.1 + Harness 54–62 | 运维/产品 | DEPLOY_RUNBOOK §3.1.3/§8.1 ↔ Walkthrough §2.1 — phase63 plan |
+| **54–62** | 发版链文档闭环（续） | 运维/产品 | host_check · pre_release · finish · SMOKE/VM — phase54–62 plans |
 | **51–53** | CI/文档对齐 | 运维/产品 | QUICKSTART · ENV · Walkthrough · README · 手册 — phase51–53 plans |
 | **42–50** | 发版链文档闭环 | 运维/产品 | helper → SMOKE → VM §5 → UPSTREAM §3.2 — phase42–50 plans |
 

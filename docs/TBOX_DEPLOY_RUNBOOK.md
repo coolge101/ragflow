@@ -132,6 +132,14 @@ bash scripts/tbox_print_release_next_steps.sh
 bash scripts/tbox_print_release_next_steps.sh --with-compose-hint
 ```
 
+**Phase 16–17 浏览器**（`pre_release` 后 VM §5 仍可能 ☐；与 **§8.1** · Walkthrough **[§2.1](./TBOX_UI_ACCEPTANCE_WALKTHROUGH.md)** 一致）：
+
+1. `bash scripts/tbox_phase16_17_handtest.sh` — Walkthrough **步骤 D**「5180 准生产前置」（与 **C §7** 共用）
+2. 浏览器 **C §7 + D** 于 **5180**；可选 **`/review/step/phase16-17`**
+3. `bash scripts/tbox_phase16_17_finish.sh --archive`
+
+同一链亦见于：**[`TBOX_QUICKSTART.md`](./TBOX_QUICKSTART.md) §1.3** · **`tbox_host_check.sh`** · **`tbox_pre_release.sh --help`** · **[`TBOX_SMOKE_SCRIPTS.md`](./TBOX_SMOKE_SCRIPTS.md)**
+
 ### 3.2 启动依赖（`docker-compose-base.yml`）
 
 按你在 `.env` 里选的**文档引擎**启动对应 profile（**不要**同时起冲突的引擎，以团队约定为准）。
@@ -372,14 +380,16 @@ cd <REPO>
 | S6 merge 后 | `bash scripts/tbox_post_upstream_merge.sh` | 重建 → host → pre_release VM+§5 |
 | UI 变更后 | `bash scripts/tbox_rebuild_console.sh` | 重建 5180 静态页 |
 
-**Phase 16–17 浏览器手测**（与 VM §5、Walkthrough §2.1 一致；详 **[`TBOX_SMOKE_SCRIPTS.md`](./TBOX_SMOKE_SCRIPTS.md)** 专节 · **[`TBOX_SMOKE_ENV.md`](./TBOX_SMOKE_ENV.md)** 环境变量）：
+**Phase 16–17 浏览器手测**（与 VM §5、Walkthrough **[§2.1](./TBOX_UI_ACCEPTANCE_WALKTHROUGH.md)** / **步骤 D** 一致；详 **[`TBOX_SMOKE_SCRIPTS.md`](./TBOX_SMOKE_SCRIPTS.md)** 专节 · **[`TBOX_SMOKE_ENV.md`](./TBOX_SMOKE_ENV.md)** · **`scripts/tbox_smoke.env.example`**）：
 
 | 顺序 | 命令 / 路径 | 说明 |
 |------|-------------|------|
-| 1 | `bash scripts/tbox_phase16_17_handtest.sh` | bundle + C/D 清单 |
-| 2 | 浏览器 Walkthrough **C §7 + D** | Citation + 检索高亮 |
+| 1 | `bash scripts/tbox_phase16_17_handtest.sh` | bundle + C/D 清单（Walkthrough **步骤 D** 5180 准生产前置与 **C §7** 共用） |
+| 2 | 浏览器 Walkthrough **步骤 C §7 + D** | Citation + 检索高亮 |
 | 2b（可选） | **`/review/step/phase16-17`** | 确认页（Walkthrough §2.2） |
 | 3 | `bash scripts/tbox_phase16_17_finish.sh --archive` | 写 §5 ☑ |
+
+**同一链亦见于**：**[`TBOX_QUICKSTART.md`](./TBOX_QUICKSTART.md) §1.3** · **`bash scripts/tbox_host_check.sh`** · **`bash scripts/tbox_pre_release.sh --help`**
 
 双账号准生产：`TBOX_REQUIRE_DUAL_ACCOUNT=1` + `scripts/tbox_smoke.env` 中 **`TBOX_SMOKE_NORMAL_*`**。
 

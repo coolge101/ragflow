@@ -48,6 +48,16 @@ class TestPostUpstreamMerge(unittest.TestCase):
         self.assertIn("TBOX_SMOKE_ENV.md", section)
         self.assertIn("/review/step/phase16-17", section)
         self.assertIn("tbox_print_release_next_steps.sh", section)
+        self.assertIn("步骤 D", section)
+        self.assertIn("TBOX_UI_ACCEPTANCE_WALKTHROUGH.md", section)
+        self.assertIn("tbox_host_check.sh", section)
+
+    def test_runbook_section313_aligns_with_walkthrough(self) -> None:
+        section = self.runbook_text.split("### 3.1.3", 1)[1].split("### 3.2", 1)[0]
+        self.assertIn("tbox_phase16_17_handtest.sh", section)
+        self.assertIn("TBOX_UI_ACCEPTANCE_WALKTHROUGH.md", section)
+        self.assertIn("§1.3", section)
+        self.assertIn("步骤 D", section)
 
 
 if __name__ == "__main__":
