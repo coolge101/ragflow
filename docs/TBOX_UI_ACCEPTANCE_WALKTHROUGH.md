@@ -174,13 +174,15 @@ Phase 16–17 浏览器通过后（步骤 **C §7** + **D**）：`bash scripts/t
 
 ### 步骤 D：检索 `/search`（含 Phase 17 高亮）
 
+**5180 准生产前置**（与 §2.1、步骤 C §7 一致）：仓库根先 `bash scripts/tbox_phase16_17_handtest.sh`（含 bundle 清单）；浏览器基址 **5180**（非 5174 dev）。
+
 1. 左侧点 **「检索」**。
 2. 选择 **有内容的知识库**，输入**可命中**的关键词，点 **检索**。
 3. **Phase 17 高亮（必测）**：结果列表非空时，**点击某一条** → 该条目应 **高亮** 并 **scrollIntoView**（滚动到可见区域）；再点另一条，高亮应切换。
 4. **其它通过标准**：结果区有 **「导出 Markdown / PDF / Excel / PPT」**；**故意**输入不可能命中的词，应出现 **「无命中」** 黄底说明；点 **「清空条件」** 后输入框与结果应被清掉。
 5. 改知识库或改关键词后，旧结果不应继续误导（应被清掉或重新检索）。
 
-**5180 准生产**：URL 为 `http://<host>:5180/search`。与 **步骤 C 第 7 点（Phase 16）** 均通过后，在仓库根执行 **`bash scripts/tbox_phase16_17_finish.sh --archive`** 更新 VM 验收 §5。
+**5180 准生产**：URL 为 `http://<host>:5180/search`。与 **步骤 C 第 7 点（Phase 16）** 均通过后：`handtest` → **C §7 + D**（可选 **`/review/step/phase16-17`**）→ **`bash scripts/tbox_phase16_17_finish.sh --archive`** 更新 VM 验收 §5。
 
 **本页验收**：`/review/step/search`。
 
