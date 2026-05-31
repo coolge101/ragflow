@@ -73,22 +73,24 @@ bash ../scripts/tbox_verify_stack_image.sh
 
 ### 3.2 Phase 16–17 手测（post-merge / pre_release 后）
 
-`post_upstream_merge` / `pre_release` 后 §5 自动化可能已通过，但 **Phase 16–17 UI 仍为 ☐**。与 **`tbox_post_upstream_merge.sh`** 收尾、**`tbox_print_release_next_steps.sh`**、VM 验收 **§5** 文案一致：
+`post_upstream_merge` / `pre_release` 后 §5 自动化可能已通过，但 **Phase 16–17 UI 仍为 ☐**。与 **`tbox_post_upstream_merge.sh`** 收尾、**[`TBOX_DEPLOY_RUNBOOK.md`](./TBOX_DEPLOY_RUNBOOK.md) §8.1** · Walkthrough **[§2.1](./TBOX_UI_ACCEPTANCE_WALKTHROUGH.md)** · VM 验收 **§5** 文案一致：
 
 | 顺序 | 操作 | 说明 |
 |------|------|------|
-| 1 | `bash scripts/tbox_phase16_17_handtest.sh` | bundle + C/D 清单 |
-| 2 | 浏览器 Walkthrough **C §7 + D** on 5180 | Citation + 检索高亮 |
+| 1 | `bash scripts/tbox_phase16_17_handtest.sh` | bundle + C/D 清单（Walkthrough **步骤 D** 5180 准生产前置与 **C §7** 共用） |
+| 2 | 浏览器 Walkthrough **步骤 C §7 + D** on 5180 | Citation + 检索高亮 |
 | 2b（可选） | **`/review/step/phase16-17`** | 确认页 |
 | 3 | `bash scripts/tbox_phase16_17_finish.sh --archive` | 写 VM §5 ☑ |
 
 ```bash
 bash scripts/tbox_phase16_17_handtest.sh
-# 5180：Walkthrough 步骤 C §7 + D；可选 /review/step/phase16-17
+# 5180：Walkthrough 步骤 D 5180 准生产前置 + C §7 + D；可选 /review/step/phase16-17
 bash scripts/tbox_phase16_17_finish.sh --archive
 ```
 
-详 **[`TBOX_DEPLOY_RUNBOOK.md`](./TBOX_DEPLOY_RUNBOOK.md)** §8.1 · **[`TBOX_SMOKE_SCRIPTS.md`](./TBOX_SMOKE_SCRIPTS.md)** · **[`TBOX_SMOKE_ENV.md`](./TBOX_SMOKE_ENV.md)**。
+**同一链亦见于**：**[`TBOX_QUICKSTART.md`](./TBOX_QUICKSTART.md) §1.3** · **`bash scripts/tbox_host_check.sh`** · **`bash scripts/tbox_pre_release.sh --help`** · **`tbox_print_release_next_steps.sh`**
+
+详 **[`TBOX_DEPLOY_RUNBOOK.md`](./TBOX_DEPLOY_RUNBOOK.md)** §8.1 · **[`TBOX_SMOKE_SCRIPTS.md`](./TBOX_SMOKE_SCRIPTS.md)** · **[`TBOX_SMOKE_ENV.md`](./TBOX_SMOKE_ENV.md)** · **`scripts/tbox_smoke.env.example`**。
 
 ---
 

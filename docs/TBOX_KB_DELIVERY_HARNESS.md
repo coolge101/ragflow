@@ -246,6 +246,7 @@
 | 2026-05-02 | **§9.4.2**：**`extra_config.tbox_crawl_retry_statuses`** 任务级全量白名单（**`effective_retry_statuses`** 第二优先级） | **`TBOX_API_BOUNDARY` §1.2** 同步 |
 | 2026-05-24 | **§1** 升级为 G1–G5「咨询/决策/辅导」产品目标；新增能力矩阵 spec 与下一阶段 plan；§7.5 DeepSeek 手测仅 `web-tbox` |
 | 2026-05-30 | **Phase 11**：post-merge 全链路验收、Docker build 磁盘 recovery |
+| 2026-05-31 | **Phase 64**：UPSTREAM §3.2 ↔ Runbook §8.1 + post_merge QUICKSTART §1.3 — phase64 plan |
 | 2026-05-31 | **Phase 63**：Runbook §3.1.3/§8.1 + Harness Phase 54–62 摘要 — phase63 plan |
 | 2026-05-31 | **Phase 62**：setup_smoke_env + Walkthrough §2.1 VM/SMOKE 链接 — phase62 plan |
 | 2026-05-31 | **Phase 61**：VM §5 ↔ SMOKE_SCRIPTS + smoke.env.example 三步链 — phase61 plan |
@@ -333,10 +334,11 @@
 | **Phase 61** | **VM §5 ↔ SMOKE_SCRIPTS + smoke.example** | VM acceptance §5 + **`tbox_smoke.env.example`** 三步链 — phase61 plan |
 | **Phase 62** | **setup_smoke_env + Walkthrough §2.1** | **`tbox_setup_smoke_env.sh`** ↔ example + §2.1 VM/SMOKE 链接 — phase62 plan |
 | **Phase 63** | **Runbook §3.1.3/§8.1 + Harness 54–62 摘要** | DEPLOY_RUNBOOK 与 §2.1 对齐 + §9 摘要行 — phase63 plan |
+| **Phase 64** | **UPSTREAM §3.2 ↔ Runbook §8.1 + post_merge** | merge Runbook §3.2 + **`tbox_post_upstream_merge.sh`** QUICKSTART §1.3 — phase64 plan |
 | **Phase 54–62** | **发版链文档闭环（续）✅** | host_check ↔ pre_release ↔ finish ↔ SMOKE/VM/Walkthrough — phase54–62 plans |
 | **Phase 51–53** | **CI/文档对齐 ✅** | QUICKSTART §6 · ENV §6 · Walkthrough · README · 手册 — phase51–53 plans |
 | **Phase 42–50** | **发版链文档闭环 ✅** | helper / SMOKE / VM §5 / UPSTREAM §3.2 交叉引用 — phase42–50 plans |
-| **矩阵/里程碑** | **Phase 0–63** | 后续：5180 Phase 16–17 浏览器手测 |
+| **矩阵/里程碑** | **Phase 0–64** | 后续：5180 Phase 16–17 浏览器手测 |
 
 ### 9.1 阶段总览
 
