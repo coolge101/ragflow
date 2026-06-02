@@ -340,6 +340,16 @@ export function CrawlPage() {
 
   const canFetchList = isSuper || resolvedListTenant != null;
 
+  const datasetNameById = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const d of datasets) {
+      if (d.id != null) {
+        map.set(String(d.id), String(d.name ?? d.id));
+      }
+    }
+    return map;
+  }, [datasets]);
+
   useEffect(() => {
     if (!me || isSuper) {
       return;
@@ -362,7 +372,7 @@ export function CrawlPage() {
 
   const reloadKbs = useCallback(async () => {
     try {
-      const { res, body } = await listDatasets({ page: 1, page_size: 200 });
+      const { res, body } = await listDatasets({ page: 1, page_size: 100 });
       if (res.ok && body.code === 0 && Array.isArray(body.data)) {
         setDatasets(body.data);
       }
@@ -738,7 +748,11 @@ export function CrawlPage() {
                     </td>
                     <td style={{ padding: "8px 6px" }}>{(t.seed_urls || []).length}</td>
                     <td style={{ padding: "8px 6px", wordBreak: "break-all" }}>{t.tenant_id}</td>
-                    <td style={{ padding: "8px 6px", wordBreak: "break-all" }}>{t.dataset_id || "—"}</td>
+                    <td style={{ padding: "8px 6px", wordBreak: "break-all" }}>
+                      {t.dataset_id
+                        ? datasetNameById.get(String(t.dataset_id)) ?? String(t.dataset_id)
+                        : "—"}
+                    </td>
                     <td style={{ padding: "8px 6px" }}>{fmtTime(t.last_run_at)}</td>
                     <td style={{ padding: "8px 6px", maxWidth: 220, wordBreak: "break-word" }} title={t.last_error || ""}>
                       {formatCrawlLastErrorDisplay(t.last_error, 80)}

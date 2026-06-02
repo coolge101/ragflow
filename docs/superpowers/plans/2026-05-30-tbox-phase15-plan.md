@@ -39,7 +39,7 @@
 - Modify: `docs/superpowers/specs/2026-05-24-tbox-capability-matrix-design.md` §6
 - Modify: `docs/TBOX_VM_PRODUCTION_ACCEPTANCE.md` §5
 
-- [ ] Phase 15 行 + §5 HEAD 钉扎
+- [x] Phase 15 行 + §5 HEAD 钉扎
 
 ---
 

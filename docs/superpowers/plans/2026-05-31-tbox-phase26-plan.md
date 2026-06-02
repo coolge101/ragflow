@@ -26,7 +26,7 @@
 **Files:**
 - Create: `test/unit_test/scripts/test_tbox_console_bundle_smoke.py`
 
-- [ ] `script_urls` / `check_bundle` / 跨 bundle 合并 marker
+- [x] `script_urls` / `check_bundle` / 跨 bundle 合并 marker
 
 ---
 
@@ -36,7 +36,7 @@
 - Modify: `scripts/tbox_post_upstream_merge.sh`
 - Modify: `docs/TBOX_UPSTREAM_MERGE_RUNBOOK.md` §3
 
-- [ ] 未 force-recreate 时仍跑 bundle smoke
+- [x] 未 force-recreate 时仍跑 bundle smoke
 
 ---
 

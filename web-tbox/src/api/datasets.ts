@@ -24,8 +24,21 @@ export type ListDatasetsJson = {
   code: number;
   message?: string;
   data?: DatasetRow[];
+  /** RAGFlow `GET /api/v1/datasets` pagination total (see `get_result`). */
+  total_datasets?: number;
   total?: number;
 };
+
+/** Total row count from list datasets response (`total_datasets` is canonical on RAGFlow REST). */
+export function datasetsListTotal(body: ListDatasetsJson): number {
+  if (typeof body.total_datasets === "number") {
+    return body.total_datasets;
+  }
+  if (typeof body.total === "number") {
+    return body.total;
+  }
+  return Array.isArray(body.data) ? body.data.length : 0;
+}
 
 export type GetDatasetJson = {
   code: number;

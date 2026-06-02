@@ -25,7 +25,7 @@
 - Modify: `scripts/tbox_post_upstream_merge.sh`
 - Modify: `docs/TBOX_UPSTREAM_MERGE_RUNBOOK.md` §3
 
-- [ ] 去掉独立 release smoke + VM + record，改 pre_release
+- [x] 去掉独立 release smoke + VM + record，改 pre_release
 
 ---
 
@@ -36,7 +36,7 @@
 - Modify: `docs/TBOX_CONSOLE_REBUILD.md`
 - Modify: `docs/TBOX_SMOKE_SCRIPTS.md`
 
-- [ ] 设置 `TBOX_PHASE16_17_HANDTEST_DONE=1` 并写 §5
+- [x] 设置 `TBOX_PHASE16_17_HANDTEST_DONE=1` 并写 §5
 
 ---
 
@@ -45,7 +45,7 @@
 **Files:**
 - Modify: `docs/TBOX_KB_DELIVERY_HARNESS.md` §9.0
 
-- [ ] Phase 30 行
+- [x] Phase 30 行
 
 ---
 

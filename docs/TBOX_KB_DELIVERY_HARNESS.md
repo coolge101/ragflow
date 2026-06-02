@@ -246,6 +246,8 @@
 | 2026-05-02 | **§9.4.2**：**`extra_config.tbox_crawl_retry_statuses`** 任务级全量白名单（**`effective_retry_statuses`** 第二优先级） | **`TBOX_API_BOUNDARY` §1.2** 同步 |
 | 2026-05-24 | **§1** 升级为 G1–G5「咨询/决策/辅导」产品目标；新增能力矩阵 spec 与下一阶段 plan；§7.5 DeepSeek 手测仅 `web-tbox` |
 | 2026-05-30 | **Phase 11**：post-merge 全链路验收、Docker build 磁盘 recovery |
+| 2026-06-02 | **Phase 67** 扩展四类专题库 + **G2-CRAWL-I18N**；手测归档 **`TBOX_5180_HANDTEST_2026-06-02.md`** |
+| 2026-06-02 | **Phase 67**（G2 搜索发现 + 智能去重）入 §9.0 / S4 说明；plan **`2026-06-02-tbox-g2-discover-dedup-plan.md`** |
 | 2026-05-31 | **Phase 66**：SMOKE_SCRIPTS S6 专节 + QUICKSTART §1.2 ↔ DEPLOY §6/§8 — phase66 plan |
 | 2026-05-31 | **Phase 65**：s6_preflight ↔ post_merge + DEPLOY_FROM_GITHUB §6/§8 — phase65 plan |
 | 2026-05-31 | **Phase 64**：UPSTREAM §3.2 ↔ Runbook §8.1 + post_merge QUICKSTART §1.3 — phase64 plan |
@@ -279,7 +281,7 @@
 | **S1** | **已推进** | `docs/TBOX_API_BOUNDARY.md`；`api/apps/tbox_app.py`：`/health`、`/contract`；**`/me`（鉴权）**、**`/logout`**；`/me` 契约版本当前为 **v4**（`permissions` 含 `crawl.manage` 等；以 `TBOX_API_CONTRACT_VERSION` 与 `GET /v1/tbox/contract` 为准）。租户列表来自 `UserTenant`；更细「一一对应」字段表仍可在 S3 补全。 |
 | **S2** | **已推进** | `web-tbox/`：**`/login` 邮箱密码登录**（RSA → `/api/v1/auth/login`）、**`/` 控制台**拉取 **`/v1/tbox/me`**（带 `Authorization`）、**退出** 调 **`POST /v1/tbox/logout`**。IA/权限/视觉以 **`docs/TBOX_UI_DESIGN_OVERVIEW.md`**、**`docs/TBOX_UI_DESIGN_DETAIL.md`** 为准；参考原型见 **§2.1**。 |
 | **S3** | **已启动** | **知识库 `/documents`**（含 **文档列表/上传/删除**）；**对话 `/`**；**检索 `/search`**；**用户 `/users`**；**审计 `/audit`**（ingestions）；**`permissions`**（**v4** 含 `crawl.manage`）。**整库 ZIP 导出** 仍视官方 REST 暴露情况。 |
-| **S4** | **已推进** | **`/crawl`** + worker tick；**`extra_config` 策略键**（`tbox_crawl_keywords` / `_max_depth` / `_allowed_domains`）UI + **`common/tbox_crawl_strategy.py`**；专项/定时任务类型。**Crawl-delay、登录/API 源等**见 **§9.4**。 |
+| **S4** | **已推进** | **`/crawl`** + worker tick；策略键 UI + **`common/tbox_crawl_strategy.py`**。**下一阶段 P1**：四类专题库（法规/技术/市场/产品行业）**全网发现 + 去重 + 中英文** — Phase 67 · **`TBOX_5180_HANDTEST_2026-06-02.md`**。 |
 | **S5–S7** | **S5–S7 已推进** | **S5** checklist · **S6** merge runbook + **`tbox_upstream_divergence.sh`** · **S7** **`TBOX_S7_ADVERSARIAL_SMOKE.md`** |
 | **S6 merge** | **2026-05-30 ✅** | `origin/main` @ `cd18cfab7` → `tbox-deploy` @ `f9bd37fdd`；**behind 0 / ahead 93** — 见 **`TBOX_UPSTREAM_MERGE_RUNBOOK.md`** §4 |
 | **Phase 10** | **栈加固 ✅** | `tbox_verify_stack_image.sh`、镜像内置 `scripts/` — phase10 plan |
@@ -288,8 +290,9 @@
 | **Phase 13** | **收尾与例行运维 ✅** | 漂移记录、P2 smoke、5180 手测归档 — phase13 plan |
 | **Phase 14** | **G3 对话应用 API 回归** | `tbox_chat_apps_smoke.sh` 纳入 release — phase14 plan |
 | **Phase 15** | **G5 权限 API 回归** | `tbox_permissions_smoke.sh`（admin 必测；`TBOX_SMOKE_NORMAL_*` 双账号）— phase15 plan |
-| **Phase 16** | **G3 Citation 侧栏联动** | `ChatMessageContent` + `ReferenceChunks` 双向高亮 — phase16 plan |
-| **Phase 17** | **S6 漂移例行 + 检索高亮** | Runbook §5 @ ahead 114；`SearchResultList` — phase17 plan |
+| **Phase 16** | **G3 Citation 侧栏联动** | `ChatMessageContent` + `ReferenceChunks` 双向高亮 — phase16 plan；**⚠️ 2026-06-02 手测：功能已实现，Citation/答案呈现效果不理想 → 矩阵 §8 G3-CITATION-UX / G3-CHAT-ANSWER-UX** |
+| **Phase 17** | **S6 漂移例行 + 检索高亮** | Runbook §5 @ ahead 114；`SearchResultList` — phase17 plan；**⚠️ 2026-06-02 手测：高亮已实现，检索结果整体输出效果不理想 → 矩阵 §8 G3-SEARCH-UX** |
+| **Phase 67** | **G2 发现与去重（P1 优先，未开始）** | **四类专题库**（法规/技术趋势/市场趋势/产品行业）共用 **DISCOVER + DEDUP + I18N**；5180 手测见 **`TBOX_5180_HANDTEST_2026-06-02.md`** — **`2026-06-02-tbox-g2-discover-dedup-plan.md`** |
 | **Phase 18** | **双账号 smoke env** | `tbox_smoke.env.example` + **`TBOX_SMOKE_ENV.md`** — phase18 plan |
 | **Phase 19** | **ChunkListPanel 共用** | `chunkDisplay.ts` + 引用/检索薄包装 — phase19 plan |
 | **Phase 20** | **chunk/citation 单元测试** | `web-tbox` Vitest 12 cases — phase20 plan |
@@ -342,7 +345,7 @@
 | **Phase 54–62** | **发版链文档闭环（续）✅** | host_check ↔ pre_release ↔ finish ↔ SMOKE/VM/Walkthrough — phase54–62 plans |
 | **Phase 51–53** | **CI/文档对齐 ✅** | QUICKSTART §6 · ENV §6 · Walkthrough · README · 手册 — phase51–53 plans |
 | **Phase 42–50** | **发版链文档闭环 ✅** | helper / SMOKE / VM §5 / UPSTREAM §3.2 交叉引用 — phase42–50 plans |
-| **矩阵/里程碑** | **Phase 0–66** | 后续：5180 Phase 16–17 浏览器手测 |
+| **矩阵/里程碑** | **Phase 0–66** | 5180 Phase 16–17 浏览器手测可继续；**输出/UX 改进 backlog → 矩阵 spec §8**（G3-*-UX，P2 后续 plan） |
 
 ### 9.1 阶段总览
 

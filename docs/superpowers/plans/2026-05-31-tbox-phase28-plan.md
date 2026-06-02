@@ -26,7 +26,7 @@
 - Modify: `scripts/tbox_post_upstream_merge.sh`
 - Modify: `docs/TBOX_UPSTREAM_MERGE_RUNBOOK.md` §3
 
-- [ ] VM 通过后 `TBOX_RECORD_WRITE_SECTION5=1` 写 §5
+- [x] VM 通过后 `TBOX_RECORD_WRITE_SECTION5=1` 写 §5
 
 ---
 
@@ -36,7 +36,7 @@
 - Modify: `docs/TBOX_KB_DELIVERY_HARNESS.md` §9.0
 - Modify: `docs/TBOX_DEPLOY_RUNBOOK.md`
 
-- [ ] Phase 28 行
+- [x] Phase 28 行
 
 ---
 

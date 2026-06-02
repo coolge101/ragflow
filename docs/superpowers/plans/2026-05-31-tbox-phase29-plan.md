@@ -26,7 +26,7 @@
 **Files:**
 - Modify: `scripts/tbox_record_vm_acceptance.sh`
 
-- [ ] 跳过重复 probe，仅钉扎 HEAD/日期/手测 env
+- [x] 跳过重复 probe，仅钉扎 HEAD/日期/手测 env
 
 ---
 
@@ -37,7 +37,7 @@
 - Modify: `docs/TBOX_KB_DELIVERY_HARNESS.md` §9.0
 - Modify: `docs/TBOX_UPSTREAM_MERGE_RUNBOOK.md` §5
 
-- [ ] Phase 29 行
+- [x] Phase 29 行
 
 ---
 

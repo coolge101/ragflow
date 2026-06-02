@@ -48,7 +48,7 @@
 - Modify: `docs/TBOX_VM_PRODUCTION_ACCEPTANCE.md`
 - Modify: `docs/TBOX_UPSTREAM_MERGE_RUNBOOK.md` §5
 
-- [ ] Phase 27 行
+- [x] Phase 27 行
 
 ---
 

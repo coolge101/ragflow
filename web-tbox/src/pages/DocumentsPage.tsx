@@ -1,8 +1,9 @@
 import { type FormEvent, useCallback, useEffect, useRef, useState } from "react";
 import { ApiErrorBanner } from "../components/ApiErrorBanner";
 import { G1IngestFormatGuide } from "../components/G1IngestFormatGuide";
-import { createDataset, deleteDatasets, getDataset, listDatasets, type DatasetRow } from "../api/datasets";
+import { createDataset, deleteDatasets, getDataset, datasetsListTotal, listDatasets, type DatasetRow } from "../api/datasets";
 import { deleteDocuments, listDocuments, parseDocuments, reparseDocuments, uploadDocuments, type DocRow } from "../api/datasetDocuments";
+import { downloadDocumentOriginal, openDocumentOriginalInNewTab } from "../utils/documentOriginal";
 import { exportDatasetZip, importDatasetZipFile } from "../utils/datasetZipTransfer";
 import { g1CreateModalHint, g1UploadChunkMethodWarning } from "../utils/g1IngestFormatGuide";
 import { hasPermission } from "../constants/permissions";
@@ -122,6 +123,8 @@ export function DocumentsPage() {
   const canCreateKb = canUpload || canConfigureKb;
   /** 首次解析（未开始→解析中）：与上传同一类操作权限。 */
   const canStartParse = canUpload;
+  /** 阅读原文/下载原文：与文档页同一权限。 */
+  const canViewOriginal = hasPermission(permissions, "doc.view");
 
   const [kbPage, setKbPage] = useState(1);
   const [rows, setRows] = useState<DatasetRow[]>([]);
@@ -141,6 +144,7 @@ export function DocumentsPage() {
   const [parseBusy, setParseBusy] = useState(false);
   const [parseRowBusy, setParseRowBusy] = useState<string | null>(null);
   const [zipBusy, setZipBusy] = useState(false);
+  const [originalBusyId, setOriginalBusyId] = useState<string | null>(null);
   const [zipStatus, setZipStatus] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement | null>(null);
   const zipImportRef = useRef<HTMLInputElement | null>(null);
@@ -176,7 +180,7 @@ export function DocumentsPage() {
           return;
         }
         setRows(Array.isArray(body.data) ? body.data : []);
-        setTotal(typeof body.total === "number" ? body.total : body.data?.length ?? 0);
+        setTotal(datasetsListTotal(body));
         if (opts?.page !== undefined) {
           setKbPage(page);
         }
@@ -486,6 +490,46 @@ export function DocumentsPage() {
     }
   }
 
+  async function onOpenOriginal(doc: DocRow) {
+    const id = doc.id as string | undefined;
+    if (!id || !canViewOriginal) {
+      return;
+    }
+    const name = (doc.name as string) || id;
+    setOriginalBusyId(id);
+    setDocsError(null);
+    try {
+      const { ok, error } = await openDocumentOriginalInNewTab(id, name);
+      if (!ok) {
+        setDocsError(error || "无法打开原文");
+      }
+    } catch (e) {
+      setDocsError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setOriginalBusyId(null);
+    }
+  }
+
+  async function onDownloadOriginal(doc: DocRow) {
+    const id = doc.id as string | undefined;
+    if (!id || !canViewOriginal) {
+      return;
+    }
+    const name = (doc.name as string) || id;
+    setOriginalBusyId(id);
+    setDocsError(null);
+    try {
+      const { ok, error } = await downloadDocumentOriginal(id, name);
+      if (!ok) {
+        setDocsError(error || "无法下载原文");
+      }
+    } catch (e) {
+      setDocsError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setOriginalBusyId(null);
+    }
+  }
+
   async function onExportZip() {
     if (!activeKb || !canExportZip) {
       return;
@@ -780,6 +824,11 @@ export function DocumentsPage() {
               <p className="muted" style={{ fontSize: "0.82rem", marginBottom: "0.65rem", maxWidth: 920 }}>
                 若长时间停留在「解析中」或变为「失败」，多与<strong>租户嵌入模型未配置/不可用</strong>、<strong>任务队列未消费</strong>或<strong>文档引擎（ES/Infinity）异常</strong>有关，请到<strong>知识库配置</strong>检查模型与依赖服务，并结合<strong>审计</strong>页与容器日志排查。
               </p>
+              {canViewOriginal ? (
+                <p className="muted" style={{ fontSize: "0.82rem", marginBottom: "0.65rem", maxWidth: 920 }}>
+                  列表中的<strong>「阅读原文」</strong>通过 <code>GET /api/v1/documents/:id/preview</code> 在新标签页打开上传或爬取的原始文件（如 HTML、PDF）；<strong>「下载原文」</strong>保存同一文件到本地。解析状态与分块数仅表示切片进度，不影响查看原文。
+                </p>
+              ) : null}
               {docsError ? (
                 <ApiErrorBanner
                   style={{ marginBottom: "0.75rem", padding: "0.5rem 0.75rem", borderRadius: 6, gap: "0.65rem" }}
@@ -968,6 +1017,38 @@ export function DocumentsPage() {
                               <td style={{ padding: "0.4rem" }}>{d.chunk_count ?? "—"}</td>
                               <td style={{ padding: "0.4rem" }}>
                                 <div style={{ display: "flex", flexWrap: "wrap", gap: 6, alignItems: "center" }}>
+                                  {did && canViewOriginal ? (
+                                    <>
+                                      <button
+                                        type="button"
+                                        disabled={
+                                          originalBusyId === did ||
+                                          !!parseBusy ||
+                                          parseRowBusy === did ||
+                                          busyId === did ||
+                                          zipBusy
+                                        }
+                                        onClick={() => void onOpenOriginal(d)}
+                                        style={{ fontSize: "0.85rem" }}
+                                      >
+                                        {originalBusyId === did ? "打开中…" : "阅读原文"}
+                                      </button>
+                                      <button
+                                        type="button"
+                                        disabled={
+                                          originalBusyId === did ||
+                                          !!parseBusy ||
+                                          parseRowBusy === did ||
+                                          busyId === did ||
+                                          zipBusy
+                                        }
+                                        onClick={() => void onDownloadOriginal(d)}
+                                        style={{ fontSize: "0.85rem" }}
+                                      >
+                                        {originalBusyId === did ? "下载中…" : "下载原文"}
+                                      </button>
+                                    </>
+                                  ) : null}
                                   {did && isDocRunRunning(d.run) ? (
                                     <span className="muted" style={{ fontSize: "0.8rem" }}>
                                       解析中…

@@ -79,6 +79,7 @@
 | G1-DOC-REPARSE | 文档重解析 | ✅ | ✅ **`/documents`** ingest | 官方 REST | P2 | `doc.reparse` + `POST /documents/ingest` |
 | G1-DOC-VERSION | 文档版本管理 | ⚠️ 视版本 | ❌ | 官方 REST | P2 | 非目标可延后 |
 | G1-KB-ZIP | 整库 ZIP 导入/导出 | ⚠️ 无专用 REST | ✅ 浏览器 ZIP | `GET /v1/document/get` + upload | P2 | `export.data` / `doc.upload` |
+| G1-DOC-ORIGINAL | **阅读原文/下载原文** | ⚠️ `GET /v1/document/get` | ✅ **`/documents`** | `GET …/documents/:id/preview` | ✅ | 2026-06-02 5180 手测通过（爬取 HTML） |
 
 ### G2 — 网络爬取
 
@@ -93,6 +94,10 @@
 | G2-CRAWL-MODE | **专项 vs 定时** 任务类型 | — | ✅ 任务类型选择 | TBOX | **P1** | 专项=无 Cron + 手动 run |
 | G2-CRAWL-AUTH | 需登录站点 | 需求 §7 | ✅ profile + env headers | TBOX common | P2 | **`TBOX_CRAWL_AUTH_<PROFILE>_HEADERS`** |
 | G2-CRAWL-API | API 拉取源 | 需求 §7 | ✅ **`http_api`** | TBOX ingest | P2 | JSON 数组 → `.txt` |
+| G2-CRAWL-DISCOVER | **搜索发现 URL**（公网检索 → 候选链接队列） | ⚠️ Agent/Tavily 仅对话检索 | ❌ | TBOX worker | **P1（下一阶段优先）** | **四类专题库**（法规/技术趋势/市场趋势/产品行业）共用；中英 search query；见 **§6 Phase 67** |
+| G2-CRAWL-DEDUP | **智能去重**（URL 规范化 + 内容指纹 + 库内跳过） | ⚠️ Connector `hash128` / 增量同步 | ❌ | TBOX ingest | **P1（下一阶段优先）** | 跨 tick/任务；四类库 **`dataset_id`** 内 dedup；当前仅 `duplicate_name` |
+| G2-CRAWL-I18N | **英文资料爬取**（英/中 query、UTF-8、preview） | ⚠️ 单 URL web 入库 | ❌ | TBOX worker | **P1（下一阶段优先）** | 与 DISCOVER 联用；英文明文/ PDF 同源入库 |
+| G2-CRAWL-RELEVANCE | 入库前相关性评分（LLM/规则） | ❌ | ❌ | TBOX | P2 | 过滤门户首页等低相关页；按库配置阈值 |
 
 ### G3 — LLM 对话
 
@@ -101,10 +106,10 @@
 | G3-MODEL-KEY | 供应商 API Key、模型列表 | ✅ profile/model | ✅ `/kb` | `/v1/llm/*` | ✅ | |
 | G3-MODEL-DEEPSEEK | DeepSeek 对话 | ✅ conf/models | ✅ API 冒烟 + `/kb` Key | 官方 LLM | **P0** | **`scripts/tbox_g3_deepseek_smoke.py`**；新租户仍须在 `/kb` 配 Key |
 | G3-APP-CRUD | 对话应用完整配置 | ✅ next-chats | ✅ `/apps` | `/api/v1/chats` | P0 | Chat Apps 主体已完成 |
-| G3-CHAT-STREAM | 流式对话 + 引用 | ✅ | ✅ `/` | SSE completions | ✅ | `reference.chunks` + **Citation 点击高亮**（Phase 16） |
+| G3-CHAT-STREAM | 流式对话 + 引用 | ✅ | ✅ `/` | SSE completions | ✅ | **Citation 联动已实现**（Phase 16）；**呈现效果待改进** → §8 **G3-CITATION-UX** |
 | G3-CHAT-SESSION | 会话列表/切换 | ✅ | ✅ `/` | chats sessions API | ✅ | |
 | G3-SCENARIO | **咨询/决策/辅导** 场景模板 | ❌ 无预设 | ✅ `/apps` 模板 | `/apps` 数据 | **P1** | 三套 Prompt/检索预设 |
-| G3-SEARCH | 知识库内检索试用 | ✅ next-search | ✅ `/search` | dataset search | ✅ | 结果条目点击高亮（Phase 17） |
+| G3-SEARCH | 知识库内检索试用 | ✅ next-search | ✅ `/search` | dataset search | ✅ | **结果高亮已实现**（Phase 17）；**列表/交互效果待改进** → §8 **G3-SEARCH-UX** |
 
 ### G4 — 结果导出
 
@@ -136,6 +141,7 @@
 | **1** | P0 收尾 | P0 行 | 去品牌、Chat Apps 文档、镜像含 TBOX 后端、验收对齐 |
 | **2** | P1 补齐 | P1 行 | MD/PDF 导出 → 三类场景模板 → 爬取关键词 UI → G1 手测 |
 | **3** | P2 扩展 | P2 行 | Office 导出、爬取高级源、文档高级能力；矩阵复审 |
+| **67** | **G2 发现与去重（产品优先）** | **P1** | **四类专题库**（法规与标准、技术趋势、市场趋势、产品/行业情报）共用 **DISCOVER + DEDUP + I18N**；plan **`2026-06-02-tbox-g2-discover-dedup-plan.md`** · 手测 **`TBOX_5180_HANDTEST_2026-06-02.md`** |
 | **4** | G1 闭环 + 交付硬化 | P1 缺口 | G1 冒烟修复、Harness 同步；S5 Docker 准备（见 phase4 plan） |
 | **5** | G3 + S6/S7 | P0/P1 | DeepSeek API 冒烟、上游合并 Runbook、发版对抗 checklist（见 phase5 plan） |
 | **6** | 发版门禁 + S0 | 运维 | `tbox_release_smoke.sh`、基线 commit、Excel UI 提示（见 phase6 plan） |
@@ -200,7 +206,30 @@
 
 ---
 
-## 8. 相关文档
+## 8. 待改进 backlog（UX / 答案质量）
+
+下列项**不阻塞** Phase 16–17 **功能交付与自动化冒烟**（bundle 特征串、Vitest、Walkthrough 交互路径），但 **5180 手测反馈输出/呈现效果不理想**，须后续专项迭代。
+
+| ID | 范围 | 问题 | 典型现象 | 优先级 | 记录 |
+|----|------|------|----------|--------|------|
+| **G3-CHAT-ANSWER-UX** | `/` 对话正文 | 答案暴露检索/推理过程，呈现不专业 | `<retrieving>`、`Searching by …`、`Retrieval N results`、`Next step is to search` 等内部链路透出；正文像调试日志 | **P2** | 2026-06-02 |
+| **G3-CITATION-UX** | Phase 16 · `/` | Citation 联动**已实现**，但**可用性与观感差** | `[ID:n]` 难读/难点；侧栏 chunk 排版粗糙；高亮不明显；引用与正文割裂；RAG 答案质量差时联动价值低 | **P2** | 2026-06-02 |
+| **G3-SEARCH-UX** | Phase 17 · `/search` | 检索结果列表**已实现高亮**，但**整体输出效果不理想** |  snippet 难读、排序/得分不直观；点击高亮弱；无命中/弱命中提示不足；与「咨询输出」体验不一致 | **P2** | 2026-06-02 |
+
+**状态说明（2026-06-02）**：Phase 16（`ChatMessageContent` / `ReferenceChunks` 双向高亮）与 Phase 17（`SearchResultList` / `ChunkListPanel`）**代码与 Walkthrough 路径已落地**；当前缺口在 **产品化呈现与 RAG 答案质量**，非「未实现功能」。
+
+**改进方向（待 spec / Phase 67+）**：
+
+- **答案层**：SSE 过滤内部标记；Prompt/应用模板约束用户可见正文；多轮检索改侧栏或调试模式。
+- **Citation 层**：引用样式（脚注/卡片）、侧栏 chunk 摘要与高亮动画、窄屏布局、无引用时的空态。
+- **检索层**：结果卡片信息架构（标题/得分/片段）、高亮对比度、空结果与弱命中引导。
+- **共用**：与 **G3-CHAT-ANSWER-UX** 一并验收「咨询/决策/辅导」三类场景的可读输出。
+
+**跟踪**：矩阵本文 §8；Harness §9.0 Phase 16–17 行；后续 plan 文件名建议 `2026-06-02-tbox-phase16-17-ux-plan.md`（尚未编写）。
+
+---
+
+## 9. 相关文档
 
 | 文档 | 关系 |
 |------|------|
@@ -211,10 +240,14 @@
 
 ---
 
-## 9. 修订记录
+## 10. 修订记录
 
 | 日期 | 变更 |
 |------|------|
+| 2026-06-02 | **G2-CRAWL-I18N**、**G1-DOC-ORIGINAL** 入矩阵；Phase 67 扩展为**四类专题知识库**中英爬取 + 去重；手测 **`TBOX_5180_HANDTEST_2026-06-02.md`** |
+| 2026-06-02 | **G2-CRAWL-DISCOVER / DEDUP / RELEVANCE** 入矩阵；**§6 Phase 67** 列为下一阶段 **P1 优先**（5180 手测：种子首页 ≠ TBOX 法规、无公网发现/内容去重） |
+| 2026-06-02 | §8 扩充：**G3-CITATION-UX**（Phase 16）、**G3-SEARCH-UX**（Phase 17）；手测结论「功能已实现、输出效果待 P2 改进」 |
+| 2026-06-02 | §8 待改进：**G3-CHAT-ANSWER-UX**（对话答案勿暴露 `<retrieving>` 等内部检索日志） |
 | 2026-05-24 | 初版：G1–G5 矩阵、非目标、阶段 0–3 摘要；brainstorming 批准 |
 | 2026-05-24 | P1 行回写（G4/G3/G2）；§7 验收勾选；worker 策略见 `common/tbox_crawl_strategy.py` |
 | 2026-05-24 | Phase 0–7 里程碑完成（phase3–7 plan）；G3-MODEL-DEEPSEEK ✅；发版门禁 `tbox_release_smoke.sh` |

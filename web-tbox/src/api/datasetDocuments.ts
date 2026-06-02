@@ -125,9 +125,9 @@ export async function listAllDocuments(
   return { docs: all };
 }
 
-/** GET /v1/document/get/:docId — original uploaded file bytes. */
+/** GET /v1/document/get/:docId — original bytes (legacy path; prefer preview API). */
 export async function downloadDocumentBlob(docId: string): Promise<{ blob: Blob | null; error?: string }> {
-  const res = await fetch(`/v1/document/get/${encodeURIComponent(docId)}`, { headers: authOnly() });
+  const res = await fetch(`/api/v1/documents/${encodeURIComponent(docId)}/preview`, { headers: authOnly() });
   if (res.status === 401) {
     return { blob: null, error: "未授权" };
   }
