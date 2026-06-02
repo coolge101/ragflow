@@ -96,6 +96,19 @@ bash scripts/tbox_phase16_17_finish.sh --archive
 
 ## 4. 合并记录
 
+### 2026-06-02 — S6 例行 merge（44 commits）
+
+| 字段 | 值 |
+|------|-----|
+| 日期 | 2026-06-02 |
+| 操作人 | Cursor Agent |
+| upstream 范围 | `origin/main` @ `36357a6af` |
+| 本 fork 合并前 | `43f95517e`（Phase 66 钉扎） |
+| 合并后 HEAD | `0af434ace` |
+| 冲突文件 | `api/db/db_models.py`（`TenantModelInstance` Meta — 采纳 upstream，移除本地 `(api_key, provider_id)` 唯一索引） |
+| 验证 | `tbox_post_upstream_merge.sh` ✅ · health ✅ · VM 7-step + §5 ✅ · Phase 16–17 UI 仍 ☐ |
+| 备注 | 构建中磁盘满 → `docker builder prune -af` 恢复；merge 后 fetch 显示 upstream 又快 **3** commits |
+
 ### 2026-05-30 — S6 首次大 merge（460 commits）
 
 | 字段 | 值 |
@@ -140,6 +153,18 @@ bash scripts/tbox_record_upstream_drift.sh --fetch --write-runbook
 | 结论 | behind 0；无缺失 upstream commit；下次 merge 前再 `--fetch` |
 
 生成：`bash scripts/tbox_record_upstream_drift.sh --fetch`
+### 2026-06-02 快照（`--fetch` 后）（`tbox-deploy` @ `0af434ace`）
+
+| 项 | 值 |
+|----|-----|
+| HEAD | `0af434ace` — 0af434ace Merge origin/main into tbox-deploy (S6 upstream sync) |
+| upstream | `origin/main` @ `9799f33549ec45415a14689882e90faa481b9d04` |
+| merge-base | `36357a6afd0e9b290f824381c2573ea787f1f20a` |
+| behind | **3** |
+| ahead | **226** |
+| 结论 | behind 3；须按 Runbook §2 规划 merge/rebase |
+
+生成：`bash scripts/tbox_s6_preflight.sh --write-runbook`
 ### 2026-05-31 快照（`--fetch` 后）（`tbox-deploy` @ `8e3ebc572`）
 
 | 项 | 值 |

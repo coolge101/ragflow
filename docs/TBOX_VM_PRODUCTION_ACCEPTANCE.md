@@ -107,19 +107,19 @@ LAN IP：`hostname -I | awk '{print $1}'`
 <!-- tbox-vm-section5:start -->
 | 项 | 值 |
 |----|-----|
-| 日期 | 2026-05-31 |
+| 日期 | 2026-06-02 |
 | VM / LAN IP | 10.40.92.240 |
 | Console | http://10.40.92.240:5180/login |
-| Git HEAD | `8e3ebc572` |
-| `tbox_smoke_suite.sh` | pass |
-| `tbox_vm_production_acceptance.sh` | suite ok (see tbox_smoke_suite.sh) |
-| `tbox_web_tbox_check.sh` | skipped |
-| `tbox_login_smoke.sh` | pass (via suite) |
-| `tbox_console_bundle_smoke.sh` | pass (via suite) |
-| `tbox_permissions_smoke.sh` | pass (via suite) |
+| Git HEAD | `0af434ace` |
+| `tbox_smoke_suite.sh` | pass (via VM 7-step) |
+| `tbox_vm_production_acceptance.sh` | pass (7/7) |
+| `tbox_web_tbox_check.sh` | pass (via VM) |
+| `tbox_login_smoke.sh` | pass (via VM) |
+| `tbox_console_bundle_smoke.sh` | pass (via VM) |
+| `tbox_permissions_smoke.sh` | pass (via VM) |
 | `tbox_dual_account_check.sh` | not configured (optional) |
-| §3 内网与双账号 A–D | ☑ 手测 2026-05-31 |
-| §4 产品动线 Walkthrough | ☑ 手测 2026-05-31 |
+| §3 内网与双账号 A–D | ☑ 手测 2026-06-02 |
+| §4 产品动线 Walkthrough | ☑ 手测 2026-06-02 |
 | Phase 16–17 UI | ☐ handtest → /review/step/phase16-17 → `bash scripts/tbox_phase16_17_finish.sh --archive` |
 | 备注 | release smoke 含 P2/chat apps；双账号见 `docs/TBOX_SMOKE_ENV.md` |
 <!-- tbox-vm-section5:end -->
