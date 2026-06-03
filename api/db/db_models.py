@@ -1262,6 +1262,7 @@ class TboxCrawlSeen(DataBaseModel):
     id = CharField(max_length=32, primary_key=True)
     dataset_id = CharField(max_length=32, null=False, index=True)
     url_canonical = CharField(max_length=2048, null=False)
+    url_canonical_hash = CharField(max_length=64, null=False)
     content_sha256 = CharField(max_length=64, null=True, index=True)
     source = CharField(max_length=16, null=False, default="crawl")
     first_seen_at = DateTimeField(null=False)
@@ -1269,7 +1270,7 @@ class TboxCrawlSeen(DataBaseModel):
 
     class Meta:
         db_table = "tbox_crawl_seen"
-        indexes = ((("dataset_id", "url_canonical"), True),)
+        indexes = ((("dataset_id", "url_canonical_hash"), True),)
 
 
 class EvaluationDataset(DataBaseModel):

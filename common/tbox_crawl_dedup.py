@@ -36,6 +36,10 @@ def _normalize_host(host: str) -> str:
     return _STRIP_WWW.sub("", h)
 
 
+def url_canonical_hash(url_canonical: str) -> str:
+    return hashlib.sha256((url_canonical or "").encode("utf-8")).hexdigest()
+
+
 def canonicalize_url(url: str) -> str:
     raw = (url or "").strip()
     if not raw:
