@@ -2,7 +2,8 @@
 
 > **触发**：5180 手测（[`TBOX_5180_HANDTEST_2026-06-02.md`](../../TBOX_5180_HANDTEST_2026-06-02.md)）— 种子 `https://www.cttic.cn/` 仅入库门户首页 `page.html`；产品期望 **公网自动发现** + **重复内容去重** + **英文资料**；且不限于法规库，**四类专题知识库**均需同一套能力。
 >
-> **Spec**：[`2026-05-24-tbox-capability-matrix-design.md`](../specs/2026-05-24-tbox-capability-matrix-design.md) — **G2-CRAWL-DISCOVER**、**G2-CRAWL-DEDUP**、**G2-CRAWL-I18N**、（P2）**G2-CRAWL-RELEVANCE**；**§6 Phase 67**。
+> **设计 Spec（已批准）**：[`2026-06-02-tbox-g2-discover-dedup-design.md`](../specs/2026-06-02-tbox-g2-discover-dedup-design.md)
+> **矩阵**：[`2026-05-24-tbox-capability-matrix-design.md`](../specs/2026-05-24-tbox-capability-matrix-design.md) — **G2-CRAWL-DISCOVER**、**G2-CRAWL-DEDUP**、**G2-CRAWL-I18N**、（P2）**G2-CRAWL-RELEVANCE**；**§6 Phase 67**。
 
 **Goal：** 在现有 `static_web` / worker tick 之上，为 **四类专题知识库** 提供统一的 **「搜索词（中/英）→ URL 队列 → 去重 → 抓取入库」** 能力；每个 crawl 任务绑定一个 `dataset_id`（目标库），共享 discover/dedup 引擎、按库配置 query/关键词/域名。
 
