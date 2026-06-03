@@ -457,6 +457,9 @@ def execute_crawl_task_stub_tick(task_id: str) -> None:
         )
         return
     if not target_urls:
+        if tick_stats.skipped_dup_url > 0 and discover_error is None:
+            record_worker_tick(task_id, ok=True, message=f"[tbox:TICK_OK] {tick_stats.summary()}")
+            return
         record_worker_tick(
             task_id,
             ok=False,
