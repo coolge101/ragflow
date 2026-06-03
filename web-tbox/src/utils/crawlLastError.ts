@@ -5,10 +5,18 @@ const LABELS: Record<string, string> = {
   HTTP_PROBE: "HTTP 探测失败",
   INGEST_STATIC: "静态页入库失败",
   INGEST_RSS: "RSS 入库失败",
+  INGEST_API: "API 入库失败",
   DATASET_TENANT: "知识库与租户不匹配",
   KB_NOT_FOUND: "知识库不存在",
   WORKER_EXCEPTION: "Worker 异常",
   WORKER_STUB: "Stub 联调失败",
+  DISCOVER_NO_KEY: "未配置 Tavily Key",
+  DISCOVER_EMPTY: "搜索发现无可用 URL",
+  DISCOVER: "搜索发现失败",
+  DISCOVER_QUOTA: "搜索发现配额/限流",
+  DISCOVER_PROVIDER: "搜索发现 Provider 错误",
+  STRATEGY: "策略过滤后无 URL",
+  TICK_OK: "最近 tick",
 };
 
 function trunc(s: string, max: number): string {

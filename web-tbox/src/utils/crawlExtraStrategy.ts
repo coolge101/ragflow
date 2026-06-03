@@ -1,5 +1,7 @@
 /** 爬取策略键（写入任务 extra_config；后端可逐步消费） */
 
+import { DISCOVER_EXTRA_KEYS } from "./crawlExtraDiscover";
+
 export const EXTRA_CRAWL_KEYWORDS = "tbox_crawl_keywords";
 export const EXTRA_CRAWL_MAX_DEPTH = "tbox_crawl_max_depth";
 export const EXTRA_CRAWL_ALLOWED_DOMAINS = "tbox_crawl_allowed_domains";
@@ -84,6 +86,9 @@ export function mergeStrategyIntoExtra(
 export function stripStrategyKeys(ex: Record<string, unknown>): Record<string, unknown> {
   const out: Record<string, unknown> = { ...ex };
   for (const k of STRATEGY_EXTRA_KEYS) {
+    delete out[k];
+  }
+  for (const k of DISCOVER_EXTRA_KEYS) {
     delete out[k];
   }
   return out;

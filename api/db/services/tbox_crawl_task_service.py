@@ -16,6 +16,7 @@
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 from datetime import datetime
 import logging
 import re
@@ -24,6 +25,7 @@ from urllib.parse import urlparse
 from api.db import UserTenantRole
 from api.db.db_models import Knowledgebase, TboxCrawlTask, UserTenant
 from api.db.services.knowledgebase_service import KnowledgebaseService
+from api.db.services.tbox_crawl_seen_service import url_seen
 from api.db.services.tbox_crawl_ingest_service import (
     ingest_http_api_seeds_into_kb,
     ingest_rss_seeds_into_kb,
@@ -32,9 +34,15 @@ from api.db.services.tbox_crawl_ingest_service import (
 from common.tbox_crawl_auth import validate_extra_config_no_secrets
 from common.constants import StatusEnum
 from common.misc_utils import get_uuid
+from common.tbox_crawl_dedup import canonicalize_url, filter_urls_not_seen, merge_url_lists
+from common.tbox_crawl_discover import (
+    DiscoverProviderError,
+    parse_discover_config,
+    run_discover,
+)
 from common.tbox_crawl_http_probe import probe_seed_urls
 from common.tbox_crawl_last_error import format_crawl_worker_error
-from common.tbox_crawl_strategy import parse_strategy, resolve_target_urls
+from common.tbox_crawl_strategy import CrawlStrategy, parse_strategy, resolve_target_urls
 
 _LOG = logging.getLogger(__name__)
 
@@ -346,8 +354,71 @@ def record_worker_tick(task_id: str, *, ok: bool, message: str = "") -> None:
     if row is None:
         return
     row.last_run_at = datetime.now()
-    row.last_error = (message or "")[:65000] if not ok else ""
+    if ok:
+        row.last_error = (message or "")[:65000]
+    else:
+        row.last_error = (message or "")[:65000]
     row.save()
+
+
+@dataclass
+class CrawlTickStats:
+    discovered: int = 0
+    skipped_dup_url: int = 0
+    ingested: int = 0
+    skipped_dup_content: int = 0
+    skipped_kw: int = 0
+
+    def summary(self) -> str:
+        return f"discovered={self.discovered} ingested={self.ingested} skipped_dup_url={self.skipped_dup_url} skipped_dup_content={self.skipped_dup_content} skipped_kw={self.skipped_kw}"
+
+
+def _resolve_crawl_target_urls(
+    row: TboxCrawlTask,
+    strategy: CrawlStrategy,
+    extra: dict,
+) -> tuple[list[str], str, CrawlTickStats, set[str], DiscoverProviderError | None]:
+    """
+    Discover + merge seeds + pre-fetch dedup + BFS expand.
+
+    Returns (target_urls, strategy_note, stats, discovered_canonical, discover_error).
+    """
+    stats = CrawlTickStats()
+    seeds = list(row.seed_urls or [])
+    skip_robots = bool(extra.get("tbox_skip_robots_check"))
+    dcfg = parse_discover_config(extra)
+    discovered: list[str] = []
+    discover_error: DiscoverProviderError | None = None
+
+    if dcfg.provider != "none" and dcfg.queries:
+        try:
+            result = run_discover(dcfg, strategy.allowed_domains)
+            if result is not None:
+                discovered = list(result.urls)
+                stats.discovered = len(discovered)
+        except DiscoverProviderError as exc:
+            discover_error = exc
+            return [], "", stats, set(), discover_error
+
+    merged = merge_url_lists(discovered, seeds)
+    discovered_canonical = {canonicalize_url(u) for u in discovered if canonicalize_url(u)}
+
+    ds = row.dataset_id
+    if ds and str(ds).strip():
+        merged, stats.skipped_dup_url = filter_urls_not_seen(str(ds), merged, seen_fn=url_seen)
+
+    if dcfg.provider == "tavily" and dcfg.queries and not merged and discover_error is None:
+        discover_error = DiscoverProviderError("DISCOVER_EMPTY", "no URLs after discover and dedup")
+        return [], "", stats, discovered_canonical, discover_error
+
+    target_urls, strategy_note = resolve_target_urls(
+        merged,
+        source_type=str(row.source_type or "static_web"),
+        strategy=strategy,
+        skip_robots=skip_robots,
+        extra_config=extra,
+    )
+    return target_urls, strategy_note, stats, discovered_canonical, discover_error
 
 
 def execute_crawl_task_stub_tick(task_id: str) -> None:
@@ -360,6 +431,7 @@ def execute_crawl_task_stub_tick(task_id: str) -> None:
     ``robots.txt`` is consulted via ``common/tbox_crawl_robots.py`` unless ``extra_config.tbox_skip_robots_check``.
     Strategy keys ``tbox_crawl_keywords``, ``tbox_crawl_max_depth``, ``tbox_crawl_allowed_domains`` are applied via
     :mod:`common.tbox_crawl_strategy` (domain filter, optional link expansion, keyword filter at ingest).
+    Discover keys ``tbox_crawl_search_*`` via :mod:`common.tbox_crawl_discover` (v1 Tavily).
     Transient HTTP retry whitelist: ``extra_config.tbox_crawl_retry_statuses`` (task full replace) /
     ``tbox_crawl_retry_extra_statuses`` (union) are passed to ``common.tbox_crawl_ssrf_fetch.effective_retry_statuses``
     for probe + ingest (process ``TBOX_CRAWL_RETRY_STATUSES`` overrides task keys when set).
@@ -374,16 +446,16 @@ def execute_crawl_task_stub_tick(task_id: str) -> None:
     if extra.get("worker_stub_fail"):
         raise RuntimeError("worker_stub_fail is set on task extra_config")
 
-    seeds = list(row.seed_urls or [])
     skip_robots = bool(extra.get("tbox_skip_robots_check"))
     strategy = parse_strategy(extra)
-    target_urls, strategy_note = resolve_target_urls(
-        seeds,
-        source_type=str(row.source_type or "static_web"),
-        strategy=strategy,
-        skip_robots=skip_robots,
-        extra_config=extra,
-    )
+    target_urls, strategy_note, tick_stats, discovered_canonical, discover_error = _resolve_crawl_target_urls(row, strategy, extra)
+    if discover_error is not None:
+        record_worker_tick(
+            task_id,
+            ok=False,
+            message=format_crawl_worker_error(discover_error.code, str(discover_error)),
+        )
+        return
     if not target_urls:
         record_worker_tick(
             task_id,
@@ -401,12 +473,12 @@ def execute_crawl_task_stub_tick(task_id: str) -> None:
             return
 
     if extra.get("tbox_skip_ingest"):
-        record_worker_tick(task_id, ok=True, message="")
+        record_worker_tick(task_id, ok=True, message=f"[tbox:TICK_OK] {tick_stats.summary()}")
         return
 
     ds = row.dataset_id
     if not ds or not str(ds).strip():
-        record_worker_tick(task_id, ok=True, message="")
+        record_worker_tick(task_id, ok=True, message=f"[tbox:TICK_OK] {tick_stats.summary()}")
         return
 
     if not kb_valid_for_tenant(str(ds), row.tenant_id):
@@ -423,8 +495,21 @@ def execute_crawl_task_stub_tick(task_id: str) -> None:
         return
 
     st = str(row.source_type or "static_web")
+    seed_canonical = {canonicalize_url(u) for u in (row.seed_urls or []) if canonicalize_url(u)}
     if st == "static_web":
-        ok_i, msg_i = ingest_static_web_seeds_into_kb(kb, row.tenant_id, target_urls, skip_robots=skip_robots, extra_config=extra)
+        ok_i, msg_i, ingest_stats = ingest_static_web_seeds_into_kb(
+            kb,
+            row.tenant_id,
+            target_urls,
+            skip_robots=skip_robots,
+            extra_config=extra,
+            dataset_id=str(ds),
+            discovered_canonical=discovered_canonical,
+            seed_canonical=seed_canonical,
+        )
+        tick_stats.ingested = ingest_stats.get("ingested", 0)
+        tick_stats.skipped_dup_content = ingest_stats.get("skipped_dup_content", 0)
+        tick_stats.skipped_kw = ingest_stats.get("skipped_kw", 0)
     elif st == "rss":
         ok_i, msg_i = ingest_rss_seeds_into_kb(kb, row.tenant_id, target_urls, skip_robots=skip_robots, extra_config=extra)
     elif st == "http_api":
@@ -433,8 +518,9 @@ def execute_crawl_task_stub_tick(task_id: str) -> None:
         _LOG.info("tbox_crawl_tick: unknown source_type=%s task_id=%s", row.source_type, task_id)
         ok_i, msg_i = True, ""
 
+    summary = f"[tbox:TICK_OK] {tick_stats.summary()}"
     if ok_i:
-        record_worker_tick(task_id, ok=True, message="")
+        record_worker_tick(task_id, ok=True, message=summary)
     elif st == "rss":
         record_worker_tick(task_id, ok=False, message=format_crawl_worker_error("INGEST_RSS", msg_i))
     elif st == "http_api":

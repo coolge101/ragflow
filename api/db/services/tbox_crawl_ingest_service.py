@@ -32,6 +32,8 @@ from common.tbox_crawl_api import api_item_to_document, extract_api_items, parse
 from common.tbox_crawl_origin_throttle import OriginFetchThrottler
 from common.tbox_crawl_robots import RobotsOriginCache
 from common.tbox_crawl_ssrf_fetch import fetch_url_body_capped, suggested_filename_from_url
+from api.db.services.tbox_crawl_seen_service import content_seen, record_seen
+from common.tbox_crawl_dedup import canonicalize_url, content_sha256
 from common.tbox_crawl_strategy import content_matches_keywords, parse_strategy
 
 _LOG = logging.getLogger(__name__)
@@ -66,17 +68,27 @@ def ingest_static_web_seeds_into_kb(
     timeout_sec: float | None = None,
     skip_robots: bool = False,
     extra_config: dict[str, Any] | None = None,
-) -> tuple[bool, str]:
+    dataset_id: str | None = None,
+    dedup: bool = True,
+    discovered_canonical: set[str] | None = None,
+    seed_canonical: set[str] | None = None,
+) -> tuple[bool, str, dict[str, int]]:
     """
     Fetch each seed (SSRF-safe, capped), upload as a new file under *kb*, queue parse tasks.
 
-    Returns ``(ok, message)``; *message* lists failures if ``ok`` is False.
+    Returns ``(ok, message, stats)``; *message* lists failures if ``ok`` is False.
+    *stats* keys: ``ingested``, ``skipped_dup_content``, ``skipped_kw``.
 
     *extra_config* is forwarded to :func:`common.tbox_crawl_ssrf_fetch.fetch_url_body_capped` for
     ``effective_retry_statuses`` (``tbox_crawl_retry_extra_statuses``).
     """
+    stats = {"ingested": 0, "skipped_dup_content": 0, "skipped_kw": 0}
     if kb is None or not getattr(kb, "id", None):
-        return False, "invalid knowledge base"
+        return False, "invalid knowledge base", stats
+
+    ds = dataset_id or str(getattr(kb, "id", "") or "")
+    disc = discovered_canonical or set()
+    seeds_set = seed_canonical or {canonicalize_url(u) for u in seed_urls if canonicalize_url(u)}
 
     lim_raw = max_urls if max_urls is not None else os.environ.get("TBOX_CRAWL_INGEST_MAX", "5")
     lim = max(1, min(int(lim_raw), len(seed_urls)))
@@ -89,6 +101,8 @@ def ingest_static_web_seeds_into_kb(
     throttle = OriginFetchThrottler(robots_cache)
     strategy = parse_strategy(extra_config)
     skipped_kw = 0
+    skipped_dup_content = 0
+    ingested = 0
 
     for url in seed_urls[:lim]:
         try:
@@ -100,6 +114,11 @@ def ingest_static_web_seeds_into_kb(
                 origin_throttle=throttle,
                 extra_config=extra_config,
             )
+            h = content_sha256(body)
+            if dedup and ds and content_seen(ds, h):
+                skipped_dup_content += 1
+                _LOG.info("tbox_crawl_ingest: content dedup skip url=%s", url)
+                continue
             if not content_matches_keywords(body, strategy.keywords):
                 skipped_kw += 1
                 _LOG.info("tbox_crawl_ingest: keyword filter skip url=%s", url)
@@ -113,16 +132,30 @@ def ingest_static_web_seeds_into_kb(
                 continue
             for doc, _blob in pairs:
                 DocumentService.run(tenant_id, doc, kb_table_num_map)
+            canon = canonicalize_url(url)
+            if canon and ds:
+                if canon in disc:
+                    src_tag = "discover"
+                elif canon in seeds_set:
+                    src_tag = "seed"
+                else:
+                    src_tag = "expand"
+                record_seen(ds, canon, content_sha256=h, source=src_tag)
+            ingested += 1
             _LOG.info("tbox_crawl_ingest: queued doc name=%s kb_id=%s url=%s", filename, kb.id, url)
         except Exception as exc:
             _LOG.warning("tbox_crawl_ingest failed url=%s err=%s", url, exc)
             errs.append(f"{url}: {exc}")
 
+    stats["ingested"] = ingested
+    stats["skipped_dup_content"] = skipped_dup_content
+    stats["skipped_kw"] = skipped_kw
+
     if errs:
-        return False, "; ".join(errs)[:65000]
-    if skipped_kw and skipped_kw >= min(lim, len(seed_urls)):
-        return False, f"all {skipped_kw} page(s) skipped by keyword filter"
-    return True, ""
+        return False, "; ".join(errs)[:65000], stats
+    if skipped_kw and skipped_kw >= min(lim, len(seed_urls)) and ingested == 0:
+        return False, f"all {skipped_kw} page(s) skipped by keyword filter", stats
+    return True, "", stats
 
 
 def ingest_rss_seeds_into_kb(

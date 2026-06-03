@@ -97,8 +97,9 @@ def resolve_auth_headers(extra_config: dict[str, Any] | None) -> dict[str, str]:
 
 
 def build_fetch_headers(extra_config: dict[str, Any] | None, *, default_user_agent: str) -> dict[str, str]:
-    """Default User-Agent merged with env-resolved auth headers (auth may override UA)."""
-    headers = {"User-Agent": default_user_agent}
+    """Default User-Agent + Accept-Language merged with env-resolved auth headers (auth may override)."""
+    accept_lang = (os.environ.get("TBOX_CRAWL_ACCEPT_LANGUAGE") or "zh-CN,en;q=0.9").strip()
+    headers = {"User-Agent": default_user_agent, "Accept-Language": accept_lang}
     headers.update(resolve_auth_headers(extra_config))
     return headers
 

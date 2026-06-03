@@ -56,7 +56,9 @@ class TestExecuteCrawlTickStrategy(unittest.TestCase):
         mock_probe.assert_called_once()
         urls = mock_probe.call_args[0][0]
         self.assertEqual(urls, ["https://www.example.com/seed"])
-        mock_record.assert_called_with("t1", ok=True, message="")
+        mock_record.assert_called_with("t1", ok=True, message=unittest.mock.ANY)
+        msg = mock_record.call_args.kwargs["message"]
+        self.assertIn("[tbox:TICK_OK]", msg)
 
     @patch.object(svc, "record_worker_tick")
     @patch.object(svc, "probe_seed_urls")

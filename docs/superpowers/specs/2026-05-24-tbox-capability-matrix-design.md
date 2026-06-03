@@ -94,9 +94,9 @@
 | G2-CRAWL-MODE | **专项 vs 定时** 任务类型 | — | ✅ 任务类型选择 | TBOX | **P1** | 专项=无 Cron + 手动 run |
 | G2-CRAWL-AUTH | 需登录站点 | 需求 §7 | ✅ profile + env headers | TBOX common | P2 | **`TBOX_CRAWL_AUTH_<PROFILE>_HEADERS`** |
 | G2-CRAWL-API | API 拉取源 | 需求 §7 | ✅ **`http_api`** | TBOX ingest | P2 | JSON 数组 → `.txt` |
-| G2-CRAWL-DISCOVER | **搜索发现 URL**（公网检索 → 候选链接队列） | ⚠️ Agent/Tavily 仅对话检索 | ❌ | TBOX worker | **P1（下一阶段优先）** | **四类专题库**（法规/技术趋势/市场趋势/产品行业）共用；中英 search query；见 **§6 Phase 67** |
-| G2-CRAWL-DEDUP | **智能去重**（URL 规范化 + 内容指纹 + 库内跳过） | ⚠️ Connector `hash128` / 增量同步 | ❌ | TBOX ingest | **P1（下一阶段优先）** | 跨 tick/任务；四类库 **`dataset_id`** 内 dedup；当前仅 `duplicate_name` |
-| G2-CRAWL-I18N | **英文资料爬取**（英/中 query、UTF-8、preview） | ⚠️ 单 URL web 入库 | ❌ | TBOX worker | **P1（下一阶段优先）** | 与 DISCOVER 联用；英文明文/ PDF 同源入库 |
+| G2-CRAWL-DISCOVER | **搜索发现 URL**（公网检索 → 候选链接队列） | ⚠️ Agent/Tavily 仅对话检索 | ✅ Tavily + 四类模板 UI | TBOX worker | ✅ | **`common/tbox_crawl_discover.py`**；v2 SearXNG stub |
+| G2-CRAWL-DEDUP | **智能去重**（URL 规范化 + 内容指纹 + 库内跳过） | ⚠️ Connector `hash128` / 增量同步 | ✅ tick 摘要 | TBOX ingest | ✅ | 表 **`tbox_crawl_seen`**；pre/post dedup |
+| G2-CRAWL-I18N | **英文资料爬取**（英/中 query、UTF-8、preview） | ⚠️ 单 URL web 入库 | ✅ locale + Accept-Language | TBOX worker | ✅ | **`TBOX_CRAWL_ACCEPT_LANGUAGE`**；与 DISCOVER 联用 |
 | G2-CRAWL-RELEVANCE | 入库前相关性评分（LLM/规则） | ❌ | ❌ | TBOX | P2 | 过滤门户首页等低相关页；按库配置阈值 |
 
 ### G3 — LLM 对话

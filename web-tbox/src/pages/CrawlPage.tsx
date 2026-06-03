@@ -22,6 +22,14 @@ import {
   type CrawlTaskMode,
 } from "../utils/crawlExtraStrategy";
 import {
+  discoverFieldsFromExtra,
+  EMPTY_DISCOVER_FIELDS,
+  formatDiscoverSummary,
+  mergeDiscoverIntoExtra,
+  type DiscoverFields,
+} from "../utils/crawlExtraDiscover";
+import { CRAWL_DOMAIN_TEMPLATES, type CrawlDomainTemplateKey } from "../utils/crawlDomainTemplates";
+import {
   advancedFieldsFromExtra,
   formatAdvancedSummary,
   mergeAdvancedIntoExtra,
@@ -149,6 +157,10 @@ function formatCrawlExtraSummary(extra: Record<string, unknown> | undefined): st
   if (adv) {
     parts.unshift(adv);
   }
+  const disc = formatDiscoverSummary(extra);
+  if (disc) {
+    parts.unshift(disc);
+  }
   return parts.length ? parts.join("、") : "—";
 }
 
@@ -177,13 +189,165 @@ const EMPTY_CRAWL_ADVANCED: CrawlAdvancedFields = {
 function mergeCrawlFormExtra(
   parsed: Record<string, unknown>,
   strategy: CrawlStrategyFields,
+  discover: DiscoverFields,
   advanced: CrawlAdvancedFields,
   sourceType: CrawlSourceType,
   flags: CrawlExtraFlags,
 ): Record<string, unknown> {
   return mergeCrawlExtraConfig(
-    mergeAdvancedIntoExtra(mergeStrategyIntoExtra(parsed, strategy), advanced, sourceType),
+    mergeAdvancedIntoExtra(
+      mergeDiscoverIntoExtra(mergeStrategyIntoExtra(parsed, strategy), discover),
+      advanced,
+      sourceType,
+    ),
     flags,
+  );
+}
+
+function hasDiscoverQueries(discover: DiscoverFields): boolean {
+  return discover.provider === "tavily" && discover.queries.trim().length > 0;
+}
+
+function applyDiscoverTemplate(setDiscover: (fn: (prev: DiscoverFields) => DiscoverFields) => void, key: CrawlDomainTemplateKey) {
+  const t = CRAWL_DOMAIN_TEMPLATES[key];
+  setDiscover(() => ({
+    ...EMPTY_DISCOVER_FIELDS,
+    provider: "tavily",
+    queries: t.queries.join("\n"),
+    locale: "both",
+  }));
+}
+
+function renderDiscoverFields(
+  discover: DiscoverFields,
+  setDiscover: (fn: (prev: DiscoverFields) => DiscoverFields) => void,
+  idPrefix: string,
+) {
+  return (
+    <div style={{ marginBottom: 12, padding: "0.75rem", border: "1px dashed #dbeafe", borderRadius: 8 }}>
+      <div style={{ marginBottom: 8, fontWeight: 600, color: "var(--fg, #111827)" }}>
+        搜索发现（Tavily / 未来 SearXNG）
+      </div>
+      <p className="muted" style={{ marginTop: 0, marginBottom: 8, lineHeight: 1.6 }}>
+        Worker 环境变量 <code>TBOX_CRAWL_TAVILY_API_KEY</code> 或 <code>TAVILY_API_KEY</code>；无 Key 时 tick 报{" "}
+        <code>DISCOVER_NO_KEY</code>。
+      </p>
+      <label style={{ display: "block", marginBottom: 8 }}>
+        <span className="muted" style={{ display: "block", marginBottom: 4 }}>
+          Provider（<code>tbox_crawl_search_provider</code>）
+        </span>
+        <select
+          id={`${idPrefix}-discover-provider`}
+          value={discover.provider}
+          onChange={(e) =>
+            setDiscover((s) => ({ ...s, provider: e.target.value === "tavily" ? "tavily" : "none" }))
+          }
+        >
+          <option value="none">none — 仅种子 URL</option>
+          <option value="tavily">tavily — 全网搜索发现</option>
+        </select>
+      </label>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 8 }}>
+        {(Object.keys(CRAWL_DOMAIN_TEMPLATES) as CrawlDomainTemplateKey[]).map((key) => (
+          <button
+            key={key}
+            type="button"
+            className="secondary"
+            onClick={() => applyDiscoverTemplate(setDiscover, key)}
+          >
+            套用模板：{CRAWL_DOMAIN_TEMPLATES[key].label}
+          </button>
+        ))}
+      </div>
+      <label style={{ display: "block", marginBottom: 8 }}>
+        <span className="muted" style={{ display: "block", marginBottom: 4 }}>
+          搜索 query（每行一条，<code>tbox_crawl_search_queries</code>）
+        </span>
+        <textarea
+          value={discover.queries}
+          onChange={(e) => setDiscover((s) => ({ ...s, queries: e.target.value }))}
+          rows={3}
+          style={{ width: "100%", maxWidth: 640 }}
+          placeholder={"TBOX 车联网 标准 法规\nautomotive TBOX standard regulation"}
+        />
+      </label>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 12, marginBottom: 8 }}>
+        <label>
+          <span className="muted" style={{ display: "block", marginBottom: 4 }}>
+            语言（<code>tbox_crawl_search_locale</code>）
+          </span>
+          <select
+            value={discover.locale}
+            onChange={(e) =>
+              setDiscover((s) => ({
+                ...s,
+                locale: e.target.value === "zh" || e.target.value === "en" ? e.target.value : "both",
+              }))
+            }
+          >
+            <option value="both">中英文</option>
+            <option value="zh">中文</option>
+            <option value="en">英文</option>
+          </select>
+        </label>
+        <label>
+          <span className="muted" style={{ display: "block", marginBottom: 4 }}>
+            Tavily depth
+          </span>
+          <select
+            value={discover.tavilyDepth}
+            onChange={(e) =>
+              setDiscover((s) => ({ ...s, tavilyDepth: e.target.value === "advanced" ? "advanced" : "basic" }))
+            }
+          >
+            <option value="basic">basic</option>
+            <option value="advanced">advanced</option>
+          </select>
+        </label>
+        <label>
+          <span className="muted" style={{ display: "block", marginBottom: 4 }}>
+            max_urls
+          </span>
+          <input
+            type="number"
+            min={1}
+            max={100}
+            value={discover.maxUrls}
+            onChange={(e) => setDiscover((s) => ({ ...s, maxUrls: e.target.value }))}
+            placeholder="10"
+            style={{ width: 88 }}
+          />
+        </label>
+        <label>
+          <span className="muted" style={{ display: "block", marginBottom: 4 }}>
+            max_queries
+          </span>
+          <input
+            type="number"
+            min={1}
+            max={20}
+            value={discover.maxQueries}
+            onChange={(e) => setDiscover((s) => ({ ...s, maxQueries: e.target.value }))}
+            placeholder="3"
+            style={{ width: 88 }}
+          />
+        </label>
+        <label>
+          <span className="muted" style={{ display: "block", marginBottom: 4 }}>
+            max_results/q
+          </span>
+          <input
+            type="number"
+            min={1}
+            max={10}
+            value={discover.maxResultsPerQuery}
+            onChange={(e) => setDiscover((s) => ({ ...s, maxResultsPerQuery: e.target.value }))}
+            placeholder="5"
+            style={{ width: 88 }}
+          />
+        </label>
+      </div>
+    </div>
   );
 }
 
@@ -255,6 +419,7 @@ export function CrawlPage() {
   const [createExtraJsonFull, setCreateExtraJsonFull] = useState(false);
   const [createTaskMode, setCreateTaskMode] = useState<CrawlTaskMode>("special");
   const [createStrategy, setCreateStrategy] = useState<CrawlStrategyFields>(EMPTY_CRAWL_STRATEGY);
+  const [createDiscover, setCreateDiscover] = useState<DiscoverFields>(EMPTY_DISCOVER_FIELDS);
   const [createAdvanced, setCreateAdvanced] = useState<CrawlAdvancedFields>(EMPTY_CRAWL_ADVANCED);
 
   const [editing, setEditing] = useState<CrawlTaskRow | null>(null);
@@ -273,6 +438,7 @@ export function CrawlPage() {
   const [editExtraJsonFull, setEditExtraJsonFull] = useState(false);
   const [editTaskMode, setEditTaskMode] = useState<CrawlTaskMode>("special");
   const [editStrategy, setEditStrategy] = useState<CrawlStrategyFields>(EMPTY_CRAWL_STRATEGY);
+  const [editDiscover, setEditDiscover] = useState<DiscoverFields>(EMPTY_DISCOVER_FIELDS);
   const [editAdvanced, setEditAdvanced] = useState<CrawlAdvancedFields>(EMPTY_CRAWL_ADVANCED);
 
   const mustPickTenant = !isSuper && eligible.length > 1;
@@ -446,6 +612,7 @@ export function CrawlPage() {
     setEditExtraJson(stringifyExtraConfigSubset(ex));
     setEditTaskMode(crawlTaskModeFromFields(t.schedule_cron || "", Boolean(t.enabled)));
     setEditStrategy(strategyFieldsFromExtra(ex));
+    setEditDiscover(discoverFieldsFromExtra(ex));
     setEditAdvanced(advancedFieldsFromExtra(ex));
   };
 
@@ -468,8 +635,8 @@ export function CrawlPage() {
       setActionMsg("请填写任务名称");
       return;
     }
-    if (seeds.length === 0) {
-      setActionMsg("请至少填写一行种子 URL（http/https）");
+    if (seeds.length === 0 && !hasDiscoverQueries(createDiscover)) {
+      setActionMsg("请至少填写一行种子 URL，或配置 Tavily 搜索 query");
       return;
     }
     const parsed = parseExtraConfigJson(createExtraJson);
@@ -489,7 +656,7 @@ export function CrawlPage() {
         schedule_cron: createCron.trim(),
         enabled: createEnabled,
         dataset_id: createDatasetId.trim() || undefined,
-        extra_config: mergeCrawlFormExtra(parsed.value, createStrategy, createAdvanced, createSource, {
+        extra_config: mergeCrawlFormExtra(parsed.value, createStrategy, createDiscover, createAdvanced, createSource, {
           skipHttpProbe: createSkipHttpProbe,
           skipIngest: createSkipIngest,
           skipRobots: createSkipRobots,
@@ -524,6 +691,7 @@ export function CrawlPage() {
     setCreateExtraJson("{}");
     setCreateTaskMode("special");
     setCreateStrategy(EMPTY_CRAWL_STRATEGY);
+    setCreateDiscover(EMPTY_DISCOVER_FIELDS);
     setCreateAdvanced(EMPTY_CRAWL_ADVANCED);
     setCreateRunState("ready");
     void loadTasks();
@@ -539,8 +707,8 @@ export function CrawlPage() {
       setActionMsg("名称不能为空");
       return;
     }
-    if (seeds.length === 0) {
-      setActionMsg("种子 URL 不能为空");
+    if (seeds.length === 0 && !hasDiscoverQueries(editDiscover)) {
+      setActionMsg("种子 URL 不能为空（或配置 Tavily 搜索 query）");
       return;
     }
     const parsed = parseExtraConfigJson(editExtraJson);
@@ -555,7 +723,7 @@ export function CrawlPage() {
       run_state: editRunState,
       schedule_cron: editCron.trim(),
       enabled: editEnabled,
-      extra_config: mergeCrawlFormExtra(parsed.value, editStrategy, editAdvanced, editSource, {
+      extra_config: mergeCrawlFormExtra(parsed.value, editStrategy, editDiscover, editAdvanced, editSource, {
         skipHttpProbe: editSkipHttpProbe,
         skipIngest: editSkipIngest,
         skipRobots: editSkipRobots,
@@ -983,6 +1151,7 @@ export function CrawlPage() {
             ))}
           </select>
         </label>
+        {renderDiscoverFields(createDiscover, setCreateDiscover, "create")}
         <div style={{ marginBottom: 12, padding: "0.75rem", border: "1px dashed #e5e7eb", borderRadius: 8 }}>
           <div style={{ marginBottom: 8, fontWeight: 600, color: "var(--fg, #111827)" }}>
             爬取策略（extra_config）
@@ -1233,6 +1402,7 @@ export function CrawlPage() {
               ))}
             </select>
           </label>
+          {renderDiscoverFields(editDiscover, setEditDiscover, "edit")}
           <div style={{ marginBottom: 12, padding: "0.75rem", border: "1px dashed #e5e7eb", borderRadius: 8 }}>
             <div style={{ marginBottom: 8, fontWeight: 600 }}>爬取策略（extra_config）</div>
             <label style={{ display: "block", marginBottom: 8 }}>

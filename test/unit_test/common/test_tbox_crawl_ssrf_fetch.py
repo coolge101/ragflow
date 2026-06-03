@@ -22,6 +22,7 @@ from unittest.mock import patch
 
 import requests
 
+from common.tbox_crawl_auth import build_fetch_headers
 from common.tbox_crawl_ssrf_fetch import (
     DEFAULT_RETRY_STATUS_CODES,
     effective_retry_statuses,
@@ -185,6 +186,17 @@ class TestTboxCrawlSsrfFetch(unittest.TestCase):
     def test_retry_max_attempts_zero_disables_per_code(self):
         with patch.dict(os.environ, {"TBOX_CRAWL_RETRY_MAX_ATTEMPTS_529": "0"}, clear=False):
             self.assertEqual(_retry_max_for_status(529), 0)
+
+    def test_build_fetch_headers_default_accept_language(self):
+        with patch.dict(os.environ, {"TBOX_CRAWL_ACCEPT_LANGUAGE": ""}, clear=False):
+            headers = build_fetch_headers(None, default_user_agent="TestAgent/1.0")
+        self.assertEqual(headers.get("Accept-Language"), "zh-CN,en;q=0.9")
+        self.assertEqual(headers.get("User-Agent"), "TestAgent/1.0")
+
+    def test_build_fetch_headers_accept_language_env_override(self):
+        with patch.dict(os.environ, {"TBOX_CRAWL_ACCEPT_LANGUAGE": "en-US,zh;q=0.8"}, clear=False):
+            headers = build_fetch_headers(None, default_user_agent="TestAgent/1.0")
+        self.assertEqual(headers.get("Accept-Language"), "en-US,zh;q=0.8")
 
 
 if __name__ == "__main__":

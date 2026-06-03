@@ -1256,6 +1256,22 @@ class TboxCrawlTask(DataBaseModel):
         indexes = ((("tenant_id", "status"), False),)
 
 
+class TboxCrawlSeen(DataBaseModel):
+    """Per-dataset crawl dedup index (canonical URL + optional content hash)."""
+
+    id = CharField(max_length=32, primary_key=True)
+    dataset_id = CharField(max_length=32, null=False, index=True)
+    url_canonical = CharField(max_length=2048, null=False)
+    content_sha256 = CharField(max_length=64, null=True, index=True)
+    source = CharField(max_length=16, null=False, default="crawl")
+    first_seen_at = DateTimeField(null=False)
+    last_seen_at = DateTimeField(null=False)
+
+    class Meta:
+        db_table = "tbox_crawl_seen"
+        indexes = ((("dataset_id", "url_canonical"), True),)
+
+
 class EvaluationDataset(DataBaseModel):
     """Ground truth dataset for RAG evaluation"""
 
