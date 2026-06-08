@@ -397,8 +397,16 @@ def _resolve_crawl_target_urls(
                 discovered = list(result.urls)
                 stats.discovered = len(discovered)
         except DiscoverProviderError as exc:
-            discover_error = exc
-            return [], "", stats, set(), discover_error
+            # 国内/隔离网络常无法访问 Tavily：有种子时降级为「仅种子 + BFS」，不阻断 tick
+            if exc.code in ("DISCOVER_NETWORK", "DISCOVER") and seeds:
+                _LOG.warning(
+                    "tbox_crawl discover provider failed (%s), falling back to seed_urls only: %s",
+                    exc.code,
+                    exc,
+                )
+            else:
+                discover_error = exc
+                return [], "", stats, set(), discover_error
 
     merged = merge_url_lists(discovered, seeds)
     discovered_canonical = {canonicalize_url(u) for u in discovered if canonicalize_url(u)}
@@ -408,8 +416,9 @@ def _resolve_crawl_target_urls(
         merged, stats.skipped_dup_url = filter_urls_not_seen(str(ds), merged, seen_fn=url_seen)
 
     if dcfg.provider == "tavily" and dcfg.queries and not merged and discover_error is None:
-        discover_error = DiscoverProviderError("DISCOVER_EMPTY", "no URLs after discover and dedup")
-        return [], "", stats, discovered_canonical, discover_error
+        if not seeds:
+            discover_error = DiscoverProviderError("DISCOVER_EMPTY", "no URLs after discover and dedup")
+            return [], "", stats, discovered_canonical, discover_error
 
     target_urls, strategy_note = resolve_target_urls(
         merged,

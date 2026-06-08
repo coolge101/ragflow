@@ -166,6 +166,22 @@ class TavilyDiscoverProvider:
                 msg = str(exc).lower()
                 if "429" in msg or "rate" in msg or "quota" in msg or "credit" in msg:
                     raise DiscoverProviderError("DISCOVER_QUOTA", str(exc)) from exc
+                if any(
+                    tok in msg
+                    for tok in (
+                        "connection reset",
+                        "connection aborted",
+                        "connection refused",
+                        "timed out",
+                        "timeout",
+                        "network is unreachable",
+                        "name or service not known",
+                        "failed to establish",
+                        "ssl",
+                        "certificate",
+                    )
+                ):
+                    raise DiscoverProviderError("DISCOVER_NETWORK", str(exc)) from exc
                 raise DiscoverProviderError("DISCOVER", str(exc)) from exc
             results = resp.get("results") if isinstance(resp, dict) else []
             if not isinstance(results, list):

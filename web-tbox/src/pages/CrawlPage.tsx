@@ -208,7 +208,14 @@ function hasDiscoverQueries(discover: DiscoverFields): boolean {
   return discover.provider === "tavily" && discover.queries.trim().length > 0;
 }
 
-function applyDiscoverTemplate(setDiscover: (fn: (prev: DiscoverFields) => DiscoverFields) => void, key: CrawlDomainTemplateKey) {
+function applyDiscoverTemplate(
+  setDiscover: (fn: (prev: DiscoverFields) => DiscoverFields) => void,
+  key: CrawlDomainTemplateKey,
+  opts?: {
+    setSeeds?: (value: string) => void;
+    setStrategy?: (fn: (prev: CrawlStrategyFields) => CrawlStrategyFields) => void;
+  },
+) {
   const t = CRAWL_DOMAIN_TEMPLATES[key];
   setDiscover(() => ({
     ...EMPTY_DISCOVER_FIELDS,
@@ -216,12 +223,22 @@ function applyDiscoverTemplate(setDiscover: (fn: (prev: DiscoverFields) => Disco
     queries: t.queries.join("\n"),
     locale: "both",
   }));
+  if (opts?.setSeeds && t.seedUrls?.length) {
+    opts.setSeeds(t.seedUrls.join("\n"));
+  }
+  if (opts?.setStrategy) {
+    opts.setStrategy((s) => ({ ...s, maxDepth: "2" }));
+  }
 }
 
 function renderDiscoverFields(
   discover: DiscoverFields,
   setDiscover: (fn: (prev: DiscoverFields) => DiscoverFields) => void,
   idPrefix: string,
+  templateOpts?: {
+    setSeeds?: (value: string) => void;
+    setStrategy?: (fn: (prev: CrawlStrategyFields) => CrawlStrategyFields) => void;
+  },
 ) {
   return (
     <div style={{ marginBottom: 12, padding: "0.75rem", border: "1px dashed #dbeafe", borderRadius: 8 }}>
@@ -229,8 +246,7 @@ function renderDiscoverFields(
         搜索发现（Tavily / 未来 SearXNG）
       </div>
       <p className="muted" style={{ marginTop: 0, marginBottom: 8, lineHeight: 1.6 }}>
-        Worker 环境变量 <code>TBOX_CRAWL_TAVILY_API_KEY</code> 或 <code>TAVILY_API_KEY</code>；无 Key 时 tick 报{" "}
-        <code>DISCOVER_NO_KEY</code>。
+        Worker 环境变量 <code>TBOX_CRAWL_TAVILY_API_KEY</code>。国内网络若无法访问 Tavily，仍会使用下方<strong>种子 URL + 链接扩展</strong>继续爬取。
       </p>
       <label style={{ display: "block", marginBottom: 8 }}>
         <span className="muted" style={{ display: "block", marginBottom: 4 }}>
@@ -253,7 +269,7 @@ function renderDiscoverFields(
             key={key}
             type="button"
             className="secondary"
-            onClick={() => applyDiscoverTemplate(setDiscover, key)}
+            onClick={() => applyDiscoverTemplate(setDiscover, key, templateOpts)}
           >
             套用模板：{CRAWL_DOMAIN_TEMPLATES[key].label}
           </button>
@@ -1151,7 +1167,10 @@ export function CrawlPage() {
             ))}
           </select>
         </label>
-        {renderDiscoverFields(createDiscover, setCreateDiscover, "create")}
+        {renderDiscoverFields(createDiscover, setCreateDiscover, "create", {
+          setSeeds: setCreateSeeds,
+          setStrategy: setCreateStrategy,
+        })}
         <div style={{ marginBottom: 12, padding: "0.75rem", border: "1px dashed #e5e7eb", borderRadius: 8 }}>
           <div style={{ marginBottom: 8, fontWeight: 600, color: "var(--fg, #111827)" }}>
             爬取策略（extra_config）
@@ -1402,7 +1421,10 @@ export function CrawlPage() {
               ))}
             </select>
           </label>
-          {renderDiscoverFields(editDiscover, setEditDiscover, "edit")}
+          {renderDiscoverFields(editDiscover, setEditDiscover, "edit", {
+            setSeeds: setEditSeeds,
+            setStrategy: setEditStrategy,
+          })}
           <div style={{ marginBottom: 12, padding: "0.75rem", border: "1px dashed #e5e7eb", borderRadius: 8 }}>
             <div style={{ marginBottom: 8, fontWeight: 600 }}>爬取策略（extra_config）</div>
             <label style={{ display: "block", marginBottom: 8 }}>

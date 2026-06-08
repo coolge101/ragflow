@@ -4,18 +4,26 @@ export const CRAWL_DOMAIN_TEMPLATES = {
   regulations: {
     label: "法规与标准",
     queries: ["TBOX 车联网 标准 法规", "C-V2X TBOX standard regulation"],
+    seedUrls: [
+      "https://www.miit.gov.cn/",
+      "https://www.cttic.cn/",
+      "https://www.gov.cn/zhengce/",
+    ],
   },
   tech: {
     label: "技术发展趋势",
     queries: ["车联网 TBOX 技术架构 白皮书", "automotive TBOX technology trend"],
+    seedUrls: ["https://www.miit.gov.cn/", "https://www.cttic.cn/"],
   },
   market: {
     label: "市场与产业趋势",
     queries: ["TBOX 市场规模 产业链", "connected vehicle TBOX market report"],
+    seedUrls: ["https://www.miit.gov.cn/"],
   },
   product: {
     label: "产品与行业情报",
     queries: ["TBOX 产品 竞品", "telematics box vendor comparison"],
+    seedUrls: ["https://www.miit.gov.cn/"],
   },
 } as const;
 

@@ -111,6 +111,17 @@ class TestExecuteCrawlTickDiscover(unittest.TestCase):
         self.assertFalse(mock_record.call_args.kwargs["ok"])
         self.assertIn("DISCOVER_EMPTY", mock_record.call_args.kwargs["message"])
 
+    @patch.object(svc, "url_seen", return_value=False)
+    @patch.object(svc, "run_discover")
+    def test_discover_network_falls_back_to_seeds(self, mock_discover, mock_url_seen):
+        mock_discover.side_effect = DiscoverProviderError("DISCOVER_NETWORK", "connection reset")
+        row = self._task()
+        strategy = svc.parse_strategy(row.extra_config)
+        urls, _note, stats, _disc, err = svc._resolve_crawl_target_urls(row, strategy, dict(row.extra_config))
+        self.assertIsNone(err)
+        self.assertGreater(len(urls), 0)
+        self.assertEqual(stats.discovered, 0)
+
 
 if __name__ == "__main__":
     unittest.main()
