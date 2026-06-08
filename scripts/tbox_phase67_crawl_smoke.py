@@ -58,9 +58,10 @@ def main() -> int:
                 "C-V2X TBOX standard regulation",
             ],
             "tbox_crawl_search_locale": "both",
-            "tbox_crawl_allowed_domains": ["cttic.cn"],
+            # 不设 allowed_domains，避免 Tavily 结果被域名白名单滤空
             "tbox_skip_http_probe": True,
         },
+        "seed_urls": ["https://www.cttic.cn/"],
         "dataset_id": dataset_id,
         "run_state": "ready",
     }
@@ -72,13 +73,32 @@ def main() -> int:
     req("POST", f"/v1/tbox/crawl/tasks/{task_id}/run", {}, token)
     got, _ = req("GET", f"/v1/tbox/crawl/tasks/{task_id}", None, token)
     last_err = str((got.get("data") or {}).get("last_error") or "")
-    print("RUN discover last_error:", last_err[:240])
+    print("RUN discover #1 last_error:", last_err[:280])
     if "DISCOVER_NO_KEY" in last_err:
         print("OK discover without Tavily key -> DISCOVER_NO_KEY")
-    elif "TICK_OK" in last_err:
-        print("OK discover tick (Tavily key present)")
+        return 0
+    if "DISCOVER" in last_err and "TICK_OK" not in last_err:
+        print("FAIL discover tick:", last_err[:280])
+        return 1
+    if "[tbox:TICK_OK]" not in last_err:
+        print("FAIL: discover tick missing [tbox:TICK_OK]")
+        return 1
+    if "discovered=0" in last_err and "ingested=0" in last_err:
+        print("WARN: discover returned 0 URLs (check Tavily quota/network)")
     else:
-        print("WARN unexpected discover tick error")
+        print("OK discover tick #1")
+
+    req("POST", f"/v1/tbox/crawl/tasks/{task_id}/run", {}, token)
+    got, _ = req("GET", f"/v1/tbox/crawl/tasks/{task_id}", None, token)
+    last_err2 = str((got.get("data") or {}).get("last_error") or "")
+    print("RUN discover #2 last_error:", last_err2[:280])
+    if "[tbox:TICK_OK]" not in last_err2:
+        print("FAIL: discover tick #2 missing [tbox:TICK_OK]")
+        return 1
+    if "skipped_dup" in last_err2:
+        print("OK discover dedup on second run")
+    else:
+        print("WARN: discover #2 expected skipped_dup_* in summary")
 
     patch_seed = {
         "extra_config": {"tbox_crawl_search_provider": "none", "tbox_skip_http_probe": True},
