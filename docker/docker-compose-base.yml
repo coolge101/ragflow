@@ -297,6 +297,18 @@ services:
       - ragflow
     restart: unless-stopped
 
+  searxng:
+    profiles:
+      - crawl-discover
+    image: searxng/searxng:latest
+    ports:
+      - "127.0.0.1:8888:8080"
+    environment:
+      - SEARXNG_BASE_URL=http://127.0.0.1:8888/
+    networks:
+      - ragflow
+    restart: unless-stopped
+
 
 volumes:
   esdata01:

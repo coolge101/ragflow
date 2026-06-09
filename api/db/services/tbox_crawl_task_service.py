@@ -43,6 +43,11 @@ from common.tbox_crawl_discover import (
 from common.tbox_crawl_http_probe import probe_seed_urls
 from common.tbox_crawl_last_error import format_crawl_worker_error
 from common.tbox_crawl_strategy import CrawlStrategy, parse_strategy, resolve_target_urls
+from common.tbox_crawl_url_quality import (
+    discover_skip_bfs,
+    filter_urls_by_quality,
+    parse_url_quality_mode,
+)
 
 _LOG = logging.getLogger(__name__)
 
@@ -368,9 +373,16 @@ class CrawlTickStats:
     ingested: int = 0
     skipped_dup_content: int = 0
     skipped_kw: int = 0
+    skipped_low_quality_url: int = 0
+    skipped_low_quality: int = 0
 
     def summary(self) -> str:
-        return f"discovered={self.discovered} ingested={self.ingested} skipped_dup_url={self.skipped_dup_url} skipped_dup_content={self.skipped_dup_content} skipped_kw={self.skipped_kw}"
+        return (
+            f"discovered={self.discovered} ingested={self.ingested} "
+            f"skipped_dup_url={self.skipped_dup_url} skipped_dup_content={self.skipped_dup_content} "
+            f"skipped_kw={self.skipped_kw} skipped_low_quality_url={self.skipped_low_quality_url} "
+            f"skipped_low_quality={self.skipped_low_quality}"
+        )
 
 
 def _resolve_crawl_target_urls(
@@ -397,8 +409,8 @@ def _resolve_crawl_target_urls(
                 discovered = list(result.urls)
                 stats.discovered = len(discovered)
         except DiscoverProviderError as exc:
-            # 国内/隔离网络常无法访问 Tavily：有种子时降级为「仅种子 + BFS」，不阻断 tick
-            if exc.code in ("DISCOVER_NETWORK", "DISCOVER") and seeds:
+            # 国内/隔离网络常无法访问 Tavily/SearXNG：有种子时降级为「仅种子 + BFS」，不阻断 tick
+            if exc.code in ("DISCOVER_NETWORK", "DISCOVER", "DISCOVER_NO_SEARXNG") and seeds:
                 _LOG.warning(
                     "tbox_crawl discover provider failed (%s), falling back to seed_urls only: %s",
                     exc.code,
@@ -408,25 +420,59 @@ def _resolve_crawl_target_urls(
                 discover_error = exc
                 return [], "", stats, set(), discover_error
 
+    quality_mode = parse_url_quality_mode(extra)
+    discovered, q_skip = filter_urls_by_quality(discovered, mode=quality_mode)
+    stats.skipped_low_quality_url += q_skip
+
     merged = merge_url_lists(discovered, seeds)
     discovered_canonical = {canonicalize_url(u) for u in discovered if canonicalize_url(u)}
+    seed_canonical_set = {canonicalize_url(u) for u in seeds if canonicalize_url(u)}
 
     ds = row.dataset_id
     if ds and str(ds).strip():
         merged, stats.skipped_dup_url = filter_urls_not_seen(str(ds), merged, seen_fn=url_seen)
 
-    if dcfg.provider == "tavily" and dcfg.queries and not merged and discover_error is None:
+    if dcfg.provider in ("tavily", "searxng") and dcfg.queries and not merged and discover_error is None:
         if not seeds:
             discover_error = DiscoverProviderError("DISCOVER_EMPTY", "no URLs after discover and dedup")
             return [], "", stats, discovered_canonical, discover_error
 
+    st = str(row.source_type or "static_web")
+    if st == "static_web" and discover_skip_bfs(extra):
+        expanded, strategy_note = resolve_target_urls(
+            seeds,
+            source_type=st,
+            strategy=strategy,
+            skip_robots=skip_robots,
+            extra_config=extra,
+        )
+        expand_only = [u for u in expanded if canonicalize_url(u) not in seed_canonical_set]
+        expand_only, q_expand = filter_urls_by_quality(expand_only, mode=quality_mode)
+        stats.skipped_low_quality_url += q_expand
+        seed_kept = [u for u in expanded if canonicalize_url(u) in seed_canonical_set]
+        target_urls = merge_url_lists(seed_kept + expand_only + discovered)
+        if not target_urls and strategy_note:
+            return [], strategy_note, stats, discovered_canonical, discover_error
+        if not target_urls:
+            note = strategy_note or "no URLs after quality filter"
+            if stats.skipped_low_quality_url > 0:
+                note = f"url quality skipped {stats.skipped_low_quality_url} URL(s)"
+            return [], note, stats, discovered_canonical, discover_error
+        return target_urls, strategy_note, stats, discovered_canonical, discover_error
+
     target_urls, strategy_note = resolve_target_urls(
         merged,
-        source_type=str(row.source_type or "static_web"),
-        strategy=strategy,
+        source_type=st,
         skip_robots=skip_robots,
         extra_config=extra,
+        strategy=strategy,
     )
+    if st == "static_web" and quality_mode != "off":
+        non_seed = [u for u in target_urls if canonicalize_url(u) not in seed_canonical_set]
+        non_seed, q2 = filter_urls_by_quality(non_seed, mode=quality_mode)
+        stats.skipped_low_quality_url += q2
+        seed_kept = [u for u in target_urls if canonicalize_url(u) in seed_canonical_set]
+        target_urls = merge_url_lists(seed_kept + non_seed)
     return target_urls, strategy_note, stats, discovered_canonical, discover_error
 
 
@@ -522,6 +568,7 @@ def execute_crawl_task_stub_tick(task_id: str) -> None:
         tick_stats.ingested = ingest_stats.get("ingested", 0)
         tick_stats.skipped_dup_content = ingest_stats.get("skipped_dup_content", 0)
         tick_stats.skipped_kw = ingest_stats.get("skipped_kw", 0)
+        tick_stats.skipped_low_quality = ingest_stats.get("skipped_low_quality", 0)
     elif st == "rss":
         ok_i, msg_i = ingest_rss_seeds_into_kb(kb, row.tenant_id, target_urls, skip_robots=skip_robots, extra_config=extra)
     elif st == "http_api":

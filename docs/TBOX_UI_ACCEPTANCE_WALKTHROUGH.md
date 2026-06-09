@@ -221,10 +221,12 @@ Phase 16–17 浏览器通过后（步骤 **C §7** + **D**）：`bash scripts/t
 
 1. 左侧点 **「采集」**（需 `crawl.manage`）。
 2. 浏览列表；新建任务时可选 **「专项爬取」** 或 **「定时爬取」**，并填写 **关键词 / 最大深度 / 允许域名**（写入 `extra_config`，由 worker 消费）。
-3. **搜索发现（Phase 67）**：在 **「搜索发现」** 区选择 **Provider = tavily**，填写 **query**（或点 **四类模板** 按钮：法规/技术/市场/产品行业）；Worker 须配置 **`TBOX_CRAWL_TAVILY_API_KEY`**（或 **`TAVILY_API_KEY`**）。可与种子 URL 并存；仅 query 无种子亦可（discover 补链）。
-4. 绑定目标知识库时，下拉应显示 **库名称**（`page_size`≤100）；四类专题库各可建独立任务。
-5. 试 **「新建 / 编辑 / 删除 / 执行一次」**；第二次执行同一任务应见 **`last_error`** 前缀 **`[tbox:TICK_OK]`** 且含 **`skipped_dup_url`** / **`skipped_dup_content`**（去重生效）。
-6. **通过标准**：列表能加载；Discover + 策略字段保存后再次编辑仍可见；错误时有明确 **`[tbox:CODE]`** 提示（如无 Key → **`DISCOVER_NO_KEY`**）。
+3. **搜索发现（Phase 67–68）**：Provider 可选 **`tavily`** 或 **`searxng`**（推荐 SearXNG：`docker compose --profile crawl-discover up -d searxng`，Worker 设 **`TBOX_CRAWL_SEARXNG_BASE_URL=http://searxng:8080`**）。填写 **query**（或点 **四类模板**）；Tavily 须 **`TBOX_CRAWL_TAVILY_API_KEY`**。无 SearXNG → **`DISCOVER_NO_SEARXNG`**（有种子时降级为仅 seed）。
+4. **内容质量（Phase 68）**：**URL 质量模式**（normal/strict/off）、**正文抽取**（trafilatura）、**discover 跳过 BFS** 勾选保存后再编辑仍可见；成功 tick 的 **`last_error`** 可含 **`skipped_low_quality_url`** / **`skipped_low_quality`**。
+5. **参考源清单（Phase 68）**：页内 **参考源 catalog** 可增删改；**「导入到任务种子」** 将同 topic 启用源写入当前任务 **`seed_urls`**。
+6. 绑定目标知识库时，下拉应显示 **库名称**（`page_size`≤100）；四类专题库各可建独立任务。
+7. 试 **「新建 / 编辑 / 删除 / 执行一次」**；第二次执行同一任务应见 **`[tbox:TICK_OK]`** 且含 **`skipped_dup_url`** / **`skipped_dup_content`**（去重生效）。
+8. **通过标准**：列表能加载；Discover + 质量 + catalog 字段持久化；错误时有明确 **`[tbox:CODE]`**（**`DISCOVER_NO_KEY`** / **`DISCOVER_NO_SEARXNG`** 等）。
 
 **本页验收**：`/review/step/crawl`。
 

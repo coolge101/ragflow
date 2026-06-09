@@ -14,13 +14,17 @@
 #  limitations under the License.
 #
 
-"""Pluggable search discover for TBOX crawl (v1 Tavily; v2 SearXNG stub)."""
+"""Pluggable search discover for TBOX crawl (v1 Tavily; v2 SearXNG)."""
 
 from __future__ import annotations
 
+import json
 import logging
 import os
 import re
+import urllib.error
+import urllib.parse
+import urllib.request
 from dataclasses import dataclass
 from typing import Any, Protocol
 
@@ -214,8 +218,93 @@ class TavilyDiscoverProvider:
 
 
 class SearxngDiscoverProvider:
-    def discover(self, *args, **kwargs) -> DiscoverResult:
-        raise DiscoverProviderError("DISCOVER_PROVIDER", "searxng provider not implemented (Phase 67.2)")
+    def __init__(self, base_url: str):
+        self._base = base_url.rstrip("/")
+
+    def discover(
+        self,
+        queries: list[str],
+        *,
+        locale: str,
+        max_urls: int,
+        max_queries: int,
+        max_results_per_query: int,
+        allowed_domains: tuple[str, ...],
+        tavily_depth: str,
+    ) -> DiscoverResult:
+        del tavily_depth  # unused for SearXNG
+        collected: list[str] = []
+        raw_count = 0
+        executed = 0
+        qlist = [q for q in queries if (q or "").strip()][:max_queries]
+        lang = "zh-CN" if locale in ("zh", "both") else "en-US"
+        for query in qlist:
+            if len(collected) >= max_urls:
+                break
+            executed += 1
+            params = urllib.parse.urlencode(
+                {
+                    "q": query.strip(),
+                    "format": "json",
+                    "language": lang,
+                }
+            )
+            req_url = f"{self._base}/search?{params}"
+            try:
+                req = urllib.request.Request(req_url, headers={"Accept": "application/json"})
+                with urllib.request.urlopen(req, timeout=30) as resp:
+                    body = json.loads(resp.read().decode("utf-8", errors="replace"))
+            except urllib.error.HTTPError as exc:
+                if exc.code == 429:
+                    raise DiscoverProviderError("DISCOVER_QUOTA", str(exc)) from exc
+                raise DiscoverProviderError("DISCOVER", str(exc)) from exc
+            except Exception as exc:
+                msg = str(exc).lower()
+                if any(
+                    tok in msg
+                    for tok in (
+                        "connection reset",
+                        "connection refused",
+                        "timed out",
+                        "timeout",
+                        "network is unreachable",
+                        "name or service not known",
+                    )
+                ):
+                    raise DiscoverProviderError("DISCOVER_NETWORK", str(exc)) from exc
+                raise DiscoverProviderError("DISCOVER", str(exc)) from exc
+            results = body.get("results") if isinstance(body, dict) else []
+            if not isinstance(results, list):
+                continue
+            for item in results[:max_results_per_query]:
+                if not isinstance(item, dict):
+                    continue
+                url = (item.get("url") or "").strip()
+                if not url:
+                    continue
+                raw_count += 1
+                if allowed_domains and not url_allowed_by_domains(url, allowed_domains):
+                    continue
+                collected.append(url)
+                if len(collected) >= max_urls:
+                    break
+
+        merged = merge_url_lists(collected)
+        if allowed_domains:
+            merged, _skipped = filter_urls_by_allowed_domains(merged, allowed_domains)
+        merged = merged[:max_urls]
+        note = f"locale={locale}; queries={executed}; raw={raw_count}"
+        return DiscoverResult(
+            urls=merged,
+            provider="searxng",
+            queries_executed=executed,
+            raw_result_count=raw_count,
+            notes=note,
+        )
+
+
+def resolve_searxng_base_url() -> str:
+    return (os.environ.get("TBOX_CRAWL_SEARXNG_BASE_URL") or "").strip().rstrip("/")
 
 
 def get_discover_provider(name: str) -> DiscoverProvider | None:
@@ -228,7 +317,10 @@ def get_discover_provider(name: str) -> DiscoverProvider | None:
             raise DiscoverProviderError("DISCOVER_NO_KEY", "TBOX_CRAWL_TAVILY_API_KEY or TAVILY_API_KEY not set")
         return TavilyDiscoverProvider(key)
     if n == "searxng":
-        return SearxngDiscoverProvider()
+        base = resolve_searxng_base_url()
+        if not base:
+            raise DiscoverProviderError("DISCOVER_NO_SEARXNG", "TBOX_CRAWL_SEARXNG_BASE_URL not set")
+        return SearxngDiscoverProvider(base)
     raise DiscoverProviderError("DISCOVER_PROVIDER", f"unknown discover provider: {name}")
 
 

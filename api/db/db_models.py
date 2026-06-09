@@ -1273,6 +1273,26 @@ class TboxCrawlSeen(DataBaseModel):
         indexes = ((("dataset_id", "url_canonical_hash"), True),)
 
 
+class TboxCrawlSourceCatalog(DataBaseModel):
+    """Curated reference URLs per tenant/topic for crawl seed lists (Phase 68)."""
+
+    id = CharField(max_length=32, primary_key=True)
+    tenant_id = CharField(max_length=32, null=False, index=True)
+    topic = CharField(max_length=32, null=False, index=True, help_text="regulations|tech|market|product")
+    label = CharField(max_length=256, null=False, default="")
+    url = CharField(max_length=2048, null=False)
+    url_canonical = CharField(max_length=2048, null=False)
+    url_canonical_hash = CharField(max_length=64, null=False)
+    domain = CharField(max_length=256, null=False, default="")
+    enabled = BooleanField(null=False, default=True, index=True)
+    created_by = CharField(max_length=32, null=False, index=True)
+    status = CharField(max_length=1, null=True, default="1", index=True, help_text="1 valid 0 deleted")
+
+    class Meta:
+        db_table = "tbox_crawl_source_catalog"
+        indexes = ((("tenant_id", "topic", "url_canonical_hash"), True),)
+
+
 class EvaluationDataset(DataBaseModel):
     """Ground truth dataset for RAG evaluation"""
 

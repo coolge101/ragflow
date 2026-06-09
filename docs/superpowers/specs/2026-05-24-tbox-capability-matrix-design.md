@@ -98,9 +98,9 @@
 | G2-CRAWL-DEDUP | **智能去重**（URL 规范化 + 内容指纹 + 库内跳过） | ⚠️ Connector `hash128` / 增量同步 | ✅ tick 摘要 | TBOX ingest | ✅ | 表 **`tbox_crawl_seen`**；pre/post dedup |
 | G2-CRAWL-I18N | **英文资料爬取**（英/中 query、UTF-8、preview） | ⚠️ 单 URL web 入库 | ✅ locale + Accept-Language | TBOX worker | ✅ | **`TBOX_CRAWL_ACCEPT_LANGUAGE`**；与 DISCOVER 联用 |
 | G2-CRAWL-RELEVANCE | 入库前相关性评分（LLM/规则） | ❌ | ❌ | TBOX | P2 | 过滤门户首页等低相关页；**Phase 69** |
-| G2-CRAWL-EXTRACT | **正文抽取**（trafilatura、低质量跳过） | —（TBOX） | ⬜ Phase 68 | TBOX ingest | **P1** | **`common/tbox_crawl_extract.py`**；`.txt` 入库 |
-| G2-CRAWL-SOURCES | **参考源清单**（DB catalog、导入种子） | —（TBOX） | ⬜ Phase 68 | `/v1/tbox/crawl/sources` | **P1** | 表 **`tbox_crawl_source_catalog`** |
-| G2-CRAWL-DISCOVER+ | **SearXNG Discover + URL 质量** | —（TBOX） | ⬜ Phase 68 | TBOX worker | **P1** | Docker **searxng**；**`tbox_crawl_url_quality.py`** |
+| G2-CRAWL-EXTRACT | **正文抽取**（trafilatura、低质量跳过） | —（TBOX） | ✅ Phase 68 | TBOX ingest | **P1** | **`common/tbox_crawl_extract.py`**；`.txt` 入库 |
+| G2-CRAWL-SOURCES | **参考源清单**（DB catalog、导入种子） | —（TBOX） | ✅ Phase 68 | `/v1/tbox/crawl/sources` | **P1** | 表 **`tbox_crawl_source_catalog`** |
+| G2-CRAWL-DISCOVER+ | **SearXNG Discover + URL 质量** | —（TBOX） | ✅ Phase 68 | TBOX worker | **P1** | Docker **searxng**；**`tbox_crawl_url_quality.py`** |
 
 ### G3 — LLM 对话
 

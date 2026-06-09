@@ -11,6 +11,7 @@ const LABELS: Record<string, string> = {
   WORKER_EXCEPTION: "Worker 异常",
   WORKER_STUB: "Stub 联调失败",
   DISCOVER_NO_KEY: "未配置 Tavily Key",
+  DISCOVER_NO_SEARXNG: "未配置 SearXNG",
   DISCOVER_EMPTY: "搜索发现无可用 URL",
   DISCOVER: "搜索发现失败",
   DISCOVER_QUOTA: "搜索发现配额/限流",

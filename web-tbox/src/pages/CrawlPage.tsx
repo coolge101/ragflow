@@ -8,6 +8,13 @@ import {
   runCrawlTask,
   type CrawlTaskRow,
 } from "../api/crawlTasks";
+import {
+  createCrawlSource,
+  deleteCrawlSource,
+  importSourcesToTask,
+  listCrawlSources,
+  type CrawlSourceRow,
+} from "../api/crawlSources";
 import { listDatasets, type DatasetRow } from "../api/datasets";
 import { useAuth } from "../context/AuthContext";
 import { formatCrawlLastErrorDisplay } from "../utils/crawlLastError";
@@ -38,6 +45,14 @@ import {
   type CrawlAdvancedFields,
   type CrawlSourceType,
 } from "../utils/crawlExtraAdvanced";
+import {
+  EMPTY_QUALITY_FIELDS,
+  formatQualitySummary,
+  mergeQualityIntoExtra,
+  qualityFieldsFromExtra,
+  stripQualityKeys,
+  type CrawlQualityFields,
+} from "../utils/crawlExtraQuality";
 
 const CRAWL_ROLES = new Set(["owner", "admin", "normal"]);
 
@@ -59,7 +74,7 @@ function stripManagedExtraKeys(ex: Record<string, unknown>): Record<string, unkn
   for (const k of MANAGED_EXTRA_KEYS) {
     delete out[k];
   }
-  return stripAdvancedKeys(stripStrategyKeys(out));
+  return stripAdvancedKeys(stripQualityKeys(stripStrategyKeys(out)));
 }
 
 function stringifyExtraConfigSubset(ex: Record<string, unknown> | undefined): string {
@@ -161,6 +176,10 @@ function formatCrawlExtraSummary(extra: Record<string, unknown> | undefined): st
   if (disc) {
     parts.unshift(disc);
   }
+  const qual = formatQualitySummary(extra);
+  if (qual) {
+    parts.unshift(qual);
+  }
   return parts.length ? parts.join("、") : "—";
 }
 
@@ -191,12 +210,16 @@ function mergeCrawlFormExtra(
   strategy: CrawlStrategyFields,
   discover: DiscoverFields,
   advanced: CrawlAdvancedFields,
+  quality: CrawlQualityFields,
   sourceType: CrawlSourceType,
   flags: CrawlExtraFlags,
 ): Record<string, unknown> {
   return mergeCrawlExtraConfig(
     mergeAdvancedIntoExtra(
-      mergeDiscoverIntoExtra(mergeStrategyIntoExtra(parsed, strategy), discover),
+      mergeQualityIntoExtra(
+        mergeDiscoverIntoExtra(mergeStrategyIntoExtra(parsed, strategy), discover),
+        quality,
+      ),
       advanced,
       sourceType,
     ),
@@ -205,7 +228,7 @@ function mergeCrawlFormExtra(
 }
 
 function hasDiscoverQueries(discover: DiscoverFields): boolean {
-  return discover.provider === "tavily" && discover.queries.trim().length > 0;
+  return (discover.provider === "tavily" || discover.provider === "searxng") && discover.queries.trim().length > 0;
 }
 
 function applyDiscoverTemplate(
@@ -219,7 +242,7 @@ function applyDiscoverTemplate(
   const t = CRAWL_DOMAIN_TEMPLATES[key];
   setDiscover(() => ({
     ...EMPTY_DISCOVER_FIELDS,
-    provider: "tavily",
+    provider: "searxng",
     queries: t.queries.join("\n"),
     locale: "both",
   }));
@@ -227,7 +250,11 @@ function applyDiscoverTemplate(
     opts.setSeeds(t.seedUrls.join("\n"));
   }
   if (opts?.setStrategy) {
-    opts.setStrategy((s) => ({ ...s, maxDepth: "2" }));
+    opts.setStrategy((s) => ({
+      ...s,
+      maxDepth: "2",
+      keywords: t.keywords?.length ? t.keywords.join("\n") : s.keywords,
+    }));
   }
 }
 
@@ -247,6 +274,7 @@ function renderDiscoverFields(
       </div>
       <p className="muted" style={{ marginTop: 0, marginBottom: 8, lineHeight: 1.6 }}>
         Worker 环境变量 <code>TBOX_CRAWL_TAVILY_API_KEY</code>。国内网络若无法访问 Tavily，仍会使用下方<strong>种子 URL + 链接扩展</strong>继续爬取。
+        若配置了<strong>关键词</strong>，页面正文须包含其中至少一个词才会入库；留空则不过滤。
       </p>
       <label style={{ display: "block", marginBottom: 8 }}>
         <span className="muted" style={{ display: "block", marginBottom: 4 }}>
@@ -256,10 +284,14 @@ function renderDiscoverFields(
           id={`${idPrefix}-discover-provider`}
           value={discover.provider}
           onChange={(e) =>
-            setDiscover((s) => ({ ...s, provider: e.target.value === "tavily" ? "tavily" : "none" }))
+            setDiscover((s) => ({
+              ...s,
+              provider: e.target.value === "tavily" ? "tavily" : e.target.value === "searxng" ? "searxng" : "none",
+            }))
           }
         >
           <option value="none">none — 仅种子 URL</option>
+          <option value="searxng">searxng — 自托管搜索（推荐）</option>
           <option value="tavily">tavily — 全网搜索发现</option>
         </select>
       </label>
@@ -367,6 +399,65 @@ function renderDiscoverFields(
   );
 }
 
+function renderQualityFields(
+  quality: CrawlQualityFields,
+  setQuality: (fn: (prev: CrawlQualityFields) => CrawlQualityFields) => void,
+) {
+  return (
+    <div style={{ marginBottom: 12, padding: "0.75rem", border: "1px dashed #bbf7d0", borderRadius: 8 }}>
+      <div style={{ marginBottom: 8, fontWeight: 600, color: "var(--fg, #111827)" }}>内容质量（Phase 68）</div>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 12, marginBottom: 8 }}>
+        <label>
+          <span className="muted" style={{ display: "block", marginBottom: 4 }}>
+            URL 质量
+          </span>
+          <select
+            value={quality.urlQualityMode}
+            onChange={(e) =>
+              setQuality((s) => ({
+                ...s,
+                urlQualityMode: e.target.value === "strict" || e.target.value === "off" ? e.target.value : "normal",
+              }))
+            }
+          >
+            <option value="normal">normal</option>
+            <option value="strict">strict</option>
+            <option value="off">off</option>
+          </select>
+        </label>
+        <label style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          <input
+            type="checkbox"
+            checked={quality.extractMainContent}
+            onChange={(e) => setQuality((s) => ({ ...s, extractMainContent: e.target.checked }))}
+          />
+          <span className="muted">正文抽取（trafilatura）</span>
+        </label>
+        <label style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          <input
+            type="checkbox"
+            checked={quality.discoverSkipBfs}
+            onChange={(e) => setQuality((s) => ({ ...s, discoverSkipBfs: e.target.checked }))}
+          />
+          <span className="muted">Discover URL 不 BFS</span>
+        </label>
+      </div>
+      <label style={{ display: "block", marginBottom: 0 }}>
+        <span className="muted" style={{ display: "block", marginBottom: 4 }}>
+          最短正文字符数
+        </span>
+        <input
+          type="number"
+          min={1}
+          value={quality.minExtractChars}
+          onChange={(e) => setQuality((s) => ({ ...s, minExtractChars: e.target.value }))}
+          style={{ width: 120 }}
+        />
+      </label>
+    </div>
+  );
+}
+
 function onCrawlTaskModeChange(
   mode: CrawlTaskMode,
   setMode: (m: CrawlTaskMode) => void,
@@ -437,6 +528,12 @@ export function CrawlPage() {
   const [createStrategy, setCreateStrategy] = useState<CrawlStrategyFields>(EMPTY_CRAWL_STRATEGY);
   const [createDiscover, setCreateDiscover] = useState<DiscoverFields>(EMPTY_DISCOVER_FIELDS);
   const [createAdvanced, setCreateAdvanced] = useState<CrawlAdvancedFields>(EMPTY_CRAWL_ADVANCED);
+  const [createQuality, setCreateQuality] = useState<CrawlQualityFields>(EMPTY_QUALITY_FIELDS);
+
+  const [catalogTopic, setCatalogTopic] = useState<CrawlDomainTemplateKey>("tech");
+  const [catalogItems, setCatalogItems] = useState<CrawlSourceRow[]>([]);
+  const [catalogLabel, setCatalogLabel] = useState("");
+  const [catalogUrl, setCatalogUrl] = useState("");
 
   const [editing, setEditing] = useState<CrawlTaskRow | null>(null);
   const [editName, setEditName] = useState("");
@@ -456,6 +553,7 @@ export function CrawlPage() {
   const [editStrategy, setEditStrategy] = useState<CrawlStrategyFields>(EMPTY_CRAWL_STRATEGY);
   const [editDiscover, setEditDiscover] = useState<DiscoverFields>(EMPTY_DISCOVER_FIELDS);
   const [editAdvanced, setEditAdvanced] = useState<CrawlAdvancedFields>(EMPTY_CRAWL_ADVANCED);
+  const [editQuality, setEditQuality] = useState<CrawlQualityFields>(EMPTY_QUALITY_FIELDS);
 
   const mustPickTenant = !isSuper && eligible.length > 1;
 
@@ -608,6 +706,66 @@ export function CrawlPage() {
     void loadTasks();
   }, [loadTasks]);
 
+  const loadCatalog = useCallback(async () => {
+    const tid = isSuper ? superListFilter.trim() || me?.user_id || "" : resolvedListTenant || "";
+    if (!tid) {
+      setCatalogItems([]);
+      return;
+    }
+    try {
+      const { body } = await listCrawlSources({ tenant_id: tid, topic: catalogTopic, page_size: 100 });
+      if (body.code === 0) {
+        setCatalogItems(body.data?.items || []);
+      }
+    } catch {
+      setCatalogItems([]);
+    }
+  }, [catalogTopic, isSuper, me?.user_id, resolvedListTenant, superListFilter]);
+
+  useEffect(() => {
+    void loadCatalog();
+  }, [loadCatalog]);
+
+  const onAddCatalogSource = async () => {
+    const tid = isSuper ? taskOwnerTenant.trim() || me?.user_id || "" : resolvedListTenant || me?.user_id || "";
+    if (!tid || !catalogUrl.trim()) {
+      setActionMsg("请填写参考源 URL");
+      return;
+    }
+    const { body } = await createCrawlSource({
+      tenant_id: tid,
+      topic: catalogTopic,
+      label: catalogLabel.trim() || catalogUrl.trim(),
+      url: catalogUrl.trim(),
+    });
+    if (body.code !== 0) {
+      setActionMsg(body.message || "添加参考源失败");
+      return;
+    }
+    setCatalogLabel("");
+    setCatalogUrl("");
+    setActionMsg("已添加参考源");
+    void loadCatalog();
+  };
+
+  const onImportCatalogToEdit = async () => {
+    if (!editing) {
+      setActionMsg("请先打开要编辑的任务");
+      return;
+    }
+    const { body } = await importSourcesToTask(editing.id, { topic: catalogTopic, replace: false });
+    if (body.code !== 0) {
+      setActionMsg(body.message || "导入失败");
+      return;
+    }
+    const data = body.data as CrawlTaskRow | undefined;
+    if (data?.seed_urls) {
+      setEditSeeds((data.seed_urls || []).join("\n"));
+    }
+    setActionMsg("已从参考源导入种子 URL");
+    void loadTasks();
+  };
+
   const openEdit = (t: CrawlTaskRow) => {
     const ex = t.extra_config && typeof t.extra_config === "object" ? (t.extra_config as Record<string, unknown>) : undefined;
     setEditing(t);
@@ -630,6 +788,7 @@ export function CrawlPage() {
     setEditStrategy(strategyFieldsFromExtra(ex));
     setEditDiscover(discoverFieldsFromExtra(ex));
     setEditAdvanced(advancedFieldsFromExtra(ex));
+    setEditQuality(qualityFieldsFromExtra(ex));
   };
 
   const closeEdit = () => {
@@ -652,7 +811,7 @@ export function CrawlPage() {
       return;
     }
     if (seeds.length === 0 && !hasDiscoverQueries(createDiscover)) {
-      setActionMsg("请至少填写一行种子 URL，或配置 Tavily 搜索 query");
+      setActionMsg("请至少填写一行种子 URL，或配置 SearXNG/Tavily 搜索 query");
       return;
     }
     const parsed = parseExtraConfigJson(createExtraJson);
@@ -672,7 +831,7 @@ export function CrawlPage() {
         schedule_cron: createCron.trim(),
         enabled: createEnabled,
         dataset_id: createDatasetId.trim() || undefined,
-        extra_config: mergeCrawlFormExtra(parsed.value, createStrategy, createDiscover, createAdvanced, createSource, {
+        extra_config: mergeCrawlFormExtra(parsed.value, createStrategy, createDiscover, createAdvanced, createQuality, createSource, {
           skipHttpProbe: createSkipHttpProbe,
           skipIngest: createSkipIngest,
           skipRobots: createSkipRobots,
@@ -709,6 +868,7 @@ export function CrawlPage() {
     setCreateStrategy(EMPTY_CRAWL_STRATEGY);
     setCreateDiscover(EMPTY_DISCOVER_FIELDS);
     setCreateAdvanced(EMPTY_CRAWL_ADVANCED);
+    setCreateQuality(EMPTY_QUALITY_FIELDS);
     setCreateRunState("ready");
     void loadTasks();
   };
@@ -739,7 +899,7 @@ export function CrawlPage() {
       run_state: editRunState,
       schedule_cron: editCron.trim(),
       enabled: editEnabled,
-      extra_config: mergeCrawlFormExtra(parsed.value, editStrategy, editDiscover, editAdvanced, editSource, {
+      extra_config: mergeCrawlFormExtra(parsed.value, editStrategy, editDiscover, editAdvanced, editQuality, editSource, {
         skipHttpProbe: editSkipHttpProbe,
         skipIngest: editSkipIngest,
         skipRobots: editSkipRobots,
@@ -996,6 +1156,64 @@ export function CrawlPage() {
         </>
       )}
 
+      <section style={{ marginBottom: "1.5rem", padding: "1rem", border: "1px solid #dbeafe", borderRadius: 8 }}>
+        <h2 style={{ marginTop: 0, fontSize: "1.05rem" }}>参考源清单（Phase 68）</h2>
+        <p className="muted" style={{ marginTop: 0, lineHeight: 1.6 }}>
+          按专题维护长期参考 URL；可导入到正在编辑的任务种子列表。
+        </p>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 12, marginBottom: 12 }}>
+          <label>
+            <span className="muted" style={{ marginRight: 8 }}>
+              专题
+            </span>
+            <select value={catalogTopic} onChange={(e) => setCatalogTopic(e.target.value as CrawlDomainTemplateKey)}>
+              {(Object.keys(CRAWL_DOMAIN_TEMPLATES) as CrawlDomainTemplateKey[]).map((key) => (
+                <option key={key} value={key}>
+                  {CRAWL_DOMAIN_TEMPLATES[key].label}
+                </option>
+              ))}
+            </select>
+          </label>
+          <button type="button" onClick={() => void loadCatalog()}>
+            刷新清单
+          </button>
+          {editing ? (
+            <button type="button" onClick={() => void onImportCatalogToEdit()}>
+              导入到当前编辑任务
+            </button>
+          ) : null}
+        </div>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 12 }}>
+          <input
+            value={catalogLabel}
+            onChange={(e) => setCatalogLabel(e.target.value)}
+            placeholder="名称（可选）"
+            style={{ minWidth: 160 }}
+          />
+          <input
+            value={catalogUrl}
+            onChange={(e) => setCatalogUrl(e.target.value)}
+            placeholder="https://..."
+            style={{ minWidth: 320, flex: 1 }}
+          />
+          <button type="button" onClick={() => void onAddCatalogSource()}>
+            添加参考源
+          </button>
+        </div>
+        <ul style={{ margin: 0, paddingLeft: "1.2rem", maxHeight: 160, overflow: "auto" }}>
+          {catalogItems.map((item) => (
+            <li key={item.id} style={{ marginBottom: 6 }}>
+              <strong>{item.label}</strong>{" "}
+              <span className="muted">{item.domain}</span>{" "}
+              <button type="button" className="secondary" onClick={() => void deleteCrawlSource(item.id).then(() => loadCatalog())}>
+                删除
+              </button>
+            </li>
+          ))}
+          {catalogItems.length === 0 ? <li className="muted">暂无参考源</li> : null}
+        </ul>
+      </section>
+
       <section style={{ marginBottom: "1.5rem", padding: "1rem", border: "1px solid #e5e7eb", borderRadius: 8 }}>
         <h2 style={{ marginTop: 0, fontSize: "1.05rem" }}>新建任务</h2>
         {isSuper ? (
@@ -1184,8 +1402,11 @@ export function CrawlPage() {
               onChange={(e) => setCreateStrategy((s) => ({ ...s, keywords: e.target.value }))}
               rows={2}
               style={{ width: "100%", maxWidth: 640 }}
-              placeholder="政策, 补贴"
+              placeholder="留空=不过滤；套用模板会自动填入专题关键词"
             />
+            <span className="muted" style={{ display: "block", marginTop: 4, fontSize: "0.85rem" }}>
+              正文须包含至少一个关键词才入库；若全部页面被过滤会报「skipped by keyword filter」。
+            </span>
           </label>
           <label style={{ display: "block", marginBottom: 8 }}>
             <span className="muted" style={{ display: "block", marginBottom: 4 }}>
@@ -1212,6 +1433,7 @@ export function CrawlPage() {
             />
           </label>
         </div>
+        {renderQualityFields(createQuality, setCreateQuality)}
         <div className="muted" style={{ marginBottom: 12, lineHeight: 1.7 }}>
           <div style={{ marginBottom: 6, fontWeight: 600, color: "var(--fg, #111827)" }}>extra_config（tick）</div>
           <label style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
@@ -1436,7 +1658,11 @@ export function CrawlPage() {
                 onChange={(e) => setEditStrategy((s) => ({ ...s, keywords: e.target.value }))}
                 rows={2}
                 style={{ width: "100%", maxWidth: 640 }}
+                placeholder="留空=不过滤"
               />
+              <span className="muted" style={{ display: "block", marginTop: 4, fontSize: "0.85rem" }}>
+                正文须包含至少一个关键词才入库；全部不匹配时会失败且无文档。
+              </span>
             </label>
             <label style={{ display: "block", marginBottom: 8 }}>
               <span className="muted" style={{ display: "block", marginBottom: 4 }}>
@@ -1462,6 +1688,7 @@ export function CrawlPage() {
               />
             </label>
           </div>
+          {renderQualityFields(editQuality, setEditQuality)}
           <div className="muted" style={{ marginBottom: 12, lineHeight: 1.7 }}>
             <div style={{ marginBottom: 6, fontWeight: 600, color: "var(--fg, #111827)" }}>extra_config（tick）</div>
             <label style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>

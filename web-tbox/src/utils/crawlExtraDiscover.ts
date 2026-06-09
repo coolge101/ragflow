@@ -18,7 +18,7 @@ export const DISCOVER_EXTRA_KEYS = new Set([
   EXTRA_TAVILY_DEPTH,
 ]);
 
-export type DiscoverProvider = "none" | "tavily";
+export type DiscoverProvider = "none" | "tavily" | "searxng";
 export type DiscoverLocale = "zh" | "en" | "both";
 export type TavilyDepth = "basic" | "advanced";
 
@@ -44,7 +44,13 @@ export const EMPTY_DISCOVER_FIELDS: DiscoverFields = {
 
 function parseDiscoverProvider(raw: unknown): DiscoverProvider {
   const s = String(raw || "none").trim().toLowerCase();
-  return s === "tavily" ? "tavily" : "none";
+  if (s === "tavily") {
+    return "tavily";
+  }
+  if (s === "searxng") {
+    return "searxng";
+  }
+  return "none";
 }
 
 function parseDiscoverLocale(raw: unknown): DiscoverLocale {
@@ -109,8 +115,8 @@ export function mergeDiscoverIntoExtra(
     .map((s) => s.trim())
     .filter(Boolean);
 
-  if (fields.provider === "tavily" && queries.length) {
-    out[EXTRA_SEARCH_PROVIDER] = "tavily";
+  if ((fields.provider === "tavily" || fields.provider === "searxng") && queries.length) {
+    out[EXTRA_SEARCH_PROVIDER] = fields.provider;
     out[EXTRA_SEARCH_QUERIES] = queries;
     out[EXTRA_SEARCH_LOCALE] = fields.locale;
     const maxUrls = clampInt(fields.maxUrls, 10, 1, 100);
@@ -154,11 +160,12 @@ export function formatDiscoverSummary(ex: Record<string, unknown> | undefined): 
     return "";
   }
   const provider = String(ex[EXTRA_SEARCH_PROVIDER] || "none").toLowerCase();
-  if (provider !== "tavily") {
+  if (provider !== "tavily" && provider !== "searxng") {
     return "";
   }
   const queries = ex[EXTRA_SEARCH_QUERIES];
   const n = Array.isArray(queries) ? queries.length : 0;
   const locale = String(ex[EXTRA_SEARCH_LOCALE] || "both");
-  return n > 0 ? `发现/Tavily×${n}（${locale}）` : "发现/Tavily";
+  const label = provider === "searxng" ? "SearXNG" : "Tavily";
+  return n > 0 ? `发现/${label}×${n}（${locale}）` : `发现/${label}`;
 }

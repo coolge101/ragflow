@@ -35,7 +35,7 @@ from common.tbox_crawl_last_error import format_crawl_worker_error
 
 # Bumped when response shape or semantics change for external clients (e.g. web-tbox).
 # Keep aligned with web-tbox/src/constants/tboxContract.ts → TBOX_API_CONTRACT_VERSION_EXPECTED.
-TBOX_API_CONTRACT_VERSION = 5
+TBOX_API_CONTRACT_VERSION = 6
 
 # UI permission keys — aligned with docs/TBOX_UI_DESIGN_DETAIL.md §2.2
 _TBOX_PERMISSIONS_ALL = (
@@ -489,6 +489,156 @@ async def crawl_tasks_run(task_id: str):
             return get_json_result(code=RetCode.EXCEPTION_ERROR, message=str(e))
         t2 = crawl_svc.get_task(task_id)
         return get_json_result(data=crawl_svc.task_row_to_dict(t2) if t2 else None)
+    except Exception as e:  # noqa: BLE001
+        return server_error_response(e)
+
+
+@manager.route("/crawl/sources", methods=["GET"])  # noqa: F821
+@login_required
+async def crawl_sources_list():
+    denied = _assert_crawl_manage()
+    if denied:
+        return denied
+    try:
+        from api.db.services import tbox_crawl_source_catalog_service as catalog_svc
+
+        user = current_user
+        is_super = bool(getattr(user, "is_superuser", False))
+        allowed = crawl_svc.tenant_ids_for_crawl(user.id, is_super)
+        tenant_param = request.args.get("tenant_id") or None
+        tenant_filter, err_msg = crawl_svc.resolve_list_tenant_id(tenant_param, allowed)
+        if err_msg:
+            return get_json_result(code=RetCode.ARGUMENT_ERROR, message=err_msg)
+        if not tenant_filter:
+            return get_json_result(code=RetCode.ARGUMENT_ERROR, message="tenant_id is required")
+        topic = (request.args.get("topic") or "").strip() or None
+        page, page_size = _parse_page_args()
+        total, rows = catalog_svc.list_sources(tenant_filter, topic=topic, page=page, page_size=page_size)
+        return get_json_result(
+            data={
+                "total": total,
+                "page": page,
+                "page_size": page_size,
+                "items": [catalog_svc.catalog_row_to_dict(r) for r in rows],
+            }
+        )
+    except Exception as e:  # noqa: BLE001
+        return server_error_response(e)
+
+
+@manager.route("/crawl/sources", methods=["POST"])  # noqa: F821
+@login_required
+async def crawl_sources_create():
+    denied = _assert_crawl_manage()
+    if denied:
+        return denied
+    try:
+        from api.db.services import tbox_crawl_source_catalog_service as catalog_svc
+
+        user = current_user
+        is_super = bool(getattr(user, "is_superuser", False))
+        allowed = crawl_svc.tenant_ids_for_crawl(user.id, is_super)
+        req = await get_request_json()
+        tenant_id = (req.get("tenant_id") or user.id or "").strip()
+        if allowed is not None and tenant_id not in allowed:
+            return get_json_result(code=RetCode.ARGUMENT_ERROR, message="tenant_id is not permitted")
+        try:
+            row = catalog_svc.create_source(
+                tenant_id=tenant_id,
+                created_by=user.id,
+                topic=str(req.get("topic") or ""),
+                label=str(req.get("label") or ""),
+                url=str(req.get("url") or ""),
+                enabled=bool(req.get("enabled", True)),
+            )
+        except ValueError as exc:
+            return get_json_result(code=RetCode.ARGUMENT_ERROR, message=str(exc))
+        return get_json_result(data=catalog_svc.catalog_row_to_dict(row))
+    except Exception as e:  # noqa: BLE001
+        return server_error_response(e)
+
+
+@manager.route("/crawl/sources/<source_id>", methods=["PATCH"])  # noqa: F821
+@login_required
+async def crawl_sources_patch(source_id: str):
+    denied = _assert_crawl_manage()
+    if denied:
+        return denied
+    try:
+        from api.db.services import tbox_crawl_source_catalog_service as catalog_svc
+
+        user = current_user
+        is_super = bool(getattr(user, "is_superuser", False))
+        allowed = crawl_svc.tenant_ids_for_crawl(user.id, is_super)
+        row = catalog_svc.get_source(source_id)
+        if not row:
+            return get_json_result(code=RetCode.NOT_FOUND, message="source not found")
+        if allowed is not None and row.tenant_id not in allowed:
+            return _crawl_task_forbidden_response()
+        req = await get_request_json()
+        updates = {}
+        for key in ("label", "url", "topic", "enabled"):
+            if key in req:
+                updates[key] = req[key]
+        if not updates:
+            return get_json_result(code=RetCode.ARGUMENT_ERROR, message="no fields to update")
+        try:
+            row = catalog_svc.update_source(row, updates)
+        except ValueError as exc:
+            return get_json_result(code=RetCode.ARGUMENT_ERROR, message=str(exc))
+        return get_json_result(data=catalog_svc.catalog_row_to_dict(row))
+    except Exception as e:  # noqa: BLE001
+        return server_error_response(e)
+
+
+@manager.route("/crawl/sources/<source_id>", methods=["DELETE"])  # noqa: F821
+@login_required
+async def crawl_sources_delete(source_id: str):
+    denied = _assert_crawl_manage()
+    if denied:
+        return denied
+    try:
+        from api.db.services import tbox_crawl_source_catalog_service as catalog_svc
+
+        user = current_user
+        is_super = bool(getattr(user, "is_superuser", False))
+        allowed = crawl_svc.tenant_ids_for_crawl(user.id, is_super)
+        row = catalog_svc.get_source(source_id)
+        if not row:
+            return get_json_result(code=RetCode.NOT_FOUND, message="source not found")
+        if allowed is not None and row.tenant_id not in allowed:
+            return _crawl_task_forbidden_response()
+        catalog_svc.soft_delete_source(row)
+        return get_json_result(message="deleted")
+    except Exception as e:  # noqa: BLE001
+        return server_error_response(e)
+
+
+@manager.route("/crawl/tasks/<task_id>/import-sources", methods=["POST"])  # noqa: F821
+@login_required
+async def crawl_tasks_import_sources(task_id: str):
+    denied = _assert_crawl_manage()
+    if denied:
+        return denied
+    try:
+        from api.db.services import tbox_crawl_source_catalog_service as catalog_svc
+
+        user = current_user
+        is_super = bool(getattr(user, "is_superuser", False))
+        allowed = crawl_svc.tenant_ids_for_crawl(user.id, is_super)
+        t = crawl_svc.get_task(task_id)
+        if not t:
+            return get_json_result(code=RetCode.NOT_FOUND, message="crawl task not found")
+        if not crawl_svc.user_may_access_task(t, allowed):
+            return _crawl_task_forbidden_response()
+        req = await get_request_json()
+        topic = str((req or {}).get("topic") or "")
+        replace = bool((req or {}).get("replace", False))
+        try:
+            t = catalog_svc.import_sources_to_task(t, topic=topic, replace=replace)
+        except ValueError as exc:
+            return get_json_result(code=RetCode.ARGUMENT_ERROR, message=str(exc))
+        return get_json_result(data=crawl_svc.task_row_to_dict(t))
     except Exception as e:  # noqa: BLE001
         return server_error_response(e)
 

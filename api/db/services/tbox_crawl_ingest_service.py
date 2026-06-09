@@ -34,6 +34,12 @@ from common.tbox_crawl_robots import RobotsOriginCache
 from common.tbox_crawl_ssrf_fetch import fetch_url_body_capped, suggested_filename_from_url
 from api.db.services.tbox_crawl_seen_service import content_seen, record_seen
 from common.tbox_crawl_dedup import canonicalize_url, content_sha256
+from common.tbox_crawl_extract import (
+    extract_main_text,
+    parse_extract_enabled,
+    parse_min_extract_chars,
+    suggested_txt_filename,
+)
 from common.tbox_crawl_strategy import content_matches_keywords, parse_strategy
 
 _LOG = logging.getLogger(__name__)
@@ -77,12 +83,12 @@ def ingest_static_web_seeds_into_kb(
     Fetch each seed (SSRF-safe, capped), upload as a new file under *kb*, queue parse tasks.
 
     Returns ``(ok, message, stats)``; *message* lists failures if ``ok`` is False.
-    *stats* keys: ``ingested``, ``skipped_dup_content``, ``skipped_kw``.
+    *stats* keys: ``ingested``, ``skipped_dup_content``, ``skipped_kw``, ``skipped_low_quality``.
 
     *extra_config* is forwarded to :func:`common.tbox_crawl_ssrf_fetch.fetch_url_body_capped` for
     ``effective_retry_statuses`` (``tbox_crawl_retry_extra_statuses``).
     """
-    stats = {"ingested": 0, "skipped_dup_content": 0, "skipped_kw": 0}
+    stats = {"ingested": 0, "skipped_dup_content": 0, "skipped_kw": 0, "skipped_low_quality": 0}
     if kb is None or not getattr(kb, "id", None):
         return False, "invalid knowledge base", stats
 
@@ -100,8 +106,11 @@ def ingest_static_web_seeds_into_kb(
     robots_cache = None if skip_robots else RobotsOriginCache()
     throttle = OriginFetchThrottler(robots_cache)
     strategy = parse_strategy(extra_config)
+    extract_on = parse_extract_enabled(extra_config)
+    min_chars = parse_min_extract_chars(extra_config)
     skipped_kw = 0
     skipped_dup_content = 0
+    skipped_low_quality = 0
     ingested = 0
 
     for url in seed_urls[:lim]:
@@ -114,6 +123,13 @@ def ingest_static_web_seeds_into_kb(
                 origin_throttle=throttle,
                 extra_config=extra_config,
             )
+            if extract_on:
+                text = extract_main_text(body)
+                if len(text) < min_chars:
+                    skipped_low_quality += 1
+                    _LOG.info("tbox_crawl_ingest: quality skip (short extract) url=%s", url)
+                    continue
+                body = text.encode("utf-8")
             h = content_sha256(body)
             if dedup and ds and content_seen(ds, h):
                 skipped_dup_content += 1
@@ -123,7 +139,10 @@ def ingest_static_web_seeds_into_kb(
                 skipped_kw += 1
                 _LOG.info("tbox_crawl_ingest: keyword filter skip url=%s", url)
                 continue
-            raw_name = suggested_filename_from_url(url, ctype)
+            if extract_on:
+                raw_name = suggested_txt_filename(url)
+            else:
+                raw_name = suggested_filename_from_url(url, ctype)
             filename = duplicate_name(DocumentService.query, name=raw_name, kb_id=kb.id)
             fobj = _BytesUploadFile(filename, body)
             err, pairs = FileService.upload_document(kb, [fobj], tenant_id, src="web")
@@ -150,11 +169,14 @@ def ingest_static_web_seeds_into_kb(
     stats["ingested"] = ingested
     stats["skipped_dup_content"] = skipped_dup_content
     stats["skipped_kw"] = skipped_kw
+    stats["skipped_low_quality"] = skipped_low_quality
 
     if errs:
         return False, "; ".join(errs)[:65000], stats
     if skipped_kw and skipped_kw >= min(lim, len(seed_urls)) and ingested == 0:
         return False, f"all {skipped_kw} page(s) skipped by keyword filter", stats
+    if skipped_low_quality and skipped_low_quality >= min(lim, len(seed_urls)) and ingested == 0:
+        return False, f"all {skipped_low_quality} page(s) skipped by quality filter", stats
     return True, "", stats
 
 
