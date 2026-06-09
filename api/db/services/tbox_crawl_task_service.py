@@ -376,6 +376,7 @@ class CrawlTickStats:
     skipped_kw: int = 0
     skipped_low_quality_url: int = 0
     skipped_low_quality: int = 0
+    skipped_relevance: int = 0
     ingest_failures: int = 0
 
     def summary(self) -> str:
@@ -383,7 +384,8 @@ class CrawlTickStats:
             f"discovered={self.discovered} ingested={self.ingested} "
             f"skipped_dup_url={self.skipped_dup_url} skipped_dup_content={self.skipped_dup_content} "
             f"skipped_kw={self.skipped_kw} skipped_low_quality_url={self.skipped_low_quality_url} "
-            f"skipped_low_quality={self.skipped_low_quality} ingest_failures={self.ingest_failures}"
+            f"skipped_low_quality={self.skipped_low_quality} skipped_relevance={self.skipped_relevance} "
+            f"ingest_failures={self.ingest_failures}"
         )
 
 
@@ -618,12 +620,14 @@ def _execute_crawl_task_stub_tick_body(
             discovered_canonical=discovered_canonical,
             seed_canonical=seed_canonical,
             task_id=task_id,
+            task_name=str(row.name or ""),
         )
         tick_stats.ingested = ingest_stats.get("ingested", 0)
         heal_ingested_urls.extend(ingest_stats.get("ingested_urls") or [])
         tick_stats.skipped_dup_content = ingest_stats.get("skipped_dup_content", 0)
         tick_stats.skipped_kw = ingest_stats.get("skipped_kw", 0)
         tick_stats.skipped_low_quality = ingest_stats.get("skipped_low_quality", 0)
+        tick_stats.skipped_relevance = ingest_stats.get("skipped_relevance", 0)
         tick_stats.ingest_failures = ingest_stats.get("ingest_failures", 0)
     elif st == "rss":
         ok_i, msg_i = ingest_rss_seeds_into_kb(kb, row.tenant_id, target_urls, skip_robots=skip_robots, extra_config=extra)

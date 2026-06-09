@@ -68,5 +68,5 @@ def build_crawl_health_report() -> dict[str, Any]:
         "searxng": searxng,
         "tavily": tavily,
         "recommended_discover_provider": recommended,
-        "self_heal_phase": "69.2",
+        "self_heal_phase": "69.3",
     }

@@ -19,7 +19,7 @@ class TestCrawlOutboundProbe(unittest.TestCase):
         report = build_crawl_health_report()
         self.assertIn("searxng", report)
         self.assertIn("recommended_discover_provider", report)
-        self.assertEqual(report["self_heal_phase"], "69.2")
+        self.assertEqual(report["self_heal_phase"], "69.3")
 
 
 if __name__ == "__main__":

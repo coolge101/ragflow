@@ -42,6 +42,7 @@ from common.tbox_crawl_extract import (
     suggested_txt_filename,
 )
 from common.tbox_crawl_strategy import content_matches_keywords, parse_strategy
+from common.tbox_crawl_relevance import passes_relevance_gate
 
 _LOG = logging.getLogger(__name__)
 
@@ -80,6 +81,7 @@ def ingest_static_web_seeds_into_kb(
     discovered_canonical: set[str] | None = None,
     seed_canonical: set[str] | None = None,
     task_id: str | None = None,
+    task_name: str = "",
 ) -> tuple[bool, str, dict[str, int]]:
     """
     Fetch each seed (SSRF-safe, capped), upload as a new file under *kb*, queue parse tasks.
@@ -96,6 +98,7 @@ def ingest_static_web_seeds_into_kb(
         "skipped_dup_content": 0,
         "skipped_kw": 0,
         "skipped_low_quality": 0,
+        "skipped_relevance": 0,
         "ingest_failures": 0,
     }
     if kb is None or not getattr(kb, "id", None):
@@ -125,6 +128,7 @@ def ingest_static_web_seeds_into_kb(
     skipped_kw = 0
     skipped_dup_content = 0
     skipped_low_quality = 0
+    skipped_relevance = 0
     ingested = 0
     ingested_urls: list[str] = []
 
@@ -168,6 +172,24 @@ def ingest_static_web_seeds_into_kb(
                     skipped_low_quality += 1
                     _LOG.info("tbox_crawl_ingest: quality skip (short extract) url=%s", url)
                     _health(url, "low_quality")
+                    continue
+                ok_rel, rel_score, rel_reason = passes_relevance_gate(
+                    text,
+                    url,
+                    tenant_id=tenant_id,
+                    extra_config=extra_config,
+                    task_name=task_name,
+                    keywords=strategy.keywords,
+                )
+                if not ok_rel:
+                    skipped_relevance += 1
+                    _LOG.info(
+                        "tbox_crawl_ingest: relevance skip url=%s score=%s reason=%s",
+                        url,
+                        rel_score,
+                        rel_reason,
+                    )
+                    _health(url, "relevance")
                     continue
                 body = text.encode("utf-8")
             h = content_sha256(body)
@@ -219,6 +241,7 @@ def ingest_static_web_seeds_into_kb(
     stats["skipped_dup_content"] = skipped_dup_content
     stats["skipped_kw"] = skipped_kw
     stats["skipped_low_quality"] = skipped_low_quality
+    stats["skipped_relevance"] = skipped_relevance
     stats["ingest_failures"] = len(errs)
 
     if ingested > 0:
@@ -230,16 +253,18 @@ def ingest_static_web_seeds_into_kb(
             )
         return True, "", stats
 
-    if errs or skipped_low_quality or skipped_kw:
+    if errs or skipped_low_quality or skipped_kw or skipped_relevance:
         parts: list[str] = []
         if errs:
             parts.append("; ".join(errs[:20]))
         if skipped_low_quality:
             parts.append(f"{skipped_low_quality} page(s) skipped by quality filter")
-        if skipped_kw and not errs and not skipped_low_quality:
+        if skipped_kw and not errs and not skipped_low_quality and not skipped_relevance:
             parts.append(f"all {skipped_kw} page(s) skipped by keyword filter")
         elif skipped_kw:
             parts.append(f"{skipped_kw} page(s) skipped by keyword filter")
+        if skipped_relevance:
+            parts.append(f"{skipped_relevance} page(s) skipped by relevance gate")
         return False, "; ".join(parts)[:65000], stats
     return True, "", stats
 

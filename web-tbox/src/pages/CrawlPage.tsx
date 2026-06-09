@@ -53,6 +53,14 @@ import {
   stripQualityKeys,
   type CrawlQualityFields,
 } from "../utils/crawlExtraQuality";
+import {
+  EMPTY_RELEVANCE_FIELDS,
+  formatRelevanceSummary,
+  mergeRelevanceIntoExtra,
+  relevanceFieldsFromExtra,
+  stripRelevanceKeys,
+  type CrawlRelevanceFields,
+} from "../utils/crawlExtraRelevance";
 
 const CRAWL_ROLES = new Set(["owner", "admin", "normal"]);
 
@@ -74,7 +82,7 @@ function stripManagedExtraKeys(ex: Record<string, unknown>): Record<string, unkn
   for (const k of MANAGED_EXTRA_KEYS) {
     delete out[k];
   }
-  return stripAdvancedKeys(stripQualityKeys(stripStrategyKeys(out)));
+  return stripAdvancedKeys(stripRelevanceKeys(stripQualityKeys(stripStrategyKeys(out))));
 }
 
 function stringifyExtraConfigSubset(ex: Record<string, unknown> | undefined): string {
@@ -180,6 +188,10 @@ function formatCrawlExtraSummary(extra: Record<string, unknown> | undefined): st
   if (qual) {
     parts.unshift(qual);
   }
+  const rel = formatRelevanceSummary(extra);
+  if (rel) {
+    parts.unshift(rel);
+  }
   return parts.length ? parts.join("、") : "—";
 }
 
@@ -211,14 +223,18 @@ function mergeCrawlFormExtra(
   discover: DiscoverFields,
   advanced: CrawlAdvancedFields,
   quality: CrawlQualityFields,
+  relevance: CrawlRelevanceFields,
   sourceType: CrawlSourceType,
   flags: CrawlExtraFlags,
 ): Record<string, unknown> {
   return mergeCrawlExtraConfig(
     mergeAdvancedIntoExtra(
-      mergeQualityIntoExtra(
-        mergeDiscoverIntoExtra(mergeStrategyIntoExtra(parsed, strategy), discover),
-        quality,
+      mergeRelevanceIntoExtra(
+        mergeQualityIntoExtra(
+          mergeDiscoverIntoExtra(mergeStrategyIntoExtra(parsed, strategy), discover),
+          quality,
+        ),
+        relevance,
       ),
       advanced,
       sourceType,
@@ -458,6 +474,66 @@ function renderQualityFields(
   );
 }
 
+function renderRelevanceFields(
+  relevance: CrawlRelevanceFields,
+  setRelevance: (fn: (prev: CrawlRelevanceFields) => CrawlRelevanceFields) => void,
+) {
+  return (
+    <div style={{ marginBottom: 12, padding: "0.75rem", border: "1px dashed #bfdbfe", borderRadius: 8 }}>
+      <div style={{ marginBottom: 8, fontWeight: 600, color: "var(--fg, #111827)" }}>入库相关性（Phase 69.3）</div>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 12, marginBottom: 8 }}>
+        <label>
+          <span className="muted" style={{ display: "block", marginBottom: 4 }}>
+            模式（<code>tbox_crawl_relevance_mode</code>）
+          </span>
+          <select
+            value={relevance.relevanceMode}
+            onChange={(e) => {
+              const v = e.target.value;
+              setRelevance((s) => ({
+                ...s,
+                relevanceMode:
+                  v === "rules" || v === "llm" || v === "rules_then_llm" ? v : "off",
+              }));
+            }}
+          >
+            <option value="off">off（默认）</option>
+            <option value="rules">rules — 规则评分</option>
+            <option value="llm">llm — Chat 模型</option>
+            <option value="rules_then_llm">rules_then_llm — 边界区 LLM</option>
+          </select>
+        </label>
+        <label>
+          <span className="muted" style={{ display: "block", marginBottom: 4 }}>
+            最低分（<code>tbox_crawl_relevance_min_score</code>）
+          </span>
+          <input
+            type="number"
+            min={0}
+            max={100}
+            value={relevance.relevanceMinScore}
+            onChange={(e) => setRelevance((s) => ({ ...s, relevanceMinScore: e.target.value }))}
+            style={{ width: 80 }}
+            disabled={relevance.relevanceMode === "off"}
+          />
+        </label>
+      </div>
+      <label style={{ display: "block", marginBottom: 0 }}>
+        <span className="muted" style={{ display: "block", marginBottom: 4 }}>
+          主题（可选，<code>tbox_crawl_relevance_topic</code>；留空从 discover/任务名推断）
+        </span>
+        <input
+          type="text"
+          value={relevance.relevanceTopic}
+          onChange={(e) => setRelevance((s) => ({ ...s, relevanceTopic: e.target.value }))}
+          style={{ width: "100%", maxWidth: 640 }}
+          disabled={relevance.relevanceMode === "off"}
+        />
+      </label>
+    </div>
+  );
+}
+
 function onCrawlTaskModeChange(
   mode: CrawlTaskMode,
   setMode: (m: CrawlTaskMode) => void,
@@ -529,6 +605,7 @@ export function CrawlPage() {
   const [createDiscover, setCreateDiscover] = useState<DiscoverFields>(EMPTY_DISCOVER_FIELDS);
   const [createAdvanced, setCreateAdvanced] = useState<CrawlAdvancedFields>(EMPTY_CRAWL_ADVANCED);
   const [createQuality, setCreateQuality] = useState<CrawlQualityFields>(EMPTY_QUALITY_FIELDS);
+  const [createRelevance, setCreateRelevance] = useState<CrawlRelevanceFields>(EMPTY_RELEVANCE_FIELDS);
 
   const [catalogTopic, setCatalogTopic] = useState<CrawlDomainTemplateKey>("tech");
   const [catalogItems, setCatalogItems] = useState<CrawlSourceRow[]>([]);
@@ -554,6 +631,7 @@ export function CrawlPage() {
   const [editDiscover, setEditDiscover] = useState<DiscoverFields>(EMPTY_DISCOVER_FIELDS);
   const [editAdvanced, setEditAdvanced] = useState<CrawlAdvancedFields>(EMPTY_CRAWL_ADVANCED);
   const [editQuality, setEditQuality] = useState<CrawlQualityFields>(EMPTY_QUALITY_FIELDS);
+  const [editRelevance, setEditRelevance] = useState<CrawlRelevanceFields>(EMPTY_RELEVANCE_FIELDS);
 
   const mustPickTenant = !isSuper && eligible.length > 1;
 
@@ -789,6 +867,7 @@ export function CrawlPage() {
     setEditDiscover(discoverFieldsFromExtra(ex));
     setEditAdvanced(advancedFieldsFromExtra(ex));
     setEditQuality(qualityFieldsFromExtra(ex));
+    setEditRelevance(relevanceFieldsFromExtra(ex));
   };
 
   const closeEdit = () => {
@@ -831,7 +910,7 @@ export function CrawlPage() {
         schedule_cron: createCron.trim(),
         enabled: createEnabled,
         dataset_id: createDatasetId.trim() || undefined,
-        extra_config: mergeCrawlFormExtra(parsed.value, createStrategy, createDiscover, createAdvanced, createQuality, createSource, {
+        extra_config: mergeCrawlFormExtra(parsed.value, createStrategy, createDiscover, createAdvanced, createQuality, createRelevance, createSource, {
           skipHttpProbe: createSkipHttpProbe,
           skipIngest: createSkipIngest,
           skipRobots: createSkipRobots,
@@ -899,7 +978,7 @@ export function CrawlPage() {
       run_state: editRunState,
       schedule_cron: editCron.trim(),
       enabled: editEnabled,
-      extra_config: mergeCrawlFormExtra(parsed.value, editStrategy, editDiscover, editAdvanced, editQuality, editSource, {
+      extra_config: mergeCrawlFormExtra(parsed.value, editStrategy, editDiscover, editAdvanced, editQuality, editRelevance, editSource, {
         skipHttpProbe: editSkipHttpProbe,
         skipIngest: editSkipIngest,
         skipRobots: editSkipRobots,
@@ -1434,6 +1513,7 @@ export function CrawlPage() {
           </label>
         </div>
         {renderQualityFields(createQuality, setCreateQuality)}
+        {renderRelevanceFields(createRelevance, setCreateRelevance)}
         <div className="muted" style={{ marginBottom: 12, lineHeight: 1.7 }}>
           <div style={{ marginBottom: 6, fontWeight: 600, color: "var(--fg, #111827)" }}>extra_config（tick）</div>
           <label style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
@@ -1689,6 +1769,7 @@ export function CrawlPage() {
             </label>
           </div>
           {renderQualityFields(editQuality, setEditQuality)}
+          {renderRelevanceFields(editRelevance, setEditRelevance)}
           <div className="muted" style={{ marginBottom: 12, lineHeight: 1.7 }}>
             <div style={{ marginBottom: 6, fontWeight: 600, color: "var(--fg, #111827)" }}>extra_config（tick）</div>
             <label style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>

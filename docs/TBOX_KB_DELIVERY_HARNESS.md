@@ -297,7 +297,7 @@
 | **Phase 67** | **G2 发现与去重** | **DISCOVER + DEDUP + I18N** — **`2026-06-02-tbox-g2-discover-dedup-plan.md`** |
 | **Phase 68** | **G2 爬取内容质量 ✅** | **SearXNG + URL 质量 + trafilatura + 参考源 DB** — **`2026-06-08-tbox-phase68-plan.md`** |
 | **Phase 69.0–69.2** | **G2-CRAWL-SELF-HEAL（P1 首要）** | HEALTH → SEED-AUTO → DISCOVER-AUTO — **`2026-06-09-tbox-phase69-plan.md`** |
-| **Phase 69.3** | **G2-CRAWL-RELEVANCE** | LLM 入库前相关性 — 待 spec |
+| **Phase 69.3** | **G2-CRAWL-RELEVANCE** | 规则/LLM 入库前相关性闸门 — spec **`2026-06-10-tbox-g2-crawl-relevance-design.md`** |
 | **Phase 18** | **双账号 smoke env** | `tbox_smoke.env.example` + **`TBOX_SMOKE_ENV.md`** — phase18 plan |
 | **Phase 19** | **ChunkListPanel 共用** | `chunkDisplay.ts` + 引用/检索薄包装 — phase19 plan |
 | **Phase 20** | **chunk/citation 单元测试** | `web-tbox` Vitest 12 cases — phase20 plan |

@@ -89,10 +89,19 @@
 
 ---
 
-## Task 6: Phase 69.3 RELEVANCE（Out of scope for this plan）
+## Task 6: Phase 69.3 RELEVANCE
 
-- [ ] 独立 spec `2026-xx-xx-tbox-g2-crawl-relevance-design.md`
-- [ ] 入库前 LLM/规则评分闸门
+**Files:**
+
+- Create: `docs/superpowers/specs/2026-06-10-tbox-g2-crawl-relevance-design.md`
+- Create: `common/tbox_crawl_relevance.py`
+- Modify: `tbox_crawl_ingest_service.py` — ingest 前闸门
+- Modify: `web-tbox` CrawlPage — mode / min_score / topic
+
+- [x] **Step 1**: 规则分 + `relevance` health outcome
+- [x] **Step 2**: 可选 LLM 分（fail-open）
+- [x] **Step 3**: tick 摘要 `skipped_relevance`
+- [x] **Step 4**: 单测 + 5180 配置 UI
 
 ---
 
@@ -102,6 +111,9 @@
 # 69.0+
 uv run pytest test/unit_test/common/test_tbox_crawl_*health* -q
 
+# 69.3 relevance
+uv run pytest test/unit_test/common/test_tbox_crawl_relevance.py -q
+
 # 69.2 smoke（API + worker 已起）
 python scripts/tbox_phase69_crawl_self_heal_smoke.py
 ```
@@ -110,5 +122,4 @@ python scripts/tbox_phase69_crawl_self_heal_smoke.py
 
 ## Out of scope
 
-- Phase 69.3 G2-CRAWL-RELEVANCE
 - 无头浏览器、Firecrawl

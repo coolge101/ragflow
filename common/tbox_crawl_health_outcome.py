@@ -25,6 +25,7 @@ VALID_OUTCOMES = frozenset(
         "timeout",
         "low_quality",
         "keyword",
+        "relevance",
         "dup",
         "http_error",
         "probe_fail",
@@ -43,6 +44,8 @@ def classify_outcome_from_message(message: str) -> str:
         return "low_quality"
     if "keyword" in msg:
         return "keyword"
+    if "relevance" in msg:
+        return "relevance"
     if "dup" in msg:
         return "dup"
     if "connection" in msg or "network" in msg or "refused" in msg:
