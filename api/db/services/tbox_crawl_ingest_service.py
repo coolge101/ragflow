@@ -92,6 +92,7 @@ def ingest_static_web_seeds_into_kb(
     """
     stats = {
         "ingested": 0,
+        "ingested_urls": [],
         "skipped_dup_content": 0,
         "skipped_kw": 0,
         "skipped_low_quality": 0,
@@ -125,6 +126,7 @@ def ingest_static_web_seeds_into_kb(
     skipped_dup_content = 0
     skipped_low_quality = 0
     ingested = 0
+    ingested_urls: list[str] = []
 
     def _source_tag(canon: str) -> str:
         if canon in disc:
@@ -197,6 +199,7 @@ def ingest_static_web_seeds_into_kb(
                 src_tag = _source_tag(canon)
                 record_seen(ds, canon, content_sha256=h, source=src_tag)
             ingested += 1
+            ingested_urls.append(url)
             _health(url, "ok")
             _LOG.info("tbox_crawl_ingest: queued doc name=%s kb_id=%s url=%s", filename, kb.id, url)
         except Exception as exc:
@@ -212,6 +215,7 @@ def ingest_static_web_seeds_into_kb(
                 )
 
     stats["ingested"] = ingested
+    stats["ingested_urls"] = ingested_urls
     stats["skipped_dup_content"] = skipped_dup_content
     stats["skipped_kw"] = skipped_kw
     stats["skipped_low_quality"] = skipped_low_quality

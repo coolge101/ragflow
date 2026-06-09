@@ -50,10 +50,10 @@
 - Create: `api/db/services/tbox_crawl_self_heal_service.py`
 - Modify: `tbox_crawl_task_service.py` — tick 末尾 `run_self_heal(task_id)`
 
-- [ ] **Step 1**: `compute_seed_actions()` — prune / import_catalog
-- [ ] **Step 2**: **无确认** `PATCH` seed_urls + audit 行
-- [ ] **Step 3**: `TBOX_CRAWL_SELF_HEAL_INTERVAL_SEC` 防抖
-- [ ] **Step 4**: 单测 + 集成：知乎种子 3 失败 → 移除
+- [x] **Step 1**: `compute_seed_actions()` — prune / import_catalog
+- [x] **Step 2**: **无确认** `PATCH` seed_urls + audit 行
+- [x] **Step 3**: `TBOX_CRAWL_SELF_HEAL_INTERVAL_SEC` 防抖
+- [x] **Step 4**: 单测 + 集成：知乎种子 3 失败 → 移除
 
 ---
 

@@ -537,6 +537,37 @@ async def crawl_tasks_url_health(task_id: str):
         return server_error_response(e)
 
 
+@manager.route("/crawl/tasks/<task_id>/heal-log", methods=["GET"])  # noqa: F821
+@login_required
+async def crawl_tasks_heal_log(task_id: str):
+    denied = _assert_crawl_manage()
+    if denied:
+        return denied
+    try:
+        from api.db.services import tbox_crawl_self_heal_service as self_heal_svc
+
+        user = current_user
+        is_super = bool(getattr(user, "is_superuser", False))
+        allowed = crawl_svc.tenant_ids_for_crawl(user.id, is_super)
+        t = crawl_svc.get_task(task_id)
+        if not t:
+            return get_json_result(code=RetCode.NOT_FOUND, message="crawl task not found")
+        if not crawl_svc.user_may_access_task(t, allowed):
+            return _crawl_task_forbidden_response()
+        page, page_size = _parse_page_args()
+        total, rows = self_heal_svc.list_heal_log(task_id, tenant_id=t.tenant_id, page=page, page_size=page_size)
+        return get_json_result(
+            data={
+                "total": total,
+                "page": page,
+                "page_size": page_size,
+                "items": [self_heal_svc.audit_row_to_dict(r) for r in rows],
+            }
+        )
+    except Exception as e:  # noqa: BLE001
+        return server_error_response(e)
+
+
 @manager.route("/crawl/sources", methods=["GET"])  # noqa: F821
 @login_required
 async def crawl_sources_list():

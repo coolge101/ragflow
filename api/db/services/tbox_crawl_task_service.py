@@ -514,6 +514,28 @@ def execute_crawl_task_stub_tick(task_id: str) -> None:
     Used by the background worker and by POST /v1/tbox/crawl/tasks/<id>/run.
     Raises ValueError if task missing; RuntimeError if extra_config.worker_stub_fail is set.
     """
+    heal_ingested_urls: list[str] = []
+    heal_discovered: set[str] = set()
+    try:
+        _execute_crawl_task_stub_tick_body(task_id, heal_ingested_urls, heal_discovered)
+    finally:
+        try:
+            from api.db.services import tbox_crawl_self_heal_service as self_heal_svc
+
+            self_heal_svc.run_self_heal(
+                task_id,
+                ingested_urls=heal_ingested_urls,
+                discovered_canonical=heal_discovered,
+            )
+        except Exception:
+            _LOG.exception("tbox_crawl self_heal failed task_id=%s", task_id)
+
+
+def _execute_crawl_task_stub_tick_body(
+    task_id: str,
+    heal_ingested_urls: list[str],
+    heal_discovered: set[str],
+) -> None:
     row = get_task(task_id)
     if row is None:
         raise ValueError("crawl task not found or deleted")
@@ -524,6 +546,7 @@ def execute_crawl_task_stub_tick(task_id: str) -> None:
     skip_robots = bool(extra.get("tbox_skip_robots_check"))
     strategy = parse_strategy(extra)
     target_urls, strategy_note, tick_stats, discovered_canonical, discover_error = _resolve_crawl_target_urls(row, strategy, extra)
+    heal_discovered.update(discovered_canonical)
     if discover_error is not None:
         record_worker_tick(
             task_id,
@@ -597,6 +620,7 @@ def execute_crawl_task_stub_tick(task_id: str) -> None:
             task_id=task_id,
         )
         tick_stats.ingested = ingest_stats.get("ingested", 0)
+        heal_ingested_urls.extend(ingest_stats.get("ingested_urls") or [])
         tick_stats.skipped_dup_content = ingest_stats.get("skipped_dup_content", 0)
         tick_stats.skipped_kw = ingest_stats.get("skipped_kw", 0)
         tick_stats.skipped_low_quality = ingest_stats.get("skipped_low_quality", 0)

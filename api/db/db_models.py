@@ -1316,6 +1316,24 @@ class TboxCrawlUrlHealth(DataBaseModel):
         indexes = ((("tenant_id", "task_id", "url_canonical_hash"), True),)
 
 
+class TboxCrawlSelfHealAudit(DataBaseModel):
+    """Audit trail for automatic crawl task self-heal PATCH actions (Phase 69.1)."""
+
+    id = CharField(max_length=32, primary_key=True)
+    tenant_id = CharField(max_length=32, null=False, index=True)
+    task_id = CharField(max_length=32, null=False, index=True)
+    action = CharField(max_length=32, null=False, index=True, help_text="prune_seed|import_catalog|add_catalog_source")
+    before_json = JSONField(null=False, default=dict)
+    after_json = JSONField(null=False, default=dict)
+    reason = LongTextField(null=True, default="")
+    created_by = CharField(max_length=64, null=False, default="system:self_heal", index=True)
+    status = CharField(max_length=1, null=True, default="1", index=True, help_text="1 valid 0 deleted")
+
+    class Meta:
+        db_table = "tbox_crawl_self_heal_audit"
+        indexes = ((("tenant_id", "task_id", "create_time"), False),)
+
+
 class EvaluationDataset(DataBaseModel):
     """Ground truth dataset for RAG evaluation"""
 
