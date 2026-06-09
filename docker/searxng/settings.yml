@@ -6,6 +6,12 @@ server:
   bind_address: "0.0.0.0"
   secret_key: "tbox-crawl-discover-dev-key"
 
+# TBOX crawl Phase 69.2: optional engine allowlist (uncomment and set engines list)
+# search:
+#   formats:
+#     - html
+#     - json
+
 search:
   formats:
     - html

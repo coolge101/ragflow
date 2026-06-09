@@ -318,8 +318,9 @@ filename = suggested_txt_filename(url)
 
 ---
 
-## Out of scope (Phase 69)
+## Out of scope (Phase 69.0+)
 
-- G2-CRAWL-RELEVANCE LLM scoring
+- **G2-CRAWL-SELF-HEAL** — spec **`2026-06-09-tbox-g2-crawl-self-heal-design.md`** · plan **`2026-06-09-tbox-phase69-plan.md`**
+- **G2-CRAWL-RELEVANCE** LLM scoring — **Phase 69.3**
 - Firecrawl / headless browser
 - Auto-promote discover URL to catalog without user action

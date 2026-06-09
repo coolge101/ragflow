@@ -2,7 +2,7 @@
 
 > **状态**：已批准（2026-06-08 brainstorming）
 > **优先级**：B 自动发现 → A 正文质量 → C 参考源清单
-> **矩阵**：G2-CRAWL-DISCOVER+、G2-CRAWL-EXTRACT、G2-CRAWL-SOURCES；（Phase 69）G2-CRAWL-RELEVANCE
+> **矩阵**：G2-CRAWL-DISCOVER+、G2-CRAWL-EXTRACT、G2-CRAWL-SOURCES；（Phase 69.0–69.2）G2-CRAWL-SELF-HEAL；（Phase 69.3）G2-CRAWL-RELEVANCE
 > **Phase**：68（[`2026-06-08-tbox-phase68-plan.md`](../plans/2026-06-08-tbox-phase68-plan.md)）
 > **前置**：Phase 67（[`2026-06-02-tbox-g2-discover-dedup-design.md`](2026-06-02-tbox-g2-discover-dedup-design.md)）
 
@@ -37,7 +37,7 @@ Phase 67 交付 Discover（Tavily）、dedup、I18N 与四类模板 UI。现网�
 
 ### 1.4 非目标（Phase 68）
 
-- **G2-CRAWL-RELEVANCE**（LLM 入库前评分）→ Phase 69
+- **G2-CRAWL-RELEVANCE**（LLM 入库前评分）→ **Phase 69.3**（**G2-CRAWL-SELF-HEAL** → 69.0–69.2，见 **`2026-06-09-tbox-g2-crawl-self-heal-design.md`**）
 - Firecrawl / 无头浏览器 / MCP discover 主路径
 - 租户级 dedup（仍按 `dataset_id`）
 - 自动把 discover URL 写回 seed（v1 仅 **手动「加入参考源」**）
@@ -250,7 +250,10 @@ TBOX_CRAWL_DEFAULT_DISCOVER_PROVIDER=searxng
 | **68.0** | SearXNG provider + Docker + URL 质量 + smoke B |
 | **68.1** | trafilatura ingest + stats + smoke A |
 | **68.2** | catalog 表/API/UI + import-seeds + smoke C |
-| **69** | G2-CRAWL-RELEVANCE（LLM 可选） |
+| **69.0** | G2-CRAWL-HEALTH（url_health + crawl/health API） |
+| **69.1** | G2-CRAWL-SEED-AUTO（无确认 auto PATCH 种子 + catalog 补种） |
+| **69.2** | G2-CRAWL-DISCOVER-AUTO（provider=auto、代理、国内 SearXNG 引擎） |
+| **69.3** | G2-CRAWL-RELEVANCE（LLM 可选） |
 
 ---
 
