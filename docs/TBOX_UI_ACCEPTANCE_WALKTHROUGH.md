@@ -221,12 +221,14 @@ Phase 16–17 浏览器通过后（步骤 **C §7** + **D**）：`bash scripts/t
 
 1. 左侧点 **「采集」**（需 `crawl.manage`）。
 2. 浏览列表；新建任务时可选 **「专项爬取」** 或 **「定时爬取」**，并填写 **关键词 / 最大深度 / 允许域名**（写入 `extra_config`，由 worker 消费）。
-3. **搜索发现（Phase 67–68）**：Provider 可选 **`tavily`** 或 **`searxng`**（推荐 SearXNG：`docker compose --profile crawl-discover up -d searxng`，Worker 设 **`TBOX_CRAWL_SEARXNG_BASE_URL=http://searxng:8080`**）。填写 **query**（或点 **四类模板**）；Tavily 须 **`TBOX_CRAWL_TAVILY_API_KEY`**。无 SearXNG → **`DISCOVER_NO_SEARXNG`**（有种子时降级为仅 seed）。
+3. **搜索发现（Phase 67–69）**：Provider 可选 **`tavily`**、**`searxng`** 或 **`auto`**（Phase 69.2：按 `GET /v1/tbox/crawl/health` 自动路由）。页顶 **Discover 子系统健康** 区块与新建/编辑表单内 **状态灯**（绿/黄/红）应对应当前 SearXNG/Tavily/代理可达性。推荐 SearXNG：`docker compose --profile crawl-discover up -d searxng`，Worker 设 **`TBOX_CRAWL_SEARXNG_BASE_URL=http://searxng:8080`**；可选 **`TBOX_CRAWL_HTTP_PROXY`**。填写 **query**（或点 **四类模板**）；Tavily 须 **`TBOX_CRAWL_TAVILY_API_KEY`**。无 SearXNG → **`DISCOVER_NO_SEARXNG`**（有种子时降级为仅 seed）。
 4. **内容质量（Phase 68）**：**URL 质量模式**（normal/strict/off）、**正文抽取**（trafilatura）、**discover 跳过 BFS** 勾选保存后再编辑仍可见；成功 tick 的 **`last_error`** 可含 **`skipped_low_quality_url`** / **`skipped_low_quality`**。
-5. **参考源清单（Phase 68）**：页内 **参考源 catalog** 可增删改；**「导入到任务种子」** 将同 topic 启用源写入当前任务 **`seed_urls`**。
-6. 绑定目标知识库时，下拉应显示 **库名称**（`page_size`≤100）；四类专题库各可建独立任务。
-7. 试 **「新建 / 编辑 / 删除 / 执行一次」**；第二次执行同一任务应见 **`[tbox:TICK_OK]`** 且含 **`skipped_dup_url`** / **`skipped_dup_content`**（去重生效）。
-8. **通过标准**：列表能加载；Discover + 质量 + catalog 字段持久化；错误时有明确 **`[tbox:CODE]`**（**`DISCOVER_NO_KEY`** / **`DISCOVER_NO_SEARXNG`** 等）。
+5. **入库相关性（Phase 69.3）**：**相关性模式**（off/rules/llm/rules_then_llm）、**最低分**、**专题描述** 保存后再编辑仍可见；tick 摘要可含 **`skipped_relevance`**。
+6. **自愈与健康（Phase 69.1）**：编辑任务时 **自愈与健康** 面板应加载 **url-health** 表（分数/失败次数/最近 outcome）与 **heal-log** 时间线（`prune_seed` / `import_catalog` 等）。坏种子多次失败后可无确认 PATCH 移除；可配合 catalog 补种。
+7. **参考源清单（Phase 68）**：页内 **参考源 catalog** 可增删改；**「导入到任务种子」** 将同 topic 启用源写入当前任务 **`seed_urls`**。
+8. 绑定目标知识库时，下拉应显示 **库名称**（`page_size`≤100）；四类专题库各可建独立任务。
+9. 试 **「新建 / 编辑 / 删除 / 执行一次」**；第二次执行同一任务应见 **`[tbox:TICK_OK]`** 且含 **`skipped_dup_url`** / **`skipped_dup_content`**（去重生效）。
+10. **通过标准**：列表能加载；Discover 状态灯 + auto + 质量 + 相关性 + catalog + 自愈面板字段/API 正常；错误时有明确 **`[tbox:CODE]`**（**`DISCOVER_NO_KEY`** / **`DISCOVER_NO_SEARXNG`** 等）。Smoke：`python scripts/tbox_phase69_crawl_self_heal_smoke.py`。
 
 **本页验收**：`/review/step/crawl`。
 

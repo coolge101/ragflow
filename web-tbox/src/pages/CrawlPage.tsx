@@ -61,6 +61,19 @@ import {
   stripRelevanceKeys,
   type CrawlRelevanceFields,
 } from "../utils/crawlExtraRelevance";
+import {
+  getCrawlHealth,
+  listTaskHealLog,
+  listTaskUrlHealth,
+  type CrawlHealLogRow,
+  type CrawlHealthReport,
+  type CrawlUrlHealthRow,
+} from "../api/crawlHealth";
+import {
+  buildDiscoverStatus,
+  discoverStatusColor,
+  type DiscoverStatusView,
+} from "../utils/crawlDiscoverStatus";
 
 const CRAWL_ROLES = new Set(["owner", "admin", "normal"]);
 
@@ -244,7 +257,12 @@ function mergeCrawlFormExtra(
 }
 
 function hasDiscoverQueries(discover: DiscoverFields): boolean {
-  return (discover.provider === "tavily" || discover.provider === "searxng") && discover.queries.trim().length > 0;
+  return (
+    (discover.provider === "tavily" ||
+      discover.provider === "searxng" ||
+      discover.provider === "auto") &&
+    discover.queries.trim().length > 0
+  );
 }
 
 function applyDiscoverTemplate(
@@ -274,6 +292,47 @@ function applyDiscoverTemplate(
   }
 }
 
+function renderDiscoverStatusLamp(status: DiscoverStatusView | null) {
+  if (!status) {
+    return null;
+  }
+  return (
+    <div
+      style={{
+        display: "flex",
+        alignItems: "flex-start",
+        gap: 10,
+        marginBottom: 10,
+        padding: "0.6rem 0.75rem",
+        borderRadius: 8,
+        background: "#f8fafc",
+        border: "1px solid #e2e8f0",
+      }}
+    >
+      <span
+        aria-hidden
+        style={{
+          width: 12,
+          height: 12,
+          borderRadius: "50%",
+          marginTop: 4,
+          background: discoverStatusColor(status.tone),
+          boxShadow: `0 0 0 3px ${discoverStatusColor(status.tone)}33`,
+          flexShrink: 0,
+        }}
+      />
+      <div>
+        <div style={{ fontWeight: 600 }}>{status.label}</div>
+        <div className="muted" style={{ fontSize: "0.85rem", lineHeight: 1.5 }}>
+          {status.detail}
+          <br />
+          推荐 provider：<code>{status.recommended}</code>（Phase 69 · <code>GET /v1/tbox/crawl/health</code>）
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function renderDiscoverFields(
   discover: DiscoverFields,
   setDiscover: (fn: (prev: DiscoverFields) => DiscoverFields) => void,
@@ -282,15 +341,17 @@ function renderDiscoverFields(
     setSeeds?: (value: string) => void;
     setStrategy?: (fn: (prev: CrawlStrategyFields) => CrawlStrategyFields) => void;
   },
+  discoverStatus?: DiscoverStatusView | null,
 ) {
   return (
     <div style={{ marginBottom: 12, padding: "0.75rem", border: "1px dashed #dbeafe", borderRadius: 8 }}>
       <div style={{ marginBottom: 8, fontWeight: 600, color: "var(--fg, #111827)" }}>
-        搜索发现（Tavily / 未来 SearXNG）
+        搜索发现（Tavily / SearXNG / auto）
       </div>
+      {renderDiscoverStatusLamp(discoverStatus ?? null)}
       <p className="muted" style={{ marginTop: 0, marginBottom: 8, lineHeight: 1.6 }}>
-        Worker 环境变量 <code>TBOX_CRAWL_TAVILY_API_KEY</code>。国内网络若无法访问 Tavily，仍会使用下方<strong>种子 URL + 链接扩展</strong>继续爬取。
-        若配置了<strong>关键词</strong>，页面正文须包含其中至少一个词才会入库；留空则不过滤。
+        Worker：<code>TBOX_CRAWL_SEARXNG_BASE_URL</code>、<code>TBOX_CRAWL_TAVILY_API_KEY</code>、可选{" "}
+        <code>TBOX_CRAWL_HTTP_PROXY</code>。Provider <code>auto</code> 按子系统健康自动路由（Phase 69.2）。
       </p>
       <label style={{ display: "block", marginBottom: 8 }}>
         <span className="muted" style={{ display: "block", marginBottom: 4 }}>
@@ -299,15 +360,24 @@ function renderDiscoverFields(
         <select
           id={`${idPrefix}-discover-provider`}
           value={discover.provider}
-          onChange={(e) =>
+          onChange={(e) => {
+            const v = e.target.value;
             setDiscover((s) => ({
               ...s,
-              provider: e.target.value === "tavily" ? "tavily" : e.target.value === "searxng" ? "searxng" : "none",
-            }))
-          }
+              provider:
+                v === "tavily"
+                  ? "tavily"
+                  : v === "searxng"
+                    ? "searxng"
+                    : v === "auto"
+                      ? "auto"
+                      : "none",
+            }));
+          }}
         >
           <option value="none">none — 仅种子 URL</option>
-          <option value="searxng">searxng — 自托管搜索（推荐）</option>
+          <option value="auto">auto — 智能路由（推荐）</option>
+          <option value="searxng">searxng — 自托管搜索</option>
           <option value="tavily">tavily — 全网搜索发现</option>
         </select>
       </label>
@@ -567,6 +637,128 @@ function fmtTime(v: unknown): string {
   return s;
 }
 
+function healActionLabel(action: string): string {
+  switch (action) {
+    case "prune_seed":
+      return "移除坏种子";
+    case "import_catalog":
+      return "catalog 补种";
+    case "add_catalog_source":
+      return "沉淀到 catalog";
+    default:
+      return action;
+  }
+}
+
+function TaskSelfHealSection({ taskId }: { taskId: string }) {
+  const [urlRows, setUrlRows] = useState<CrawlUrlHealthRow[]>([]);
+  const [healRows, setHealRows] = useState<CrawlHealLogRow[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [panelErr, setPanelErr] = useState<string | null>(null);
+
+  const loadPanel = useCallback(async () => {
+    setLoading(true);
+    setPanelErr(null);
+    try {
+      const [uh, hl] = await Promise.all([
+        listTaskUrlHealth(taskId, { page: 1, page_size: 8 }),
+        listTaskHealLog(taskId, { page: 1, page_size: 10 }),
+      ]);
+      if (uh.body.code !== 0) {
+        setPanelErr(uh.body.message || "url-health 加载失败");
+        return;
+      }
+      if (hl.body.code !== 0) {
+        setPanelErr(hl.body.message || "heal-log 加载失败");
+        return;
+      }
+      setUrlRows(uh.body.data?.items || []);
+      setHealRows(hl.body.data?.items || []);
+    } catch (e) {
+      setPanelErr(e instanceof Error ? e.message : String(e));
+    } finally {
+      setLoading(false);
+    }
+  }, [taskId]);
+
+  useEffect(() => {
+    void loadPanel();
+  }, [loadPanel]);
+
+  return (
+    <div style={{ marginBottom: 12, padding: "0.75rem", border: "1px dashed #fde68a", borderRadius: 8 }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+        <div style={{ fontWeight: 600, color: "var(--fg, #111827)" }}>自愈与健康（Phase 69）</div>
+        <button type="button" className="secondary" onClick={() => void loadPanel()} disabled={loading}>
+          {loading ? "加载中…" : "刷新"}
+        </button>
+      </div>
+      {panelErr ? <p style={{ color: "#b91c1c" }}>{panelErr}</p> : null}
+      <div style={{ marginBottom: 12 }}>
+        <div className="muted" style={{ marginBottom: 6, fontWeight: 600 }}>
+          URL 健康（低分优先）
+        </div>
+        {urlRows.length === 0 ? (
+          <p className="muted" style={{ margin: 0 }}>
+            暂无记录（执行 tick 后写入）
+          </p>
+        ) : (
+          <div style={{ overflowX: "auto" }}>
+            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.85rem" }}>
+              <thead>
+                <tr style={{ textAlign: "left", borderBottom: "1px solid #e5e7eb" }}>
+                  <th style={{ padding: "4px 6px" }}>分数</th>
+                  <th style={{ padding: "4px 6px" }}>URL</th>
+                  <th style={{ padding: "4px 6px" }}>失败</th>
+                  <th style={{ padding: "4px 6px" }}>最近</th>
+                </tr>
+              </thead>
+              <tbody>
+                {urlRows.map((r) => (
+                  <tr key={r.id} style={{ borderBottom: "1px solid #f3f4f6" }}>
+                    <td style={{ padding: "4px 6px", color: r.health_score < 20 ? "#b91c1c" : undefined }}>
+                      {r.health_score}
+                    </td>
+                    <td style={{ padding: "4px 6px", maxWidth: 280, wordBreak: "break-all" }} title={r.url}>
+                      {r.url}
+                    </td>
+                    <td style={{ padding: "4px 6px" }}>{r.fail_count}</td>
+                    <td style={{ padding: "4px 6px" }}>{r.last_outcome}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+      <div>
+        <div className="muted" style={{ marginBottom: 6, fontWeight: 600 }}>
+          自愈时间线（heal-log）
+        </div>
+        {healRows.length === 0 ? (
+          <p className="muted" style={{ margin: 0 }}>
+            暂无自动 PATCH 记录
+          </p>
+        ) : (
+          <ul style={{ margin: 0, paddingLeft: "1.1rem", lineHeight: 1.6 }}>
+            {healRows.map((r) => (
+              <li key={r.id} style={{ marginBottom: 6 }}>
+                <strong>{healActionLabel(r.action)}</strong>
+                <span className="muted"> · {fmtTime(r.create_time)}</span>
+                {r.reason ? (
+                  <div className="muted" style={{ fontSize: "0.85rem" }}>
+                    {String(r.reason).slice(0, 200)}
+                  </div>
+                ) : null}
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export function CrawlPage() {
   const { me } = useAuth();
   const eligible = useMemo(() => eligibleTenants(me), [me]);
@@ -611,6 +803,11 @@ export function CrawlPage() {
   const [catalogItems, setCatalogItems] = useState<CrawlSourceRow[]>([]);
   const [catalogLabel, setCatalogLabel] = useState("");
   const [catalogUrl, setCatalogUrl] = useState("");
+
+  const [crawlHealthReport, setCrawlHealthReport] = useState<CrawlHealthReport | null>(null);
+  const [healthLoading, setHealthLoading] = useState(false);
+  const [healthErr, setHealthErr] = useState<string | null>(null);
+  const discoverStatus = useMemo(() => buildDiscoverStatus(crawlHealthReport), [crawlHealthReport]);
 
   const [editing, setEditing] = useState<CrawlTaskRow | null>(null);
   const [editName, setEditName] = useState("");
@@ -803,6 +1000,27 @@ export function CrawlPage() {
   useEffect(() => {
     void loadCatalog();
   }, [loadCatalog]);
+
+  const loadCrawlHealth = useCallback(async () => {
+    setHealthLoading(true);
+    setHealthErr(null);
+    try {
+      const { body } = await getCrawlHealth();
+      if (body.code !== 0) {
+        setHealthErr(body.message || "health 加载失败");
+        return;
+      }
+      setCrawlHealthReport(body.data || null);
+    } catch (e) {
+      setHealthErr(e instanceof Error ? e.message : String(e));
+    } finally {
+      setHealthLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void loadCrawlHealth();
+  }, [loadCrawlHealth]);
 
   const onAddCatalogSource = async () => {
     const tid = isSuper ? taskOwnerTenant.trim() || me?.user_id || "" : resolvedListTenant || me?.user_id || "";
@@ -1092,6 +1310,34 @@ export function CrawlPage() {
         </ApiErrorBanner>
       ) : null}
       {actionMsg ? <p style={{ color: "#15803d" }}>{actionMsg}</p> : null}
+
+      <section style={{ marginBottom: "1.5rem", padding: "1rem", border: "1px solid #e5e7eb", borderRadius: 8 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, marginBottom: 8 }}>
+          <h2 style={{ marginTop: 0, marginBottom: 0, fontSize: "1.05rem" }}>Discover 子系统健康（Phase 69）</h2>
+          <button type="button" className="secondary" onClick={() => void loadCrawlHealth()} disabled={healthLoading}>
+            {healthLoading ? "加载中…" : "刷新健康"}
+          </button>
+        </div>
+        {healthErr ? <p style={{ color: "#b91c1c", marginTop: 0 }}>{healthErr}</p> : null}
+        {renderDiscoverStatusLamp(discoverStatus)}
+        {crawlHealthReport ? (
+          <p className="muted" style={{ margin: 0, fontSize: "0.85rem", lineHeight: 1.6 }}>
+            API 推荐 provider：<code>{crawlHealthReport.recommended_discover_provider ?? "—"}</code>
+            {crawlHealthReport.self_heal_phase ? (
+              <>
+                {" "}
+                · 自愈阶段 <code>{crawlHealthReport.self_heal_phase}</code>
+              </>
+            ) : null}
+            {crawlHealthReport.proxy?.http_proxy_configured || crawlHealthReport.proxy?.https_proxy_configured ? (
+              <>
+                {" "}
+                · 出站代理已配置
+              </>
+            ) : null}
+          </p>
+        ) : null}
+      </section>
 
       <section style={{ marginBottom: "1.5rem", padding: "1rem", border: "1px solid #e5e7eb", borderRadius: 8 }}>
         <h2 style={{ marginTop: 0, fontSize: "1.05rem" }}>筛选</h2>
@@ -1464,10 +1710,16 @@ export function CrawlPage() {
             ))}
           </select>
         </label>
-        {renderDiscoverFields(createDiscover, setCreateDiscover, "create", {
-          setSeeds: setCreateSeeds,
-          setStrategy: setCreateStrategy,
-        })}
+        {renderDiscoverFields(
+          createDiscover,
+          setCreateDiscover,
+          "create",
+          {
+            setSeeds: setCreateSeeds,
+            setStrategy: setCreateStrategy,
+          },
+          discoverStatus,
+        )}
         <div style={{ marginBottom: 12, padding: "0.75rem", border: "1px dashed #e5e7eb", borderRadius: 8 }}>
           <div style={{ marginBottom: 8, fontWeight: 600, color: "var(--fg, #111827)" }}>
             爬取策略（extra_config）
@@ -1723,10 +1975,17 @@ export function CrawlPage() {
               ))}
             </select>
           </label>
-          {renderDiscoverFields(editDiscover, setEditDiscover, "edit", {
-            setSeeds: setEditSeeds,
-            setStrategy: setEditStrategy,
-          })}
+          {renderDiscoverFields(
+            editDiscover,
+            setEditDiscover,
+            "edit",
+            {
+              setSeeds: setEditSeeds,
+              setStrategy: setEditStrategy,
+            },
+            discoverStatus,
+          )}
+          <TaskSelfHealSection taskId={String(editing.id)} />
           <div style={{ marginBottom: 12, padding: "0.75rem", border: "1px dashed #e5e7eb", borderRadius: 8 }}>
             <div style={{ marginBottom: 8, fontWeight: 600 }}>爬取策略（extra_config）</div>
             <label style={{ display: "block", marginBottom: 8 }}>

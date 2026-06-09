@@ -83,9 +83,9 @@
 - Create: `scripts/tbox_phase69_crawl_self_heal_smoke.py`
 - Modify: `docs/TBOX_UI_ACCEPTANCE_WALKTHROUGH.md` — 步骤 G Phase 69
 
-- [ ] **Step 1**: Crawl 页 Discover 状态
-- [ ] **Step 2**: smoke：坏种子任务 → audit 有 prune → 下次 tick ingested≥1
-- [ ] **Step 3**: `npm run build` + console rebuild 说明
+- [x] **Step 1**: Crawl 页 Discover 状态
+- [x] **Step 2**: smoke：坏种子任务 → audit 有 prune → 下次 tick ingested≥1
+- [x] **Step 3**: `npm run build` + console rebuild 说明
 
 ---
 
