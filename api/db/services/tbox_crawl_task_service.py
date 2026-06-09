@@ -424,7 +424,7 @@ def _resolve_crawl_target_urls(
 
     if dcfg.provider != "none" and dcfg.queries:
         try:
-            result = run_discover(dcfg, strategy.allowed_domains)
+            result = run_discover(dcfg, strategy.allowed_domains, extra)
             if result is not None:
                 discovered = list(result.urls)
                 stats.discovered = len(discovered)
@@ -452,7 +452,7 @@ def _resolve_crawl_target_urls(
     if ds and str(ds).strip():
         merged, stats.skipped_dup_url = filter_urls_not_seen(str(ds), merged, seen_fn=url_seen)
 
-    if dcfg.provider in ("tavily", "searxng") and dcfg.queries and not merged and discover_error is None:
+    if dcfg.provider in ("tavily", "searxng", "auto") and dcfg.queries and not merged and discover_error is None:
         if not seeds:
             discover_error = DiscoverProviderError("DISCOVER_EMPTY", "no URLs after discover and dedup")
             return [], "", stats, discovered_canonical, discover_error

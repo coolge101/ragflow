@@ -68,10 +68,10 @@
 - Modify: `docker/searxng/settings.yml` — 引擎 allowlist 注释模板
 - Modify: `docker/.env.example` — proxy + allowlist 文档键
 
-- [ ] **Step 1**: SearXNG ping + `unresponsive_engines` → 禁用列表
-- [ ] **Step 2**: `TBOX_CRAWL_SEARXNG_ENGINE_ALLOWLIST`
-- [ ] **Step 3**: `provider=auto` 链：searxng → tavily → seed-only
-- [ ] **Step 4**: proxy 注入 requests Session
+- [x] **Step 1**: SearXNG ping + `unresponsive_engines` → 禁用列表
+- [x] **Step 2**: `TBOX_CRAWL_SEARXNG_ENGINE_ALLOWLIST`
+- [x] **Step 3**: `provider=auto` 链：searxng → tavily → seed-only
+- [x] **Step 4**: proxy 注入 requests Session
 
 ---
 

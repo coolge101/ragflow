@@ -25,7 +25,9 @@ class TestTboxCrawlDiscover(unittest.TestCase):
         self.assertEqual(cfg.provider, "none")
         self.assertEqual(cfg.queries, ())
 
-    def test_parse_discover_config_queries(self):
+    def test_parse_discover_config_auto(self):
+        cfg = parse_discover_config({EXTRA_SEARCH_PROVIDER: "auto", EXTRA_SEARCH_QUERIES: ["q1"]})
+        self.assertEqual(cfg.provider, "auto")
         cfg = parse_discover_config(
             {
                 EXTRA_SEARCH_PROVIDER: "tavily",

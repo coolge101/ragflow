@@ -29,6 +29,7 @@ from dataclasses import dataclass
 from typing import Any, Protocol
 
 from common.tbox_crawl_dedup import canonicalize_url, merge_url_lists
+from common.tbox_crawl_ssrf_fetch import crawl_http_proxies
 from common.tbox_crawl_strategy import filter_urls_by_allowed_domains, url_allowed_by_domains
 
 _LOG = logging.getLogger(__name__)
@@ -41,7 +42,7 @@ EXTRA_DISCOVER_MAX_QUERIES = "tbox_crawl_discover_max_queries"
 EXTRA_DISCOVER_MAX_RESULTS = "tbox_crawl_discover_max_results_per_query"
 EXTRA_TAVILY_DEPTH = "tbox_crawl_tavily_depth"
 
-_VALID_PROVIDERS = frozenset({"none", "tavily", "searxng"})
+_VALID_PROVIDERS = frozenset({"none", "tavily", "searxng", "auto"})
 _VALID_LOCALES = frozenset({"zh", "en", "both"})
 _VALID_TAVILY_DEPTH = frozenset({"basic", "advanced"})
 
@@ -131,6 +132,7 @@ class DiscoverProvider(Protocol):
         max_results_per_query: int,
         allowed_domains: tuple[str, ...],
         tavily_depth: str,
+        engines: str | None = None,
     ) -> DiscoverResult: ...
 
 
@@ -148,7 +150,9 @@ class TavilyDiscoverProvider:
         max_results_per_query: int,
         allowed_domains: tuple[str, ...],
         tavily_depth: str,
+        engines: str | None = None,
     ) -> DiscoverResult:
+        del engines
         from tavily import TavilyClient
 
         client = TavilyClient(api_key=self._api_key)
@@ -231,6 +235,7 @@ class SearxngDiscoverProvider:
         max_results_per_query: int,
         allowed_domains: tuple[str, ...],
         tavily_depth: str,
+        engines: str | None = None,
     ) -> DiscoverResult:
         del tavily_depth  # unused for SearXNG
         collected: list[str] = []
@@ -242,18 +247,17 @@ class SearxngDiscoverProvider:
             if len(collected) >= max_urls:
                 break
             executed += 1
-            params = urllib.parse.urlencode(
-                {
-                    "q": query.strip(),
-                    "format": "json",
-                    "language": lang,
-                }
-            )
-            req_url = f"{self._base}/search?{params}"
+            params: dict[str, str] = {
+                "q": query.strip(),
+                "format": "json",
+                "language": lang,
+            }
+            if engines:
+                params["engines"] = engines
+            req_url = f"{self._base}/search?{urllib.parse.urlencode(params)}"
             try:
                 req = urllib.request.Request(req_url, headers={"Accept": "application/json"})
-                with urllib.request.urlopen(req, timeout=30) as resp:
-                    body = json.loads(resp.read().decode("utf-8", errors="replace"))
+                body = self._fetch_json(req)
             except urllib.error.HTTPError as exc:
                 if exc.code == 429:
                     raise DiscoverProviderError("DISCOVER_QUOTA", str(exc)) from exc
@@ -302,6 +306,24 @@ class SearxngDiscoverProvider:
             notes=note,
         )
 
+    def _fetch_json(self, req: urllib.request.Request) -> dict:
+        proxies = crawl_http_proxies()
+        if proxies:
+            proxy_map: dict[str, str] = {}
+            if proxies.get("http"):
+                proxy_map["http"] = proxies["http"]
+                proxy_map["https"] = proxies.get("https") or proxies["http"]
+            elif proxies.get("https"):
+                proxy_map["https"] = proxies["https"]
+            handler = urllib.request.ProxyHandler(proxy_map) if proxy_map else urllib.request.ProxyHandler({})
+            opener = urllib.request.build_opener(handler)
+            with opener.open(req, timeout=30) as resp:
+                parsed = json.loads(resp.read().decode("utf-8", errors="replace"))
+                return parsed if isinstance(parsed, dict) else {}
+        with urllib.request.urlopen(req, timeout=30) as resp:
+            parsed = json.loads(resp.read().decode("utf-8", errors="replace"))
+            return parsed if isinstance(parsed, dict) else {}
+
 
 def resolve_searxng_base_url() -> str:
     return (os.environ.get("TBOX_CRAWL_SEARXNG_BASE_URL") or "").strip().rstrip("/")
@@ -324,9 +346,17 @@ def get_discover_provider(name: str) -> DiscoverProvider | None:
     raise DiscoverProviderError("DISCOVER_PROVIDER", f"unknown discover provider: {name}")
 
 
-def run_discover(cfg: DiscoverConfig, allowed_domains: tuple[str, ...]) -> DiscoverResult | None:
+def run_discover(
+    cfg: DiscoverConfig,
+    allowed_domains: tuple[str, ...],
+    extra_config: dict[str, Any] | None = None,
+) -> DiscoverResult | None:
     if cfg.provider == "none" or not cfg.queries:
         return None
+    if cfg.provider == "auto":
+        from common.tbox_crawl_discover_router import run_auto_discover
+
+        return run_auto_discover(cfg, allowed_domains, extra_config)
     provider = get_discover_provider(cfg.provider)
     if provider is None:
         return None

@@ -1,18 +1,13 @@
-import json
 import unittest
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 from common.tbox_crawl_discover import SearxngDiscoverProvider, resolve_searxng_base_url
 
 
 class TestSearxngDiscover(unittest.TestCase):
-    @patch("common.tbox_crawl_discover.urllib.request.urlopen")
-    def test_searxng_parses_json(self, mock_open):
-        mock_resp = MagicMock()
-        mock_resp.read.return_value = json.dumps({"results": [{"url": "https://example.com/news/2024/tbox-report.html"}]}).encode()
-        mock_resp.__enter__ = lambda s: s
-        mock_resp.__exit__ = lambda *a: None
-        mock_open.return_value = mock_resp
+    @patch.object(SearxngDiscoverProvider, "_fetch_json")
+    def test_searxng_parses_json(self, mock_fetch):
+        mock_fetch.return_value = {"results": [{"url": "https://example.com/news/2024/tbox-report.html"}]}
         provider = SearxngDiscoverProvider("http://searxng:8080")
         result = provider.discover(
             ["TBOX 技术"],

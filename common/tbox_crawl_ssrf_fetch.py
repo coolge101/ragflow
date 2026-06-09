@@ -69,6 +69,25 @@ _RETRY_BACKOFF_MAX = max(0.0, float(os.environ.get("TBOX_CRAWL_RETRY_BACKOFF_MAX
 _RETRY_AFTER_CAP_SEC = max(0.0, float(os.environ.get("TBOX_CRAWL_RETRY_AFTER_CAP_SEC", "30")))
 
 
+def crawl_http_proxies() -> dict[str, str] | None:
+    """
+    Outbound HTTP(S) proxy for crawl fetch and discover (Phase 69.2).
+
+    Uses ``TBOX_CRAWL_HTTP_PROXY`` / ``TBOX_CRAWL_HTTPS_PROXY``, falling back to
+    ``HTTP_PROXY`` / ``HTTPS_PROXY`` when unset.
+    """
+    http_p = (os.environ.get("TBOX_CRAWL_HTTP_PROXY") or os.environ.get("HTTP_PROXY") or "").strip()
+    https_p = (os.environ.get("TBOX_CRAWL_HTTPS_PROXY") or os.environ.get("HTTPS_PROXY") or http_p).strip()
+    if not http_p and not https_p:
+        return None
+    out: dict[str, str] = {}
+    if http_p:
+        out["http"] = http_p
+    if https_p:
+        out["https"] = https_p
+    return out
+
+
 def _parse_retry_status_int_list(raw: str) -> set[int]:
     out: set[int] = set()
     for tok in raw.replace(",", " ").split():
@@ -237,6 +256,7 @@ def _ssrf_redirecting_stream_get(
                     allow_redirects=False,
                     headers=headers,
                     stream=True,
+                    proxies=crawl_http_proxies(),
                 )
             if response.status_code in retry_statuses and attempt < _retry_max_for_status(response.status_code):
                 wait_sec = _retry_delay_seconds(response, attempt)

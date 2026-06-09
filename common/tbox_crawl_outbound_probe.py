@@ -14,18 +14,15 @@
 #  limitations under the License.
 #
 
-"""Outbound crawl subsystem probes for GET /v1/tbox/crawl/health (Phase 69.0)."""
+"""Outbound crawl subsystem probes for GET /v1/tbox/crawl/health (Phase 69.0+)."""
 
 from __future__ import annotations
 
-import json
 import os
-import urllib.error
-import urllib.parse
-import urllib.request
 from typing import Any
 
-from common.tbox_crawl_discover import resolve_searxng_base_url, resolve_tavily_api_key
+from common.tbox_crawl_discover import resolve_tavily_api_key
+from common.tbox_crawl_searxng_health import probe_searxng_health
 
 
 def _proxy_configured() -> dict[str, Any]:
@@ -38,49 +35,7 @@ def _proxy_configured() -> dict[str, Any]:
 
 
 def probe_searxng(*, timeout: float = 12.0) -> dict[str, Any]:
-    base = resolve_searxng_base_url()
-    if not base:
-        return {
-            "configured": False,
-            "reachable": False,
-            "results_count": 0,
-            "engines_ok": 0,
-            "unresponsive_engines": [],
-            "error": "TBOX_CRAWL_SEARXNG_BASE_URL not set",
-        }
-    params = urllib.parse.urlencode({"q": "ping", "format": "json"})
-    url = f"{base.rstrip('/')}/search?{params}"
-    try:
-        req = urllib.request.Request(url, headers={"Accept": "application/json"})
-        with urllib.request.urlopen(req, timeout=timeout) as resp:
-            body = json.loads(resp.read().decode("utf-8", errors="replace"))
-    except Exception as exc:
-        return {
-            "configured": True,
-            "base_url": base,
-            "reachable": False,
-            "results_count": 0,
-            "engines_ok": 0,
-            "unresponsive_engines": [],
-            "error": str(exc),
-        }
-    results = body.get("results") if isinstance(body, dict) else []
-    unresponsive = body.get("unresponsive_engines") if isinstance(body, dict) else []
-    if not isinstance(results, list):
-        results = []
-    if not isinstance(unresponsive, list):
-        unresponsive = []
-    allow_raw = (os.environ.get("TBOX_CRAWL_SEARXNG_ENGINE_ALLOWLIST") or "").strip()
-    return {
-        "configured": True,
-        "base_url": base,
-        "reachable": True,
-        "results_count": len(results),
-        "engines_ok": 1 if results else 0,
-        "unresponsive_engines": unresponsive[:20],
-        "engine_allowlist": [x.strip() for x in allow_raw.split(",") if x.strip()],
-        "degraded": len(results) == 0 and len(unresponsive) > 0,
-    }
+    return probe_searxng_health(timeout=timeout)
 
 
 def probe_tavily() -> dict[str, Any]:
@@ -113,5 +68,5 @@ def build_crawl_health_report() -> dict[str, Any]:
         "searxng": searxng,
         "tavily": tavily,
         "recommended_discover_provider": recommended,
-        "self_heal_phase": "69.0",
+        "self_heal_phase": "69.2",
     }
