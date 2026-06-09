@@ -17,6 +17,12 @@ class TestCrawlExtract(unittest.TestCase):
         self.assertTrue(name.endswith(".txt"))
         self.assertIn("example.com", name)
 
+    def test_fallback_extracts_tag_stripped_body(self):
+        html = b"<html><head><title>TBOX</title></head><body><div>" + ("TBOX \u8f66\u8054\u7f51\u6280\u672f\u8d8b\u52bf " * 30).encode() + b"</div></body></html>"
+        text = extract_main_text(html)
+        self.assertGreaterEqual(len(text), 200)
+        self.assertIn("\u8f66\u8054\u7f51", text)
+
     def test_min_chars_default(self):
         self.assertEqual(parse_min_extract_chars({}), 200)
 

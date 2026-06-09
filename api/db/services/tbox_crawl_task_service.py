@@ -375,14 +375,33 @@ class CrawlTickStats:
     skipped_kw: int = 0
     skipped_low_quality_url: int = 0
     skipped_low_quality: int = 0
+    ingest_failures: int = 0
 
     def summary(self) -> str:
         return (
             f"discovered={self.discovered} ingested={self.ingested} "
             f"skipped_dup_url={self.skipped_dup_url} skipped_dup_content={self.skipped_dup_content} "
             f"skipped_kw={self.skipped_kw} skipped_low_quality_url={self.skipped_low_quality_url} "
-            f"skipped_low_quality={self.skipped_low_quality}"
+            f"skipped_low_quality={self.skipped_low_quality} ingest_failures={self.ingest_failures}"
         )
+
+
+def _prioritize_discovered_urls(
+    target_urls: list[str],
+    discovered_canonical: set[str],
+) -> list[str]:
+    """Try discover URLs before user seeds so one bad seed does not block fresh links."""
+    if not discovered_canonical:
+        return list(target_urls)
+    disc: list[str] = []
+    rest: list[str] = []
+    for url in target_urls:
+        canon = canonicalize_url(url)
+        if canon and canon in discovered_canonical:
+            disc.append(url)
+        else:
+            rest.append(url)
+    return merge_url_lists(disc + rest)
 
 
 def _resolve_crawl_target_urls(
@@ -450,7 +469,7 @@ def _resolve_crawl_target_urls(
         expand_only, q_expand = filter_urls_by_quality(expand_only, mode=quality_mode)
         stats.skipped_low_quality_url += q_expand
         seed_kept = [u for u in expanded if canonicalize_url(u) in seed_canonical_set]
-        target_urls = merge_url_lists(seed_kept + expand_only + discovered)
+        target_urls = merge_url_lists(discovered + seed_kept + expand_only)
         if not target_urls and strategy_note:
             return [], strategy_note, stats, discovered_canonical, discover_error
         if not target_urls:
@@ -554,11 +573,12 @@ def execute_crawl_task_stub_tick(task_id: str) -> None:
 
     st = str(row.source_type or "static_web")
     seed_canonical = {canonicalize_url(u) for u in (row.seed_urls or []) if canonicalize_url(u)}
+    ingest_urls = _prioritize_discovered_urls(target_urls, discovered_canonical)
     if st == "static_web":
         ok_i, msg_i, ingest_stats = ingest_static_web_seeds_into_kb(
             kb,
             row.tenant_id,
-            target_urls,
+            ingest_urls,
             skip_robots=skip_robots,
             extra_config=extra,
             dataset_id=str(ds),
@@ -569,6 +589,7 @@ def execute_crawl_task_stub_tick(task_id: str) -> None:
         tick_stats.skipped_dup_content = ingest_stats.get("skipped_dup_content", 0)
         tick_stats.skipped_kw = ingest_stats.get("skipped_kw", 0)
         tick_stats.skipped_low_quality = ingest_stats.get("skipped_low_quality", 0)
+        tick_stats.ingest_failures = ingest_stats.get("ingest_failures", 0)
     elif st == "rss":
         ok_i, msg_i = ingest_rss_seeds_into_kb(kb, row.tenant_id, target_urls, skip_robots=skip_robots, extra_config=extra)
     elif st == "http_api":

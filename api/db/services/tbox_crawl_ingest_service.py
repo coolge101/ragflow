@@ -88,7 +88,13 @@ def ingest_static_web_seeds_into_kb(
     *extra_config* is forwarded to :func:`common.tbox_crawl_ssrf_fetch.fetch_url_body_capped` for
     ``effective_retry_statuses`` (``tbox_crawl_retry_extra_statuses``).
     """
-    stats = {"ingested": 0, "skipped_dup_content": 0, "skipped_kw": 0, "skipped_low_quality": 0}
+    stats = {
+        "ingested": 0,
+        "skipped_dup_content": 0,
+        "skipped_kw": 0,
+        "skipped_low_quality": 0,
+        "ingest_failures": 0,
+    }
     if kb is None or not getattr(kb, "id", None):
         return False, "invalid knowledge base", stats
 
@@ -97,7 +103,12 @@ def ingest_static_web_seeds_into_kb(
     seeds_set = seed_canonical or {canonicalize_url(u) for u in seed_urls if canonicalize_url(u)}
 
     lim_raw = max_urls if max_urls is not None else os.environ.get("TBOX_CRAWL_INGEST_MAX", "5")
-    lim = max(1, min(int(lim_raw), len(seed_urls)))
+    goal_raw = os.environ.get("TBOX_CRAWL_INGEST_GOAL", "1")
+    scan_raw = os.environ.get("TBOX_CRAWL_INGEST_SCAN_MAX", "")
+    lim = max(1, int(lim_raw))
+    goal = max(1, min(lim, int(goal_raw)))
+    scan_max = int(scan_raw) if str(scan_raw).strip() else max(lim * 5, 20)
+    scan_max = max(goal, min(scan_max, len(seed_urls)))
     max_b = int(max_bytes if max_bytes is not None else os.environ.get("TBOX_CRAWL_INGEST_MAX_BYTES", str(8 * 1024 * 1024)))
     timeout = float(timeout_sec if timeout_sec is not None else os.environ.get("TBOX_CRAWL_INGEST_TIMEOUT", os.environ.get("TBOX_CRAWL_FETCH_TIMEOUT", "60")))
 
@@ -113,7 +124,9 @@ def ingest_static_web_seeds_into_kb(
     skipped_low_quality = 0
     ingested = 0
 
-    for url in seed_urls[:lim]:
+    for url in seed_urls[:scan_max]:
+        if ingested >= goal:
+            break
         try:
             body, ctype = fetch_url_body_capped(
                 url,
@@ -170,13 +183,28 @@ def ingest_static_web_seeds_into_kb(
     stats["skipped_dup_content"] = skipped_dup_content
     stats["skipped_kw"] = skipped_kw
     stats["skipped_low_quality"] = skipped_low_quality
+    stats["ingest_failures"] = len(errs)
 
-    if errs:
-        return False, "; ".join(errs)[:65000], stats
-    if skipped_kw and skipped_kw >= min(lim, len(seed_urls)) and ingested == 0:
-        return False, f"all {skipped_kw} page(s) skipped by keyword filter", stats
-    if skipped_low_quality and skipped_low_quality >= min(lim, len(seed_urls)) and ingested == 0:
-        return False, f"all {skipped_low_quality} page(s) skipped by quality filter", stats
+    if ingested > 0:
+        if errs:
+            _LOG.warning(
+                "tbox_crawl_ingest: partial success ingested=%s failures=%s",
+                ingested,
+                "; ".join(errs[:5]),
+            )
+        return True, "", stats
+
+    if errs or skipped_low_quality or skipped_kw:
+        parts: list[str] = []
+        if errs:
+            parts.append("; ".join(errs[:20]))
+        if skipped_low_quality:
+            parts.append(f"{skipped_low_quality} page(s) skipped by quality filter")
+        if skipped_kw and not errs and not skipped_low_quality:
+            parts.append(f"all {skipped_kw} page(s) skipped by keyword filter")
+        elif skipped_kw:
+            parts.append(f"{skipped_kw} page(s) skipped by keyword filter")
+        return False, "; ".join(parts)[:65000], stats
     return True, "", stats
 
 

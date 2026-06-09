@@ -26,6 +26,21 @@ EXTRA_EXTRACT_MAIN_CONTENT = "tbox_crawl_extract_main_content"
 EXTRA_MIN_EXTRACT_CHARS = "tbox_crawl_min_extract_chars"
 
 _STRIP_WWW = re.compile(r"^www\.", re.I)
+_SCRIPT_STYLE = re.compile(r"(?is)<(script|style|noscript)[^>]*>.*?</\1>")
+_TAG = re.compile(r"(?s)<[^>]+>")
+
+
+def _normalize_text(text: str) -> str:
+    return re.sub(r"[\n\r\t ]+", " ", (text or "").replace("\u00a0", " ")).strip()
+
+
+def _fallback_html_to_text(html: str) -> str:
+    """Strip tags when trafilatura yields empty (common on CN news / portal pages)."""
+    if not html:
+        return ""
+    cleaned = _SCRIPT_STYLE.sub(" ", html)
+    cleaned = _TAG.sub(" ", cleaned)
+    return _normalize_text(cleaned)
 
 
 def parse_extract_enabled(extra_config: dict[str, Any] | None) -> bool:
@@ -59,10 +74,14 @@ def extract_main_text(body: bytes) -> str:
         config = use_config()
         config.set("DEFAULT", "include_links", "True")
         config.set("DEFAULT", "include_tables", "True")
-        text = trafilatura.extract(html, config=config) or ""
-        return re.sub(r"[\n\r]+", "\n", text).strip()
+        text = _normalize_text(trafilatura.extract(html, config=config) or "")
+        if len(text) < 80:
+            fallback = _fallback_html_to_text(html)
+            if len(fallback) > len(text):
+                text = fallback
+        return text
     except Exception:
-        return ""
+        return _fallback_html_to_text(html)
 
 
 def suggested_txt_filename(url: str, *, max_len: int = 180) -> str:
