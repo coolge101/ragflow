@@ -24,9 +24,9 @@
 - Modify: `api/db/services/tbox_crawl_ingest_service.py` — 成功/失败/outcome 埋点
 - Modify: `api/db/services/tbox_crawl_task_service.py` — discover/probe 埋点
 
-- [ ] **Step 1**: 模型 + `init_database_tables`
-- [ ] **Step 2**: `record_url_outcome(task, url, outcome, source)`
-- [ ] **Step 3**: 单测 `test_tbox_crawl_health_service.py`
+- [x] **Step 1**: 模型 + `init_database_tables`
+- [x] **Step 2**: `record_url_outcome(task, url, outcome, source)`
+- [x] **Step 3**: 单测 `test_tbox_crawl_health_service.py`
 
 ---
 
@@ -37,8 +37,8 @@
 - Modify: `api/apps/tbox_app.py` — `GET /v1/tbox/crawl/health`
 - Create: `common/tbox_crawl_outbound_probe.py` — proxy/SearXNG/Tavily 轻量探测
 
-- [ ] **Step 1**: health JSON：`searxng`, `providers`, `proxy_configured`
-- [ ] **Step 2**: 契约版本 + `web-tbox` 常量（若响应形状变更）
+- [x] **Step 1**: health JSON：`searxng`, `providers`, `proxy_configured`
+- [x] **Step 2**: 契约版本 + `web-tbox` 常量（若响应形状变更）
 
 ---
 

@@ -28,6 +28,8 @@
 | POST | `/v1/tbox/crawl/tasks` | 创建。JSON：`name`（必填）、`seed_urls`（必填，非空 `http`/`https` URL 数组，≤100 条）、`source_type`（`static_web` \| `rss` \| `http_api`，默认 `static_web`）、`run_state`（`draft` \| `ready` \| `paused`，默认 `draft`）、`schedule_cron`（可选；空串表示仅手动；若非空需 **5 段 cron**，字符集 `0-9 * / , -`）、`enabled`（布尔）、`extra_config`（对象）、`tenant_id`（可选，默认当前用户 id）、`dataset_id`（可选，须为该租户下有效知识库 id）。 |
 | PATCH | `/v1/tbox/crawl/tasks/<task_id>` | 部分更新；仅允许上述可写字段中出现在 body 的键（`dataset_id` 可置 `null` 解除绑定；`schedule_cron` 校验同创建）。 |
 | DELETE | `/v1/tbox/crawl/tasks/<task_id>` | 软删除（`status=0`）。 |
+| GET | `/v1/tbox/crawl/health` | 爬取子系统健康（SearXNG/Tavily/代理探测、推荐 discover provider）。需 **`crawl.manage`**。 |
+| GET | `/v1/tbox/crawl/tasks/<task_id>/url-health` | 任务 URL 健康分页（Phase 69.0 **`tbox_crawl_url_health`**）。 |
 | GET | `/v1/tbox/crawl/sources` | 参考源 catalog 分页列表。Query：`tenant_id`（多租户时必填）、`topic`（可选）、`page` / `page_size`。 |
 | POST | `/v1/tbox/crawl/sources` | 创建参考源。JSON：`topic`、`label`、`url`（必填 http/https）、`enabled`（默认 true）、`tenant_id`（可选）。 |
 | PATCH | `/v1/tbox/crawl/sources/<source_id>` | 部分更新 `label` / `url` / `topic` / `enabled`。 |
@@ -131,4 +133,5 @@
 | 2026-05-02 | **§1.2–1.3**：**`effective_retry_statuses`** — **`TBOX_CRAWL_RETRY_STATUSES`** / **`TBOX_CRAWL_RETRY_EXTRA_STATUSES`** / **`extra_config.tbox_crawl_retry_extra_statuses`** 可配置抓取层瞬时重试白名单；**`DEFAULT_RETRY_STATUS_CODES`** 为内建默认；**`TBOX_KB_DELIVERY_HARNESS.md` §9.4.2** 同步 |
 | 2026-05-02 | **§1.2**：**`extra_config.tbox_crawl_retry_statuses`** 任务级全量替换重试白名单（与 **`TBOX_CRAWL_RETRY_STATUSES`** 语义一致；进程级全量优先）；**`TBOX_API_BOUNDARY` §1.3** 与 **`effective_retry_statuses`** 文档串同步 |
 | 2026-06-02 | **§1.2**：**Phase 67** — **`tbox_crawl_search_*`** / **`tbox_crawl_discover_*`**（Tavily discover）；**`tbox_crawl_seen`** dedup；**`TBOX_CRAWL_TAVILY_API_KEY`** / **`TBOX_CRAWL_ACCEPT_LANGUAGE`**；成功 tick **`[tbox:TICK_OK]`** 摘要 |
+| 2026-06-09 | **契约版本 7**：Phase **69.0** — **`GET /v1/tbox/crawl/health`**、**`GET …/url-health`**；表 **`tbox_crawl_url_health`** |
 | 2026-06-08 | **契约版本 6**：**Phase 68** — SearXNG discover、URL 质量、trafilatura 正文抽取；表 **`tbox_crawl_source_catalog`**；**`/v1/tbox/crawl/sources`** CRUD + **`import-sources`** |

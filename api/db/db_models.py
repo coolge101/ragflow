@@ -1293,6 +1293,29 @@ class TboxCrawlSourceCatalog(DataBaseModel):
         indexes = ((("tenant_id", "topic", "url_canonical_hash"), True),)
 
 
+class TboxCrawlUrlHealth(DataBaseModel):
+    """Per-task URL fetch/ingest health for self-heal (Phase 69.0)."""
+
+    id = CharField(max_length=32, primary_key=True)
+    tenant_id = CharField(max_length=32, null=False, index=True)
+    task_id = CharField(max_length=32, null=False, index=True)
+    url = CharField(max_length=2048, null=False)
+    url_canonical = CharField(max_length=2048, null=False)
+    url_canonical_hash = CharField(max_length=64, null=False)
+    source = CharField(max_length=16, null=False, default="seed", help_text="seed|discover|expand|catalog")
+    success_count = IntegerField(null=False, default=0)
+    fail_count = IntegerField(null=False, default=0)
+    last_outcome = CharField(max_length=32, null=False, default="unknown", index=True)
+    last_http_status = IntegerField(null=True)
+    health_score = IntegerField(null=False, default=50, index=True)
+    auto_disabled = BooleanField(null=False, default=False, index=True)
+    status = CharField(max_length=1, null=True, default="1", index=True, help_text="1 valid 0 deleted")
+
+    class Meta:
+        db_table = "tbox_crawl_url_health"
+        indexes = ((("tenant_id", "task_id", "url_canonical_hash"), True),)
+
+
 class EvaluationDataset(DataBaseModel):
     """Ground truth dataset for RAG evaluation"""
 

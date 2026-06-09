@@ -33,6 +33,7 @@ from common.tbox_crawl_origin_throttle import OriginFetchThrottler
 from common.tbox_crawl_robots import RobotsOriginCache
 from common.tbox_crawl_ssrf_fetch import fetch_url_body_capped, suggested_filename_from_url
 from api.db.services.tbox_crawl_seen_service import content_seen, record_seen
+from api.db.services import tbox_crawl_health_service as crawl_health_svc
 from common.tbox_crawl_dedup import canonicalize_url, content_sha256
 from common.tbox_crawl_extract import (
     extract_main_text,
@@ -78,6 +79,7 @@ def ingest_static_web_seeds_into_kb(
     dedup: bool = True,
     discovered_canonical: set[str] | None = None,
     seed_canonical: set[str] | None = None,
+    task_id: str | None = None,
 ) -> tuple[bool, str, dict[str, int]]:
     """
     Fetch each seed (SSRF-safe, capped), upload as a new file under *kb*, queue parse tasks.
@@ -124,6 +126,28 @@ def ingest_static_web_seeds_into_kb(
     skipped_low_quality = 0
     ingested = 0
 
+    def _source_tag(canon: str) -> str:
+        if canon in disc:
+            return "discover"
+        if canon in seeds_set:
+            return "seed"
+        return "expand"
+
+    def _health(url: str, outcome: str, *, source: str | None = None) -> None:
+        if not task_id:
+            return
+        try:
+            canon = canonicalize_url(url)
+            crawl_health_svc.record_url_outcome(
+                tenant_id=tenant_id,
+                task_id=task_id,
+                url=url,
+                outcome=outcome,
+                source=source or _source_tag(canon),
+            )
+        except Exception as exc:
+            _LOG.debug("tbox_crawl_health record skipped url=%s err=%s", url, exc)
+
     for url in seed_urls[:scan_max]:
         if ingested >= goal:
             break
@@ -141,16 +165,19 @@ def ingest_static_web_seeds_into_kb(
                 if len(text) < min_chars:
                     skipped_low_quality += 1
                     _LOG.info("tbox_crawl_ingest: quality skip (short extract) url=%s", url)
+                    _health(url, "low_quality")
                     continue
                 body = text.encode("utf-8")
             h = content_sha256(body)
             if dedup and ds and content_seen(ds, h):
                 skipped_dup_content += 1
                 _LOG.info("tbox_crawl_ingest: content dedup skip url=%s", url)
+                _health(url, "dup")
                 continue
             if not content_matches_keywords(body, strategy.keywords):
                 skipped_kw += 1
                 _LOG.info("tbox_crawl_ingest: keyword filter skip url=%s", url)
+                _health(url, "keyword")
                 continue
             if extract_on:
                 raw_name = suggested_txt_filename(url)
@@ -161,23 +188,28 @@ def ingest_static_web_seeds_into_kb(
             err, pairs = FileService.upload_document(kb, [fobj], tenant_id, src="web")
             if err:
                 errs.append(f"{url}: {'; '.join(err)}")
+                _health(url, "http_error")
                 continue
             for doc, _blob in pairs:
                 DocumentService.run(tenant_id, doc, kb_table_num_map)
             canon = canonicalize_url(url)
             if canon and ds:
-                if canon in disc:
-                    src_tag = "discover"
-                elif canon in seeds_set:
-                    src_tag = "seed"
-                else:
-                    src_tag = "expand"
+                src_tag = _source_tag(canon)
                 record_seen(ds, canon, content_sha256=h, source=src_tag)
             ingested += 1
+            _health(url, "ok")
             _LOG.info("tbox_crawl_ingest: queued doc name=%s kb_id=%s url=%s", filename, kb.id, url)
         except Exception as exc:
             _LOG.warning("tbox_crawl_ingest failed url=%s err=%s", url, exc)
             errs.append(f"{url}: {exc}")
+            if task_id:
+                crawl_health_svc.record_url_outcome_from_error(
+                    tenant_id=tenant_id,
+                    task_id=task_id,
+                    url=url,
+                    error_message=str(exc),
+                    source=_source_tag(canonicalize_url(url) or ""),
+                )
 
     stats["ingested"] = ingested
     stats["skipped_dup_content"] = skipped_dup_content

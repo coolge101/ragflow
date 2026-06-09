@@ -33,7 +33,7 @@
 
 | 字段 | 当前值 | 说明 |
 |------|--------|------|
-| `TBOX_API_CONTRACT_VERSION`（后端常量） | **6** | `api/apps/tbox_app.py`；**`GET /v1/tbox/contract`** 与已鉴权 **`GET /v1/tbox/me`** 的 JSON 中 **`tbox_api_contract_version`** 与此一致。Phase **68** 增 **`/v1/tbox/crawl/sources`** 与 **`import-sources`**。 |
+| `TBOX_API_CONTRACT_VERSION`（后端常量） | **7** | Phase **69.0** 增 **`GET /v1/tbox/crawl/health`**、**`GET …/tasks/<id>/url-health`**。 |
 | 客户端建议 | 读取 `tbox_api_contract_version`，**≥4** 时识别 **`crawl.manage`** 等扩展权限键 | 权限全集与语义见 **`docs/TBOX_API_BOUNDARY.md`**。 |
 | 采集任务表 | **`tbox_crawl_task`** | 由 `init_database_tables` 创建；HTTP 见 **`docs/TBOX_API_BOUNDARY.md`** §1.2。 |
 

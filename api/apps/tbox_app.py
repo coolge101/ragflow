@@ -28,6 +28,7 @@ from api.apps import current_user, login_required, logout_user
 from api.db import UserTenantRole
 from api.db.db_models import UserTenant
 from api.db.services import tbox_crawl_task_service as crawl_svc
+from api.db.services import tbox_crawl_health_service as crawl_health_svc
 from api.db.services import tbox_managed_user_service as managed_users
 from api.utils.api_utils import get_json_result, get_request_json, server_error_response
 from common.constants import RetCode, StatusEnum
@@ -35,7 +36,7 @@ from common.tbox_crawl_last_error import format_crawl_worker_error
 
 # Bumped when response shape or semantics change for external clients (e.g. web-tbox).
 # Keep aligned with web-tbox/src/constants/tboxContract.ts → TBOX_API_CONTRACT_VERSION_EXPECTED.
-TBOX_API_CONTRACT_VERSION = 6
+TBOX_API_CONTRACT_VERSION = 7
 
 # UI permission keys — aligned with docs/TBOX_UI_DESIGN_DETAIL.md §2.2
 _TBOX_PERMISSIONS_ALL = (
@@ -489,6 +490,49 @@ async def crawl_tasks_run(task_id: str):
             return get_json_result(code=RetCode.EXCEPTION_ERROR, message=str(e))
         t2 = crawl_svc.get_task(task_id)
         return get_json_result(data=crawl_svc.task_row_to_dict(t2) if t2 else None)
+    except Exception as e:  # noqa: BLE001
+        return server_error_response(e)
+
+
+@manager.route("/crawl/health", methods=["GET"])  # noqa: F821
+@login_required
+async def crawl_health():
+    denied = _assert_crawl_manage()
+    if denied:
+        return denied
+    try:
+        from common.tbox_crawl_outbound_probe import build_crawl_health_report
+
+        return get_json_result(data=build_crawl_health_report())
+    except Exception as e:  # noqa: BLE001
+        return server_error_response(e)
+
+
+@manager.route("/crawl/tasks/<task_id>/url-health", methods=["GET"])  # noqa: F821
+@login_required
+async def crawl_tasks_url_health(task_id: str):
+    denied = _assert_crawl_manage()
+    if denied:
+        return denied
+    try:
+        user = current_user
+        is_super = bool(getattr(user, "is_superuser", False))
+        allowed = crawl_svc.tenant_ids_for_crawl(user.id, is_super)
+        t = crawl_svc.get_task(task_id)
+        if not t:
+            return get_json_result(code=RetCode.NOT_FOUND, message="crawl task not found")
+        if not crawl_svc.user_may_access_task(t, allowed):
+            return _crawl_task_forbidden_response()
+        page, page_size = _parse_page_args()
+        total, rows = crawl_health_svc.list_task_url_health(task_id, tenant_id=t.tenant_id, page=page, page_size=page_size)
+        return get_json_result(
+            data={
+                "total": total,
+                "page": page,
+                "page_size": page_size,
+                "items": [crawl_health_svc.health_row_to_dict(r) for r in rows],
+            }
+        )
     except Exception as e:  # noqa: BLE001
         return server_error_response(e)
 

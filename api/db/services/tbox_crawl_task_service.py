@@ -31,6 +31,7 @@ from api.db.services.tbox_crawl_ingest_service import (
     ingest_rss_seeds_into_kb,
     ingest_static_web_seeds_into_kb,
 )
+from api.db.services import tbox_crawl_health_service as crawl_health_svc
 from common.tbox_crawl_auth import validate_extra_config_no_secrets
 from common.constants import StatusEnum
 from common.misc_utils import get_uuid
@@ -546,6 +547,15 @@ def execute_crawl_task_stub_tick(task_id: str) -> None:
     if not extra.get("tbox_skip_http_probe"):
         ok, msg = probe_seed_urls(target_urls, skip_robots=skip_robots, extra_config=extra)
         if not ok:
+            if msg and ":" in msg:
+                fail_url, _, fail_rest = msg.partition(":")
+                crawl_health_svc.record_url_outcome_from_error(
+                    tenant_id=row.tenant_id,
+                    task_id=task_id,
+                    url=fail_url.strip(),
+                    error_message=fail_rest.strip() or msg,
+                    source="seed",
+                )
             record_worker_tick(task_id, ok=False, message=format_crawl_worker_error("HTTP_PROBE", msg))
             return
 
@@ -584,6 +594,7 @@ def execute_crawl_task_stub_tick(task_id: str) -> None:
             dataset_id=str(ds),
             discovered_canonical=discovered_canonical,
             seed_canonical=seed_canonical,
+            task_id=task_id,
         )
         tick_stats.ingested = ingest_stats.get("ingested", 0)
         tick_stats.skipped_dup_content = ingest_stats.get("skipped_dup_content", 0)
