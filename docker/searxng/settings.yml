@@ -1,0 +1,12 @@
+# TBOX crawl-discover profile: enable JSON API for SearxngDiscoverProvider.
+use_default_settings: true
+
+server:
+  limiter: false
+  bind_address: "0.0.0.0"
+  secret_key: "tbox-crawl-discover-dev-key"
+
+search:
+  formats:
+    - html
+    - json
