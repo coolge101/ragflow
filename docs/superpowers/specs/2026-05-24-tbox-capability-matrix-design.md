@@ -97,7 +97,10 @@
 | G2-CRAWL-DISCOVER | **搜索发现 URL**（公网检索 → 候选链接队列） | ⚠️ Agent/Tavily 仅对话检索 | ✅ Tavily + 四类模板 UI | TBOX worker | ✅ | **`common/tbox_crawl_discover.py`**；v2 SearXNG stub |
 | G2-CRAWL-DEDUP | **智能去重**（URL 规范化 + 内容指纹 + 库内跳过） | ⚠️ Connector `hash128` / 增量同步 | ✅ tick 摘要 | TBOX ingest | ✅ | 表 **`tbox_crawl_seen`**；pre/post dedup |
 | G2-CRAWL-I18N | **英文资料爬取**（英/中 query、UTF-8、preview） | ⚠️ 单 URL web 入库 | ✅ locale + Accept-Language | TBOX worker | ✅ | **`TBOX_CRAWL_ACCEPT_LANGUAGE`**；与 DISCOVER 联用 |
-| G2-CRAWL-RELEVANCE | 入库前相关性评分（LLM/规则） | ❌ | ❌ | TBOX | P2 | 过滤门户首页等低相关页；按库配置阈值 |
+| G2-CRAWL-RELEVANCE | 入库前相关性评分（LLM/规则） | ❌ | ❌ | TBOX | P2 | 过滤门户首页等低相关页；**Phase 69** |
+| G2-CRAWL-EXTRACT | **正文抽取**（trafilatura、低质量跳过） | —（TBOX） | ⬜ Phase 68 | TBOX ingest | **P1** | **`common/tbox_crawl_extract.py`**；`.txt` 入库 |
+| G2-CRAWL-SOURCES | **参考源清单**（DB catalog、导入种子） | —（TBOX） | ⬜ Phase 68 | `/v1/tbox/crawl/sources` | **P1** | 表 **`tbox_crawl_source_catalog`** |
+| G2-CRAWL-DISCOVER+ | **SearXNG Discover + URL 质量** | —（TBOX） | ⬜ Phase 68 | TBOX worker | **P1** | Docker **searxng**；**`tbox_crawl_url_quality.py`** |
 
 ### G3 — LLM 对话
 
@@ -141,7 +144,9 @@
 | **1** | P0 收尾 | P0 行 | 去品牌、Chat Apps 文档、镜像含 TBOX 后端、验收对齐 |
 | **2** | P1 补齐 | P1 行 | MD/PDF 导出 → 三类场景模板 → 爬取关键词 UI → G1 手测 |
 | **3** | P2 扩展 | P2 行 | Office 导出、爬取高级源、文档高级能力；矩阵复审 |
-| **67** | **G2 发现与去重（产品优先）** | **P1** | **四类专题库**（法规与标准、技术趋势、市场趋势、产品/行业情报）共用 **DISCOVER + DEDUP + I18N**；plan **`2026-06-02-tbox-g2-discover-dedup-plan.md`** · 手测 **`TBOX_5180_HANDTEST_2026-06-02.md`** |
+| **67** | **G2 发现与去重** | **P1** | **DISCOVER（Tavily）+ DEDUP + I18N**；plan **`2026-06-02-tbox-g2-discover-dedup-plan.md`** · 手测 **`TBOX_5180_HANDTEST_2026-06-02.md`** |
+| **68** | **G2 爬取内容质量（首要）** | **P1** | **B** SearXNG + URL 质量 → **A** trafilatura 正文 → **C** 参考源 DB；spec **`2026-06-08-tbox-g2-crawl-quality-design.md`** · plan **`2026-06-08-tbox-phase68-plan.md`** |
+| **69** | **G2-CRAWL-RELEVANCE** | P2 | LLM 入库前相关性（可选闸门） |
 | **4** | G1 闭环 + 交付硬化 | P1 缺口 | G1 冒烟修复、Harness 同步；S5 Docker 准备（见 phase4 plan） |
 | **5** | G3 + S6/S7 | P0/P1 | DeepSeek API 冒烟、上游合并 Runbook、发版对抗 checklist（见 phase5 plan） |
 | **6** | 发版门禁 + S0 | 运维 | `tbox_release_smoke.sh`、基线 commit、Excel UI 提示（见 phase6 plan） |
@@ -244,6 +249,7 @@
 
 | 日期 | 变更 |
 |------|------|
+| 2026-06-08 | **Phase 68** G2-CRAWL-EXTRACT / SOURCES / DISCOVER+；§6 Phase 68–69 |
 | 2026-06-02 | **G2-CRAWL-I18N**、**G1-DOC-ORIGINAL** 入矩阵；Phase 67 扩展为**四类专题知识库**中英爬取 + 去重；手测 **`TBOX_5180_HANDTEST_2026-06-02.md`** |
 | 2026-06-02 | **G2-CRAWL-DISCOVER / DEDUP / RELEVANCE** 入矩阵；**§6 Phase 67** 列为下一阶段 **P1 优先**（5180 手测：种子首页 ≠ TBOX 法规、无公网发现/内容去重） |
 | 2026-06-02 | §8 扩充：**G3-CITATION-UX**（Phase 16）、**G3-SEARCH-UX**（Phase 17）；手测结论「功能已实现、输出效果待 P2 改进」 |
