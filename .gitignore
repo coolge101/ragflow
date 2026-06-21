@@ -53,6 +53,9 @@ uv-x86_64*.tar.gz
 .lh/
 .venv
 scripts/tbox_smoke.env
+scripts/tbox_sync.env
+backups/tbox-sync-*/
+backups/tbox-migration-*/
 docker/data
 
 # Nested full-repo checkouts / local platform trees (accidental copies; keep this repo lean)
@@ -159,6 +162,9 @@ web_modules/
 .env.production.local
 .env.local
 scripts/tbox_smoke.env
+scripts/tbox_sync.env
+backups/tbox-sync-*/
+backups/tbox-migration-*/
 
 # parcel-bundler cache (https://parceljs.org/)
 .cache

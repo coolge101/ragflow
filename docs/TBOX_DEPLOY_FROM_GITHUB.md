@@ -3,6 +3,7 @@
 > **重要前提**：本文中的 TBOX 脚本与 `api/apps/tbox_app.py` 等改动，必须先存在于 **GitHub 上你实际 `git clone` 的分支**里。
 > 若服务器上执行 `bash scripts/deploy-on-new-server.sh` 报 **No such file or directory**，说明当前 clone 的仍是 **InfiniFlow 上游 `main`**（或尚未 push 的本地分支），**不是**含 TBOX 的部署分支。
 > 请先完成 **§0.1 把 TBOX 代码推到 GitHub**，或在服务器上用 **§0.2 rsync** 从已改好的开发机同步整份仓库，再执行下文步骤。
+> **本机 ↔ 远端（含 Windows Docker Desktop + 知识库数据）** 见 **[`TBOX_SYNC_LOCAL_REMOTE.md`](./TBOX_SYNC_LOCAL_REMOTE.md)**（`scripts/tbox_sync_push.sh` / `tbox_sync_pull.ps1`）。
 
 本文基于**含 TBOX 扩展的仓库树**整理部署路径：**`git clone` → 本地下载依赖 → 本地构建 `ragflow_deps` → 构建 API 镜像 → 启动栈 → 前端**。
 请勿跳过 **「本地 deps」** 步骤；**仅 `docker pull infiniflow/ragflow_deps:latest` 再 `docker build` 是错误流程**。
