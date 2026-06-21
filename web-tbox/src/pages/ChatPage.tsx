@@ -17,6 +17,7 @@ import { hasPermission } from "../constants/permissions";
 import { CHAT_APP_SCENARIOS } from "../utils/chatAppScenarioTemplates";
 import { useAuth } from "../context/AuthContext";
 import { useNarrowLayout } from "../hooks/useNarrowLayout";
+import { sanitizeChatFinal } from "../utils/chatStreamSanitize";
 import {
   buildChatPrintHtml,
   downloadUtf8File,
@@ -41,7 +42,8 @@ function mapSessionMessages(raw: SessionMessage[] | undefined): ChatMessage[] {
     .filter((m) => m.role === "user" || m.role === "assistant")
     .map((m) => ({
       role: m.role as "user" | "assistant",
-      content: String(m.content ?? ""),
+      content:
+        m.role === "assistant" ? sanitizeChatFinal(String(m.content ?? "")) : String(m.content ?? ""),
     }));
 }
 
@@ -307,7 +309,7 @@ export function ChatPage() {
           (ev) => {
             if (ev.type === "delta") {
               acc += ev.answer;
-              setStreaming(acc);
+              setStreaming(sanitizeChatFinal(acc));
               if (ev.reference !== undefined && ev.reference !== null) {
                 const ref = ev.reference as Record<string, unknown>;
                 if (Object.keys(ref).length > 0) {
@@ -316,11 +318,12 @@ export function ChatPage() {
                 }
               }
             } else if (ev.type === "done") {
-              if (acc.trim()) {
+              const finalText = sanitizeChatFinal(acc);
+              if (finalText.trim()) {
                 const ref = liveReferenceRef.current;
                 setMessages((prev) => [
                   ...prev,
-                  { role: "assistant", content: acc, reference: ref ?? undefined },
+                  { role: "assistant", content: finalText, reference: ref ?? undefined },
                 ]);
               }
               setStreaming(null);
@@ -328,11 +331,12 @@ export function ChatPage() {
               if (ev.message === "已取消") {
                 setStreaming(null);
                 setError(null);
-                if (acc.trim()) {
+                const finalText = sanitizeChatFinal(acc);
+                if (finalText.trim()) {
                   const ref = liveReferenceRef.current;
                   setMessages((prev) => [
                     ...prev,
-                    { role: "assistant", content: acc, reference: ref ?? undefined },
+                    { role: "assistant", content: finalText, reference: ref ?? undefined },
                   ]);
                 }
                 return;
@@ -342,10 +346,11 @@ export function ChatPage() {
               if (!acc.trim()) {
                 setMessages((prev) => prev.slice(0, -1));
               } else {
+                const finalText = sanitizeChatFinal(acc);
                 const ref = liveReferenceRef.current;
                 setMessages((prev) => [
                   ...prev,
-                  { role: "assistant", content: acc, reference: ref ?? undefined },
+                  { role: "assistant", content: finalText, reference: ref ?? undefined },
                 ]);
               }
             }

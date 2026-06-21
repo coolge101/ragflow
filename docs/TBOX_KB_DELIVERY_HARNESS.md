@@ -246,6 +246,7 @@
 | 2026-05-02 | **§9.4.2**：**`extra_config.tbox_crawl_retry_statuses`** 任务级全量白名单（**`effective_retry_statuses`** 第二优先级） | **`TBOX_API_BOUNDARY` §1.2** 同步 |
 | 2026-05-24 | **§1** 升级为 G1–G5「咨询/决策/辅导」产品目标；新增能力矩阵 spec 与下一阶段 plan；§7.5 DeepSeek 手测仅 `web-tbox` |
 | 2026-05-30 | **Phase 11**：post-merge 全链路验收、Docker build 磁盘 recovery |
+| 2026-06-10 | **Phase 69 ✅** 全量交付（69.0–69.3）；Harness §9.0 **Phase 70 G3 UX** 为当前 P1 |
 | 2026-06-09 | **Phase 69.0–69.2** G2-CRAWL-SELF-HEAL 入 Harness §9.0 / S4；**RELEVANCE → 69.3** |
 | 2026-06-08 | **Phase 68**（G2 内容质量 B→A→C）入矩阵 §6 / Harness S4；spec **`2026-06-08-tbox-g2-crawl-quality-design.md`** |
 | 2026-06-02 | **Phase 67** 扩展四类专题库 + **G2-CRAWL-I18N**；手测归档 **`TBOX_5180_HANDTEST_2026-06-02.md`** |
@@ -283,7 +284,7 @@
 | **S1** | **已推进** | `docs/TBOX_API_BOUNDARY.md`；`api/apps/tbox_app.py`：`/health`、`/contract`；**`/me`（鉴权）**、**`/logout`**；`/me` 契约版本当前为 **v4**（`permissions` 含 `crawl.manage` 等；以 `TBOX_API_CONTRACT_VERSION` 与 `GET /v1/tbox/contract` 为准）。租户列表来自 `UserTenant`；更细「一一对应」字段表仍可在 S3 补全。 |
 | **S2** | **已推进** | `web-tbox/`：**`/login` 邮箱密码登录**（RSA → `/api/v1/auth/login`）、**`/` 控制台**拉取 **`/v1/tbox/me`**（带 `Authorization`）、**退出** 调 **`POST /v1/tbox/logout`**。IA/权限/视觉以 **`docs/TBOX_UI_DESIGN_OVERVIEW.md`**、**`docs/TBOX_UI_DESIGN_DETAIL.md`** 为准；参考原型见 **§2.1**。 |
 | **S3** | **已启动** | **知识库 `/documents`**（含 **文档列表/上传/删除**）；**对话 `/`**；**检索 `/search`**；**用户 `/users`**；**审计 `/audit`**（ingestions）；**`permissions`**（**v4** 含 `crawl.manage`）。**整库 ZIP 导出** 仍视官方 REST 暴露情况。 |
-| **S4** | **已推进** | **`/crawl`** + worker tick；Phase **67–68** 已交付。**当前 P1 首要**：**Phase 69.0–69.2 爬取自愈**（无确认 auto PATCH 种子、Discover `provider=auto`、代理/国内 SearXNG 引擎）— spec **`2026-06-09-tbox-g2-crawl-self-heal-design.md`**。 |
+| **S4** | **已推进** | **`/crawl`** + worker tick；Phase **67–69** 已交付（含 **69.3 RELEVANCE**）。**当前 P1 首要**：**Phase 70 G3 UX**（对话答案净化、Citation 侧栏、检索结果可读性）— spec **`2026-06-10-tbox-g3-ux-polish-design.md`**。 |
 | **S5–S7** | **S5–S7 已推进** | **S5** checklist · **S6** merge runbook + **`tbox_upstream_divergence.sh`** · **S7** **`TBOX_S7_ADVERSARIAL_SMOKE.md`** |
 | **S6 merge** | **2026-05-30 ✅** | `origin/main` @ `cd18cfab7` → `tbox-deploy` @ `f9bd37fdd`；**behind 0 / ahead 93** — 见 **`TBOX_UPSTREAM_MERGE_RUNBOOK.md`** §4 |
 | **Phase 10** | **栈加固 ✅** | `tbox_verify_stack_image.sh`、镜像内置 `scripts/` — phase10 plan |
@@ -296,8 +297,9 @@
 | **Phase 17** | **S6 漂移例行 + 检索高亮** | Runbook §5 @ ahead 114；`SearchResultList` — phase17 plan；**⚠️ 2026-06-02 手测：高亮已实现，检索结果整体输出效果不理想 → 矩阵 §8 G3-SEARCH-UX** |
 | **Phase 67** | **G2 发现与去重** | **DISCOVER + DEDUP + I18N** — **`2026-06-02-tbox-g2-discover-dedup-plan.md`** |
 | **Phase 68** | **G2 爬取内容质量 ✅** | **SearXNG + URL 质量 + trafilatura + 参考源 DB** — **`2026-06-08-tbox-phase68-plan.md`** |
-| **Phase 69.0–69.2** | **G2-CRAWL-SELF-HEAL（P1 首要）** | HEALTH → SEED-AUTO → DISCOVER-AUTO — **`2026-06-09-tbox-phase69-plan.md`** |
-| **Phase 69.3** | **G2-CRAWL-RELEVANCE** | 规则/LLM 入库前相关性闸门 — spec **`2026-06-10-tbox-g2-crawl-relevance-design.md`** |
+| **Phase 69.0–69.2** | **G2-CRAWL-SELF-HEAL ✅** | HEALTH → SEED-AUTO → DISCOVER-AUTO — **`2026-06-09-tbox-phase69-plan.md`** @ `3e1049a9b` |
+| **Phase 69.3** | **G2-CRAWL-RELEVANCE ✅** | 规则/LLM 入库前相关性闸门 — spec **`2026-06-10-tbox-g2-crawl-relevance-design.md`** |
+| **Phase 70** | **G3 UX 产品化（P1 首要）** | **ANSWER** 流式净化 → **CITATION** 侧栏/脚注 → **SEARCH** 结果卡片 — spec **`2026-06-10-tbox-g3-ux-polish-design.md`** |
 | **Phase 18** | **双账号 smoke env** | `tbox_smoke.env.example` + **`TBOX_SMOKE_ENV.md`** — phase18 plan |
 | **Phase 19** | **ChunkListPanel 共用** | `chunkDisplay.ts` + 引用/检索薄包装 — phase19 plan |
 | **Phase 20** | **chunk/citation 单元测试** | `web-tbox` Vitest 12 cases — phase20 plan |

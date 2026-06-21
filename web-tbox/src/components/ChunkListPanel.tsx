@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 import type { ChunkDisplayItem } from "../utils/chunkDisplay";
-import { formatSimilaritySuffix } from "../utils/chunkDisplay";
+import { formatSimilarityPercent, splitHighlightSegments } from "../utils/chunkDisplay";
 
 type Props = {
   items: ChunkDisplayItem[];
@@ -12,11 +12,12 @@ type Props = {
   /** compact：引用侧栏；comfortable：检索结果 */
   density?: "compact" | "comfortable";
   selectLabelPrefix?: string;
+  highlightQuery?: string;
 };
 
 const DENSITY = {
-  compact: { gap: "0.65rem", btnPad: "0.45rem 0.55rem", btnBg: "#fafafa", marginLeft: "-1rem" },
-  comfortable: { gap: "0.75rem", btnPad: "0.75rem 1rem", btnBg: "#fff", marginLeft: undefined as string | undefined },
+  compact: { gap: "0.65rem", btnPad: "0.55rem 0.65rem", btnBg: "#fafafa", marginLeft: "-1rem" },
+  comfortable: { gap: "0.75rem", btnPad: "0.85rem 1rem", btnBg: "#fff", marginLeft: undefined as string | undefined },
 } as const;
 
 /** 可点击高亮的 chunk 列表（对话引用侧栏 / 检索结果共用） */
@@ -29,6 +30,7 @@ export function ChunkListPanel({
   listAs = "ul",
   density = "compact",
   selectLabelPrefix = "片段",
+  highlightQuery = "",
 }: Props) {
   const itemRefs = useRef<Map<number, HTMLLIElement>>(new Map());
   const ListTag = listAs;
@@ -57,7 +59,7 @@ export function ChunkListPanel({
       }}
     >
       {items.map((item, i) => {
-        const sim = formatSimilaritySuffix(item.similarity);
+        const pct = formatSimilarityPercent(item.similarity);
         const active = activeIndex === i;
 
         return (
@@ -86,16 +88,30 @@ export function ChunkListPanel({
                   padding: d.btnPad,
                   borderRadius: 8,
                   border: active ? "1px solid var(--color-primary)" : "1px solid var(--border-subtle)",
-                  background: active ? "rgba(37, 99, 235, 0.08)" : d.btnBg,
+                  borderLeft: active ? "3px solid var(--color-primary)" : "1px solid var(--border-subtle)",
+                  background: active ? "#eff6ff" : d.btnBg,
                   cursor: "pointer",
-                  whiteSpace: "pre-wrap",
                   wordBreak: "break-word",
                 }}
               >
-                <ChunkBody doc={item.doc} sim={sim} text={item.text} index={i} />
+                <ChunkBody
+                  doc={item.doc}
+                  pct={pct}
+                  text={item.text}
+                  index={i}
+                  highlightQuery={highlightQuery}
+                  snippetLines={density === "comfortable" ? 4 : 2}
+                />
               </button>
             ) : (
-              <ChunkBody doc={item.doc} sim={sim} text={item.text} index={i} />
+              <ChunkBody
+                doc={item.doc}
+                pct={pct}
+                text={item.text}
+                index={i}
+                highlightQuery={highlightQuery}
+                snippetLines={density === "comfortable" ? 4 : 2}
+              />
             )}
           </li>
         );
@@ -104,20 +120,88 @@ export function ChunkListPanel({
   );
 }
 
-function ChunkBody({ doc, sim, text, index }: { doc: string; sim: string; text: string; index: number }) {
+function ChunkBody({
+  doc,
+  pct,
+  text,
+  index,
+  highlightQuery,
+  snippetLines,
+}: {
+  doc: string;
+  pct: string | null;
+  text: string;
+  index: number;
+  highlightQuery: string;
+  snippetLines: number;
+}) {
+  const segments = splitHighlightSegments(text.slice(0, 1200), highlightQuery);
+
   return (
     <>
-      <div style={{ fontWeight: 600, color: "var(--color-primary)", marginBottom: 4 }}>
-        <span className="muted" style={{ fontWeight: 500, marginRight: 6 }}>
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 8,
+          marginBottom: 6,
+          minWidth: 0,
+        }}
+      >
+        <span className="muted" style={{ fontWeight: 500, flexShrink: 0 }}>
           {index + 1}.
         </span>
-        {doc}
-        <span className="muted" style={{ fontWeight: 400 }}>
-          {sim}
+        <span
+          style={{
+            fontWeight: 600,
+            color: "var(--color-primary)",
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+            whiteSpace: "nowrap",
+            flex: 1,
+          }}
+          title={doc}
+        >
+          {doc}
         </span>
+        {pct ? (
+          <span
+            style={{
+              flexShrink: 0,
+              fontSize: "0.72rem",
+              fontWeight: 600,
+              padding: "0.1rem 0.45rem",
+              borderRadius: 999,
+              background: "#e0e7ff",
+              color: "#3730a3",
+            }}
+          >
+            {pct}
+          </span>
+        ) : null}
       </div>
-      <div className="muted" style={{ whiteSpace: "pre-wrap", wordBreak: "break-word" }}>
-        {text.slice(0, 1200)}
+      <div
+        className="muted"
+        style={{
+          display: "-webkit-box",
+          WebkitLineClamp: snippetLines,
+          WebkitBoxOrient: "vertical",
+          overflow: "hidden",
+          wordBreak: "break-word",
+        }}
+      >
+        {segments.map((seg, si) =>
+          seg.kind === "mark" ? (
+            <mark
+              key={si}
+              style={{ background: "#fef08a", color: "inherit", padding: "0 0.1em", borderRadius: 2 }}
+            >
+              {seg.value}
+            </mark>
+          ) : (
+            <span key={si}>{seg.value}</span>
+          ),
+        )}
         {text.length > 1200 ? "…" : ""}
       </div>
     </>

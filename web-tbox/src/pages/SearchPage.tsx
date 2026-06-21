@@ -1,8 +1,9 @@
-import { FormEvent, useCallback, useEffect, useState } from "react";
+import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import { ApiErrorBanner } from "../components/ApiErrorBanner";
 import { SearchResultList, searchChunkSnippet } from "../components/SearchResultList";
 import { listDatasets, type DatasetRow } from "../api/datasets";
 import { searchDataset, type ChunkRow } from "../api/datasetSearch";
+import { maxChunkSimilarity } from "../utils/chunkDisplay";
 import {
   buildSearchPrintHtml,
   downloadUtf8File,
@@ -118,6 +119,17 @@ export function SearchPage() {
     chunks.length === 0 &&
     !loadingSearch &&
     !searchError;
+  const showWeakHit =
+    lastSuccessSearchKey !== null &&
+    lastSuccessSearchKey === currentSearchKey &&
+    chunks.length > 0 &&
+    maxChunkSimilarity(chunks) < 0.35;
+
+  const lastQuery = useMemo(() => {
+    if (!lastSuccessSearchKey) return "";
+    const tab = lastSuccessSearchKey.indexOf("\t");
+    return tab >= 0 ? lastSuccessSearchKey.slice(tab + 1) : "";
+  }, [lastSuccessSearchKey]);
   const showKbEmpty = !loadingList && !listError && datasets.length === 0;
   const showHintBeforeSearch =
     datasets.length > 0 &&
@@ -372,10 +384,26 @@ export function SearchPage() {
           <p className="muted" style={{ fontSize: "0.85rem", margin: "0 0 0.75rem" }}>
             点击结果条目可高亮查看；切换检索会清空选中。
           </p>
+          {showWeakHit ? (
+            <div
+              className="muted"
+              style={{
+                marginBottom: "0.75rem",
+                padding: "0.65rem 0.85rem",
+                background: "#fff7ed",
+                border: "1px solid #fed7aa",
+                borderRadius: 8,
+                fontSize: "0.88rem",
+              }}
+            >
+              最高相似度较低，结果可能与问题关联较弱。建议换关键词、换知识库，或在对话应用中增大 top_n。
+            </div>
+          ) : null}
           <SearchResultList
             chunks={chunks}
             activeIndex={activeResultIndex}
             onSelectChunk={setActiveResultIndex}
+            highlightQuery={lastQuery}
           />
         </section>
       ) : null}

@@ -31,6 +31,7 @@ from common.data_source.rss_connector import RSSConnector
 from common.tbox_crawl_api import api_item_to_document, extract_api_items, parse_api_config
 from common.tbox_crawl_origin_throttle import OriginFetchThrottler
 from common.tbox_crawl_robots import RobotsOriginCache
+from common.tbox_crawl_encoding import mime_from_content_type, normalize_html_bytes_for_storage
 from common.tbox_crawl_ssrf_fetch import fetch_url_body_capped, suggested_filename_from_url
 from api.db.services.tbox_crawl_seen_service import content_seen, record_seen
 from api.db.services import tbox_crawl_health_service as crawl_health_svc
@@ -167,7 +168,7 @@ def ingest_static_web_seeds_into_kb(
                 extra_config=extra_config,
             )
             if extract_on:
-                text = extract_main_text(body)
+                text = extract_main_text(body, ctype)
                 if len(text) < min_chars:
                     skipped_low_quality += 1
                     _LOG.info("tbox_crawl_ingest: quality skip (short extract) url=%s", url)
@@ -192,6 +193,9 @@ def ingest_static_web_seeds_into_kb(
                     _health(url, "relevance")
                     continue
                 body = text.encode("utf-8")
+            else:
+                if "html" in mime_from_content_type(ctype):
+                    body = normalize_html_bytes_for_storage(body, ctype)
             h = content_sha256(body)
             if dedup and ds and content_seen(ds, h):
                 skipped_dup_content += 1

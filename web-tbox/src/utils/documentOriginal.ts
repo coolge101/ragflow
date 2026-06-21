@@ -7,6 +7,21 @@ function authOnly(): HeadersInit {
   return a ? { Authorization: a } : {};
 }
 
+/** Blob preview defaults to Latin-1 unless charset is set on text/* types. */
+export function withUtf8Charset(contentType: string | undefined): string | undefined {
+  if (!contentType) {
+    return contentType;
+  }
+  const base = contentType.split(";")[0]?.trim().toLowerCase();
+  if (!base || !["text/html", "text/plain", "text/markdown", "text/csv"].includes(base)) {
+    return contentType;
+  }
+  if (/charset=/i.test(contentType)) {
+    return contentType;
+  }
+  return `${base};charset=utf-8`;
+}
+
 /** GET /api/v1/documents/:id/preview — raw file bytes (upload + crawl ingest). */
 export async function fetchDocumentOriginalBlob(
   docId: string,
@@ -48,8 +63,9 @@ export async function openDocumentOriginalInNewTab(
   if (error || !blob) {
     return { ok: false, error: error || "无法读取原文" };
   }
-  const type =
+  const rawType =
     contentType && contentType !== "application/octet-stream" ? contentType : guessMimeFromName(filename);
+  const type = withUtf8Charset(rawType);
   const viewBlob = type && blob.type !== type ? blob.slice(0, blob.size, type) : blob;
   const url = URL.createObjectURL(viewBlob);
   const win = window.open(url, "_blank", "noopener,noreferrer");

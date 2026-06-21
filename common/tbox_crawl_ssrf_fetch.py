@@ -313,7 +313,8 @@ def fetch_url_body_capped(
     """
     GET *url* with manual redirect handling; each hop passes :func:`assert_url_is_safe`.
 
-    Returns ``(body, content_type)`` where content_type is stripped of parameters.
+    Returns ``(body, content_type)`` where *content_type* is the raw ``Content-Type`` header
+    (may include ``charset=``; use :func:`common.tbox_crawl_encoding.mime_from_content_type` for MIME only).
     Raises ``ValueError`` on HTTP errors, empty body, or oversize beyond *max_bytes* (read is capped).
 
     If *missing_ok_statuses* is set (e.g. ``frozenset({404})``) and the final status is in it, the body is
@@ -350,8 +351,8 @@ def fetch_url_body_capped(
             raise ValueError(f"HTTP {response.status_code}")
 
         ct = response.headers.get("Content-Type")
-        if ct and ";" in ct:
-            ct = ct.split(";", 1)[0].strip()
+        if ct:
+            ct = ct.strip()
 
         buf = bytearray()
         for chunk in response.iter_content(chunk_size=65536):

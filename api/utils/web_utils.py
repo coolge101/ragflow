@@ -119,9 +119,29 @@ def should_force_attachment(ext: str | None, content_type: str | None = None) ->
     return normalized_type in FORCE_ATTACHMENT_CONTENT_TYPES
 
 
+_UTF8_TEXT_CONTENT_TYPES = {
+    "text/html",
+    "text/plain",
+    "text/markdown",
+    "text/csv",
+}
+
+
+def with_utf8_charset(content_type: str | None) -> str | None:
+    """Ensure text/* preview responses declare UTF-8 (crawl ingest stores CN text as UTF-8)."""
+    if not content_type:
+        return content_type
+    base = content_type.split(";", 1)[0].strip().lower()
+    if base not in _UTF8_TEXT_CONTENT_TYPES:
+        return content_type
+    if "charset=" in content_type.lower():
+        return content_type
+    return f"{content_type}; charset=utf-8"
+
+
 def apply_safe_file_response_headers(response, content_type: str | None, ext: str | None = None):
     if content_type:
-        response.headers.set("Content-Type", content_type)
+        response.headers.set("Content-Type", with_utf8_charset(content_type))
     force_attachment = should_force_attachment(ext, content_type)
     if force_attachment:
         response.headers.set("X-Content-Type-Options", "nosniff")

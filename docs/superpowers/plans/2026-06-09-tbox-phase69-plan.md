@@ -123,3 +123,11 @@ python scripts/tbox_phase69_crawl_self_heal_smoke.py
 ## Out of scope
 
 - 无头浏览器、Firecrawl
+
+---
+
+## Closure（2026-06-10）
+
+- **交付 commit**：`3e1049a9b`（Task 5 UI + smoke + Walkthrough）；前置 69.0–69.3 @ `42c97bf6f`…`22c880f6c`
+- **Harness / 矩阵**：Phase 69 全量 ✅；**Phase 70 G3 UX** 为下一 P1 — spec **`2026-06-10-tbox-g3-ux-polish-design.md`**
+- **5180 验收**：Walkthrough 步骤 G；smoke **`scripts/tbox_phase69_crawl_self_heal_smoke.py`**

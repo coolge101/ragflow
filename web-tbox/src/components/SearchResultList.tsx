@@ -6,10 +6,16 @@ type Props = {
   chunks: ChunkRow[];
   activeIndex?: number | null;
   onSelectChunk?: (index: number) => void;
+  highlightQuery?: string;
 };
 
 /** 检索结果列表：可点击高亮，与对话页引用侧栏交互一致 */
-export function SearchResultList({ chunks, activeIndex = null, onSelectChunk }: Props) {
+export function SearchResultList({
+  chunks,
+  activeIndex = null,
+  onSelectChunk,
+  highlightQuery = "",
+}: Props) {
   const items = chunks.map((c, i) => chunkRowToDisplayItem(c, i));
 
   return (
@@ -22,6 +28,7 @@ export function SearchResultList({ chunks, activeIndex = null, onSelectChunk }: 
       listAs="ol"
       density="comfortable"
       selectLabelPrefix="结果"
+      highlightQuery={highlightQuery}
     />
   );
 }

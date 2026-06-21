@@ -22,6 +22,8 @@ import re
 from typing import Any
 from urllib.parse import urlparse
 
+from common.tbox_crawl_encoding import decode_response_body
+
 EXTRA_EXTRACT_MAIN_CONTENT = "tbox_crawl_extract_main_content"
 EXTRA_MIN_EXTRACT_CHARS = "tbox_crawl_min_extract_chars"
 
@@ -60,13 +62,10 @@ def parse_min_extract_chars(extra_config: dict[str, Any] | None) -> int:
         return 200
 
 
-def extract_main_text(body: bytes) -> str:
+def extract_main_text(body: bytes, content_type: str | None = None) -> str:
     if not body:
         return ""
-    try:
-        html = body.decode("utf-8", errors="ignore")
-    except Exception:
-        html = body.decode("latin-1", errors="ignore")
+    html = decode_response_body(body, content_type)
     try:
         import trafilatura  # type: ignore
         from trafilatura.settings import use_config  # type: ignore

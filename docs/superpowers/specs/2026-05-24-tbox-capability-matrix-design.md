@@ -101,7 +101,7 @@
 | G2-CRAWL-EXTRACT | **正文抽取**（trafilatura、低质量跳过） | —（TBOX） | ✅ Phase 68 | TBOX ingest | **P1** | **`common/tbox_crawl_extract.py`**；`.txt` 入库 |
 | G2-CRAWL-SOURCES | **参考源清单**（DB catalog、导入种子） | —（TBOX） | ✅ Phase 68 | `/v1/tbox/crawl/sources` | **P1** | 表 **`tbox_crawl_source_catalog`** |
 | G2-CRAWL-DISCOVER+ | **SearXNG Discover + URL 质量** | —（TBOX） | ✅ Phase 68 | TBOX worker | **P1** | Docker **searxng**；**`tbox_crawl_url_quality.py`** |
-| G2-CRAWL-SELF-HEAL | **爬取自愈**（健康观测→无确认 PATCH 种子→Discover 自动路由） | —（TBOX） | ⬜ Phase 69.0–69.2 | TBOX worker + PATCH | **P1** | **`tbox_crawl_url_health`**；**`provider=auto`**；代理/国内引擎；spec **`2026-06-09-tbox-g2-crawl-self-heal-design.md`** |
+| G2-CRAWL-SELF-HEAL | **爬取自愈**（健康观测→无确认 PATCH 种子→Discover 自动路由） | —（TBOX） | ✅ Phase 69.0–69.3 | TBOX worker + PATCH | ✅ | **`tbox_crawl_url_health`**；**`provider=auto`**；heal-log UI @ `3e1049a9b` |
 
 ### G3 — LLM 对话
 
@@ -147,10 +147,14 @@
 | **3** | P2 扩展 | P2 行 | Office 导出、爬取高级源、文档高级能力；矩阵复审 |
 | **67** | **G2 发现与去重** | **P1** | **DISCOVER（Tavily）+ DEDUP + I18N**；plan **`2026-06-02-tbox-g2-discover-dedup-plan.md`** · 手测 **`TBOX_5180_HANDTEST_2026-06-02.md`** |
 | **68** | **G2 爬取内容质量** | **P1** | **B** SearXNG + URL 质量 → **A** trafilatura 正文 → **C** 参考源 DB；spec **`2026-06-08-tbox-g2-crawl-quality-design.md`** · plan **`2026-06-08-tbox-phase68-plan.md`** |
-| **69.0** | **G2-CRAWL-HEALTH** | **P1** | URL 健康表 + tick 埋点 + **`GET /v1/tbox/crawl/health`** |
-| **69.1** | **G2-CRAWL-SEED-AUTO** | **P1** | **无确认** 自动 PATCH 坏种子 + catalog 补种 + audit |
-| **69.2** | **G2-CRAWL-DISCOVER-AUTO** | **P1** | **`provider=auto`**；SearXNG 引擎 overlay；**`TBOX_CRAWL_HTTP_PROXY`**；国内引擎 allowlist |
-| **69.3** | **G2-CRAWL-RELEVANCE** | P2 | 规则/LLM 入库前相关性闸门；`skipped_relevance` |
+| **69.0** | **G2-CRAWL-HEALTH** | ✅ | URL 健康表 + tick 埋点 + **`GET /v1/tbox/crawl/health`** |
+| **69.1** | **G2-CRAWL-SEED-AUTO** | ✅ | **无确认** 自动 PATCH 坏种子 + catalog 补种 + audit |
+| **69.2** | **G2-CRAWL-DISCOVER-AUTO** | ✅ | **`provider=auto`**；SearXNG 引擎 overlay；**`TBOX_CRAWL_HTTP_PROXY`** |
+| **69.3** | **G2-CRAWL-RELEVANCE** | ✅ | 规则/LLM 入库前相关性闸门；`skipped_relevance` |
+| **70.0** | **G3-CHAT-ANSWER-UX** | **P1** | SSE 净化内部标记；用户可见正文专业化 |
+| **70.1** | **G3-CITATION-UX** | **P1** | 引用脚注/卡片；`ReferenceChunks` 侧栏信息架构 |
+| **70.2** | **G3-SEARCH-UX** | **P1** | 检索结果卡片；得分/片段/高亮对比度；弱命中引导 |
+| **70.3** | **G3-SCENARIO 验收** | P1 | 咨询/决策/辅导三套模板 × Phase 70 UX 联调手测 |
 | **4** | G1 闭环 + 交付硬化 | P1 缺口 | G1 冒烟修复、Harness 同步；S5 Docker 准备（见 phase4 plan） |
 | **5** | G3 + S6/S7 | P0/P1 | DeepSeek API 冒烟、上游合并 Runbook、发版对抗 checklist（见 phase5 plan） |
 | **6** | 发版门禁 + S0 | 运维 | `tbox_release_smoke.sh`、基线 commit、Excel UI 提示（见 phase6 plan） |
@@ -221,9 +225,9 @@
 
 | ID | 范围 | 问题 | 典型现象 | 优先级 | 记录 |
 |----|------|------|----------|--------|------|
-| **G3-CHAT-ANSWER-UX** | `/` 对话正文 | 答案暴露检索/推理过程，呈现不专业 | `<retrieving>`、`Searching by …`、`Retrieval N results`、`Next step is to search` 等内部链路透出；正文像调试日志 | **P2** | 2026-06-02 |
-| **G3-CITATION-UX** | Phase 16 · `/` | Citation 联动**已实现**，但**可用性与观感差** | `[ID:n]` 难读/难点；侧栏 chunk 排版粗糙；高亮不明显；引用与正文割裂；RAG 答案质量差时联动价值低 | **P2** | 2026-06-02 |
-| **G3-SEARCH-UX** | Phase 17 · `/search` | 检索结果列表**已实现高亮**，但**整体输出效果不理想** |  snippet 难读、排序/得分不直观；点击高亮弱；无命中/弱命中提示不足；与「咨询输出」体验不一致 | **P2** | 2026-06-02 |
+| **G3-CHAT-ANSWER-UX** | `/` 对话正文 | 答案暴露检索/推理过程，呈现不专业 | `<retrieving>`、`Searching by …`、`Retrieval N results`、`Next step is to search` 等内部链路透出；正文像调试日志 | **P1 → Phase 70.0** | 2026-06-02 |
+| **G3-CITATION-UX** | Phase 16 · `/` | Citation 联动**已实现**，但**可用性与观感差** | `[ID:n]` 难读/难点；侧栏 chunk 排版粗糙；高亮不明显；引用与正文割裂；RAG 答案质量差时联动价值低 | **P1 → Phase 70.1** | 2026-06-02 |
+| **G3-SEARCH-UX** | Phase 17 · `/search` | 检索结果列表**已实现高亮**，但**整体输出效果不理想** |  snippet 难读、排序/得分不直观；点击高亮弱；无命中/弱命中提示不足；与「咨询输出」体验不一致 | **P1 → Phase 70.2** | 2026-06-02 |
 
 **状态说明（2026-06-02）**：Phase 16（`ChatMessageContent` / `ReferenceChunks` 双向高亮）与 Phase 17（`SearchResultList` / `ChunkListPanel`）**代码与 Walkthrough 路径已落地**；当前缺口在 **产品化呈现与 RAG 答案质量**，非「未实现功能」。
 
@@ -234,7 +238,7 @@
 - **检索层**：结果卡片信息架构（标题/得分/片段）、高亮对比度、空结果与弱命中引导。
 - **共用**：与 **G3-CHAT-ANSWER-UX** 一并验收「咨询/决策/辅导」三类场景的可读输出。
 
-**跟踪**：矩阵本文 §8；Harness §9.0 Phase 16–17 行；后续 plan 文件名建议 `2026-06-02-tbox-phase16-17-ux-plan.md`（尚未编写）。
+**跟踪**：矩阵本文 §8；Harness §9.0 **Phase 70**；spec **`2026-06-10-tbox-g3-ux-polish-design.md`**（plan 待 **`2026-06-10-tbox-phase70-plan.md`**）。
 
 ---
 
@@ -253,6 +257,7 @@
 
 | 日期 | 变更 |
 |------|------|
+| 2026-06-10 | **Phase 69 ✅**（69.0–69.3）；**Phase 70** G3 UX（70.0–70.3）入 §6；§8 backlog 升 **P1** |
 | 2026-06-09 | **G2-CRAWL-SELF-HEAL**；§6 **Phase 69.0–69.2**；**G2-CRAWL-RELEVANCE** → **69.3**；spec **`2026-06-09-tbox-g2-crawl-self-heal-design.md`** |
 | 2026-06-08 | **Phase 68** G2-CRAWL-EXTRACT / SOURCES / DISCOVER+；§6 Phase 68–69 |
 | 2026-06-02 | **G2-CRAWL-I18N**、**G1-DOC-ORIGINAL** 入矩阵；Phase 67 扩展为**四类专题知识库**中英爬取 + 去重；手测 **`TBOX_5180_HANDTEST_2026-06-02.md`** |

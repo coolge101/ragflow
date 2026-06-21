@@ -1,5 +1,7 @@
 /** 咨询/对话结果导出（Markdown 下载、HTML 打印为 PDF） */
 
+import { sanitizeChatFinal } from "./chatStreamSanitize";
+
 export type ExportMessage = { role: "user" | "assistant"; content: string };
 
 function pad2(n: number): string {
@@ -23,7 +25,9 @@ export function formatChatMarkdown(params: {
 
   for (const m of params.messages) {
     const heading = m.role === "user" ? "## 用户" : "## 助手";
-    lines.push(heading, "", m.content.trim() || "（空）", "", "---", "");
+    const body =
+      m.role === "assistant" ? sanitizeChatFinal(m.content.trim()) : m.content.trim();
+    lines.push(heading, "", body || "（空）", "", "---", "");
   }
 
   return lines.join("\n").replace(/\n---\n\n$/u, "\n");
@@ -67,7 +71,8 @@ export function buildChatPrintHtml(params: {
   const blocks = params.messages
     .map((m) => {
       const label = m.role === "user" ? "用户" : "助手";
-      return `<section class="msg"><h2>${label}</h2><div class="body">${nl2br(m.content.trim() || "（空）")}</div></section>`;
+      const raw = m.role === "assistant" ? sanitizeChatFinal(m.content.trim()) : m.content.trim();
+      return `<section class="msg"><h2>${label}</h2><div class="body">${nl2br(raw || "（空）")}</div></section>`;
     })
     .join("\n");
 

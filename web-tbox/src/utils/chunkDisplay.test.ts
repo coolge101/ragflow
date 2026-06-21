@@ -3,7 +3,10 @@ import {
   chunkRowToDisplayItem,
   chunksFromReference,
   formatChunkSnippet,
+  formatSimilarityPercent,
   formatSimilaritySuffix,
+  maxChunkSimilarity,
+  splitHighlightSegments,
 } from "./chunkDisplay";
 
 describe("chunkRowToDisplayItem", () => {
@@ -68,5 +71,28 @@ describe("formatChunkSnippet", () => {
     expect(snippet).toContain("相似度 0.123");
     expect(snippet).toContain("x".repeat(500));
     expect(snippet).not.toContain("x".repeat(501));
+  });
+});
+
+describe("formatSimilarityPercent", () => {
+  it("rounds to percent", () => {
+    expect(formatSimilarityPercent(0.876)).toBe("88%");
+    expect(formatSimilarityPercent(null)).toBeNull();
+  });
+});
+
+describe("splitHighlightSegments", () => {
+  it("highlights query terms case-insensitively", () => {
+    const segs = splitHighlightSegments("TBOX 车载终端", "tbox");
+    expect(segs).toEqual([
+      { kind: "mark", value: "TBOX" },
+      { kind: "text", value: " 车载终端" },
+    ]);
+  });
+});
+
+describe("maxChunkSimilarity", () => {
+  it("returns max finite similarity", () => {
+    expect(maxChunkSimilarity([{ similarity: 0.2 }, { similarity: 0.45 }])).toBe(0.45);
   });
 });
