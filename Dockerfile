@@ -195,7 +195,10 @@ RUN --mount=type=cache,id=ragflow_uv,target=/root/.cache/uv,sharing=locked \
     fi; \
     uv sync --python 3.13 --frozen && \
     # Ensure pip is available in the venv for runtime package installation (fixes #12651)
-    .venv/bin/python3 -m ensurepip --upgrade
+    .venv/bin/python3 -m ensurepip --upgrade && \
+    # TBOX: guard against broken litellm installs (ImportError: MAX_BASE64_LENGTH_FOR_LOGGING).
+    .venv/bin/python3 -m pip install 'litellm==1.82.6' --force-reinstall --no-deps && \
+    .venv/bin/python3 -c "from litellm.constants import MAX_BASE64_LENGTH_FOR_LOGGING"
 
 COPY web web
 COPY docs docs
