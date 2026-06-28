@@ -37,10 +37,18 @@ from common.constants import StatusEnum
 from common.misc_utils import get_uuid
 from common.tbox_crawl_dedup import canonicalize_url, filter_urls_not_seen, merge_url_lists
 from common.tbox_crawl_discover import (
+    DiscoverHit,
     DiscoverProviderError,
     parse_discover_config,
     run_discover,
 )
+from common.tbox_crawl_discover_rank import (
+    parse_discover_max_fetch,
+    parse_discover_rank_min_score,
+    parse_discover_rank_mode,
+    rank_discover_hits,
+)
+from common.tbox_crawl_relevance import infer_relevance_topic
 from common.tbox_crawl_http_probe import probe_seed_urls
 from common.tbox_crawl_last_error import format_crawl_worker_error
 from common.tbox_crawl_strategy import CrawlStrategy, parse_strategy, resolve_target_urls
@@ -48,6 +56,7 @@ from common.tbox_crawl_url_quality import (
     discover_skip_bfs,
     filter_urls_by_quality,
     parse_url_quality_mode,
+    url_passes_quality,
 )
 
 _LOG = logging.getLogger(__name__)
@@ -370,6 +379,9 @@ def record_worker_tick(task_id: str, *, ok: bool, message: str = "") -> None:
 @dataclass
 class CrawlTickStats:
     discovered: int = 0
+    discover_hits: int = 0
+    skipped_serp_rank: int = 0
+    discover_rank_kept: int = 0
     skipped_dup_url: int = 0
     ingested: int = 0
     skipped_dup_content: int = 0
@@ -381,12 +393,31 @@ class CrawlTickStats:
 
     def summary(self) -> str:
         return (
-            f"discovered={self.discovered} ingested={self.ingested} "
+            f"discovered={self.discovered} discover_hits={self.discover_hits} "
+            f"discover_rank_kept={self.discover_rank_kept} skipped_serp_rank={self.skipped_serp_rank} "
+            f"ingested={self.ingested} "
             f"skipped_dup_url={self.skipped_dup_url} skipped_dup_content={self.skipped_dup_content} "
             f"skipped_kw={self.skipped_kw} skipped_low_quality_url={self.skipped_low_quality_url} "
             f"skipped_low_quality={self.skipped_low_quality} skipped_relevance={self.skipped_relevance} "
             f"ingest_failures={self.ingest_failures}"
         )
+
+
+def _filter_discover_hits_by_quality(
+    hits: list[DiscoverHit],
+    *,
+    mode: str,
+) -> tuple[list[DiscoverHit], int]:
+    if mode == "off":
+        return list(hits), 0
+    kept: list[DiscoverHit] = []
+    skipped = 0
+    for hit in hits:
+        if url_passes_quality(hit.url, mode):
+            kept.append(hit)
+        else:
+            skipped += 1
+    return kept, skipped
 
 
 def _prioritize_discovered_urls(
@@ -411,25 +442,27 @@ def _resolve_crawl_target_urls(
     row: TboxCrawlTask,
     strategy: CrawlStrategy,
     extra: dict,
-) -> tuple[list[str], str, CrawlTickStats, set[str], DiscoverProviderError | None]:
+) -> tuple[list[str], str, CrawlTickStats, set[str], DiscoverProviderError | None, dict[str, DiscoverHit]]:
     """
     Discover + merge seeds + pre-fetch dedup + BFS expand.
 
-    Returns (target_urls, strategy_note, stats, discovered_canonical, discover_error).
+    Returns (target_urls, strategy_note, stats, discovered_canonical, discover_error, discover_hit_by_url).
     """
     stats = CrawlTickStats()
     seeds = list(row.seed_urls or [])
     skip_robots = bool(extra.get("tbox_skip_robots_check"))
     dcfg = parse_discover_config(extra)
     discovered: list[str] = []
+    discover_hits: list[DiscoverHit] = []
+    discover_hit_by_url: dict[str, DiscoverHit] = {}
     discover_error: DiscoverProviderError | None = None
+    discover_attempted = dcfg.provider != "none" and bool(dcfg.queries)
 
-    if dcfg.provider != "none" and dcfg.queries:
+    if discover_attempted:
         try:
             result = run_discover(dcfg, strategy.allowed_domains, extra)
             if result is not None:
-                discovered = list(result.urls)
-                stats.discovered = len(discovered)
+                discover_hits = list(result.hits)
         except DiscoverProviderError as exc:
             # 国内/隔离网络常无法访问 Tavily/SearXNG：有种子时降级为「仅种子 + BFS」，不阻断 tick
             if exc.code in ("DISCOVER_NETWORK", "DISCOVER", "DISCOVER_NO_SEARXNG") and seeds:
@@ -440,11 +473,44 @@ def _resolve_crawl_target_urls(
                 )
             else:
                 discover_error = exc
-                return [], "", stats, set(), discover_error
+                return [], "", stats, set(), discover_error, {}
 
     quality_mode = parse_url_quality_mode(extra)
-    discovered, q_skip = filter_urls_by_quality(discovered, mode=quality_mode)
+    discover_hits, q_skip = _filter_discover_hits_by_quality(discover_hits, mode=quality_mode)
     stats.skipped_low_quality_url += q_skip
+    stats.discover_hits = len(discover_hits)
+
+    if discover_hits:
+        rank_mode = parse_discover_rank_mode(extra)
+        min_score = parse_discover_rank_min_score(extra)
+        max_fetch = parse_discover_max_fetch(extra)
+        topic = infer_relevance_topic(extra, task_name=str(row.name or ""))
+        ranked_hits, stats.skipped_serp_rank = rank_discover_hits(
+            discover_hits,
+            topic=topic,
+            mode=rank_mode,
+            min_score=min_score,
+            max_keep=max_fetch,
+        )
+        stats.discover_rank_kept = len(ranked_hits)
+        discovered = [h.url for h in ranked_hits if (h.url or "").strip()]
+        discover_hit_by_url = {h.url: h for h in ranked_hits if (h.url or "").strip()}
+    stats.discovered = len(discovered)
+
+    if (
+        discover_attempted
+        and not discovered
+        and not seeds
+        and discover_error is None
+    ):
+        if stats.discover_hits > 0 and stats.skipped_serp_rank > 0:
+            discover_error = DiscoverProviderError(
+                "DISCOVER_RANK_EMPTY",
+                "no URLs passed discover SERP rank filter",
+            )
+        else:
+            discover_error = DiscoverProviderError("DISCOVER_EMPTY", "no URLs after discover and quality filter")
+        return [], "", stats, set(), discover_error, {}
 
     merged = merge_url_lists(discovered, seeds)
     discovered_canonical = {canonicalize_url(u) for u in discovered if canonicalize_url(u)}
@@ -457,7 +523,7 @@ def _resolve_crawl_target_urls(
     if dcfg.provider in ("tavily", "searxng", "auto") and dcfg.queries and not merged and discover_error is None:
         if not seeds:
             discover_error = DiscoverProviderError("DISCOVER_EMPTY", "no URLs after discover and dedup")
-            return [], "", stats, discovered_canonical, discover_error
+            return [], "", stats, discovered_canonical, discover_error, discover_hit_by_url
 
     st = str(row.source_type or "static_web")
     if st == "static_web" and discover_skip_bfs(extra):
@@ -474,13 +540,13 @@ def _resolve_crawl_target_urls(
         seed_kept = [u for u in expanded if canonicalize_url(u) in seed_canonical_set]
         target_urls = merge_url_lists(discovered + seed_kept + expand_only)
         if not target_urls and strategy_note:
-            return [], strategy_note, stats, discovered_canonical, discover_error
+            return [], strategy_note, stats, discovered_canonical, discover_error, discover_hit_by_url
         if not target_urls:
             note = strategy_note or "no URLs after quality filter"
             if stats.skipped_low_quality_url > 0:
                 note = f"url quality skipped {stats.skipped_low_quality_url} URL(s)"
-            return [], note, stats, discovered_canonical, discover_error
-        return target_urls, strategy_note, stats, discovered_canonical, discover_error
+            return [], note, stats, discovered_canonical, discover_error, discover_hit_by_url
+        return target_urls, strategy_note, stats, discovered_canonical, discover_error, discover_hit_by_url
 
     target_urls, strategy_note = resolve_target_urls(
         merged,
@@ -495,7 +561,7 @@ def _resolve_crawl_target_urls(
         stats.skipped_low_quality_url += q2
         seed_kept = [u for u in target_urls if canonicalize_url(u) in seed_canonical_set]
         target_urls = merge_url_lists(seed_kept + non_seed)
-    return target_urls, strategy_note, stats, discovered_canonical, discover_error
+    return target_urls, strategy_note, stats, discovered_canonical, discover_error, discover_hit_by_url
 
 
 def execute_crawl_task_stub_tick(task_id: str) -> None:
@@ -547,7 +613,7 @@ def _execute_crawl_task_stub_tick_body(
 
     skip_robots = bool(extra.get("tbox_skip_robots_check"))
     strategy = parse_strategy(extra)
-    target_urls, strategy_note, tick_stats, discovered_canonical, discover_error = _resolve_crawl_target_urls(row, strategy, extra)
+    target_urls, strategy_note, tick_stats, discovered_canonical, discover_error, discover_hit_by_url = _resolve_crawl_target_urls(row, strategy, extra)
     heal_discovered.update(discovered_canonical)
     if discover_error is not None:
         record_worker_tick(
@@ -621,6 +687,7 @@ def _execute_crawl_task_stub_tick_body(
             seed_canonical=seed_canonical,
             task_id=task_id,
             task_name=str(row.name or ""),
+            hit_by_url=discover_hit_by_url or None,
         )
         tick_stats.ingested = ingest_stats.get("ingested", 0)
         heal_ingested_urls.extend(ingest_stats.get("ingested_urls") or [])

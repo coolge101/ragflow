@@ -100,7 +100,7 @@ def run_auto_discover(
     decision = resolve_auto_provider(extra_config)
     if decision.provider == "none":
         return DiscoverResult(
-            urls=[],
+            hits=[],
             provider="auto",
             queries_executed=0,
             raw_result_count=0,
@@ -117,7 +117,7 @@ def run_auto_discover(
             raise
 
     if provider is None:
-        return DiscoverResult(urls=[], provider="auto", queries_executed=0, raw_result_count=0, notes=decision.note)
+        return DiscoverResult(hits=[], provider="auto", queries_executed=0, raw_result_count=0, notes=decision.note)
 
     engines = None
     if decision.provider == "searxng" and decision.searxng_health:
@@ -149,7 +149,7 @@ def run_auto_discover(
     if result.notes:
         note = f"{note}; {result.notes}"
     return DiscoverResult(
-        urls=result.urls,
+        hits=list(result.hits),
         provider="auto",
         queries_executed=result.queries_executed,
         raw_result_count=result.raw_result_count,

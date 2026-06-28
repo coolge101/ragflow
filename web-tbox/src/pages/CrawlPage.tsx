@@ -33,7 +33,10 @@ import {
   EMPTY_DISCOVER_FIELDS,
   formatDiscoverSummary,
   mergeDiscoverIntoExtra,
+  QUERY_TEMPLATES,
+  TECH_TREND_DISCOVER_DEFAULTS,
   type DiscoverFields,
+  type QueryTemplateValue,
 } from "../utils/crawlExtraDiscover";
 import { CRAWL_DOMAIN_TEMPLATES, type CrawlDomainTemplateKey } from "../utils/crawlDomainTemplates";
 import {
@@ -257,12 +260,41 @@ function mergeCrawlFormExtra(
 }
 
 function hasDiscoverQueries(discover: DiscoverFields): boolean {
+  if (discover.queryTemplate === "tech_trend") {
+    return (
+      discover.provider === "tavily" || discover.provider === "searxng" || discover.provider === "auto"
+    );
+  }
   return (
     (discover.provider === "tavily" ||
       discover.provider === "searxng" ||
       discover.provider === "auto") &&
     discover.queries.trim().length > 0
   );
+}
+
+function applyQueryTemplateSelection(
+  template: QueryTemplateValue,
+  setDiscover: (fn: (prev: DiscoverFields) => DiscoverFields) => void,
+  setQuality?: (fn: (prev: CrawlQualityFields) => CrawlQualityFields) => void,
+  setRelevance?: (fn: (prev: CrawlRelevanceFields) => CrawlRelevanceFields) => void,
+) {
+  setDiscover((prev) => ({
+    ...prev,
+    queryTemplate: template,
+    ...(template === "tech_trend" ? TECH_TREND_DISCOVER_DEFAULTS : {}),
+  }));
+  if (template === "tech_trend") {
+    setQuality?.((prev) => ({
+      ...prev,
+      urlQualityMode: "strict",
+      discoverSkipBfs: true,
+    }));
+    setRelevance?.((prev) => ({
+      ...prev,
+      relevanceMode: "rules",
+    }));
+  }
 }
 
 function applyDiscoverTemplate(
@@ -340,6 +372,8 @@ function renderDiscoverFields(
   templateOpts?: {
     setSeeds?: (value: string) => void;
     setStrategy?: (fn: (prev: CrawlStrategyFields) => CrawlStrategyFields) => void;
+    setQuality?: (fn: (prev: CrawlQualityFields) => CrawlQualityFields) => void;
+    setRelevance?: (fn: (prev: CrawlRelevanceFields) => CrawlRelevanceFields) => void;
   },
   discoverStatus?: DiscoverStatusView | null,
 ) {
@@ -353,6 +387,30 @@ function renderDiscoverFields(
         Worker：<code>TBOX_CRAWL_SEARXNG_BASE_URL</code>、<code>TBOX_CRAWL_TAVILY_API_KEY</code>、可选{" "}
         <code>TBOX_CRAWL_HTTP_PROXY</code>。Provider <code>auto</code> 按子系统健康自动路由（Phase 69.2）。
       </p>
+      <label style={{ display: "block", marginBottom: 8 }}>
+        <span className="muted" style={{ display: "block", marginBottom: 4 }}>
+          专题 query 模板（<code>tbox_crawl_query_template</code>）
+        </span>
+        <select
+          id={`${idPrefix}-query-template`}
+          value={discover.queryTemplate}
+          onChange={(e) => {
+            const v = e.target.value === "tech_trend" ? "tech_trend" : "";
+            applyQueryTemplateSelection(v, setDiscover, templateOpts?.setQuality, templateOpts?.setRelevance);
+          }}
+        >
+          {QUERY_TEMPLATES.map((t) => (
+            <option key={t.value || "none"} value={t.value}>
+              {t.label}
+            </option>
+          ))}
+        </select>
+        {discover.queryTemplate === "tech_trend" ? (
+          <span className="muted" style={{ display: "block", marginTop: 4, fontSize: "0.85rem" }}>
+            自动写入 rank=rules、URL 质量 strict、相关性 rules、跳过 BFS；可在下方质量/相关性区覆盖。
+          </span>
+        ) : null}
+      </label>
       <label style={{ display: "block", marginBottom: 8 }}>
         <span className="muted" style={{ display: "block", marginBottom: 4 }}>
           Provider（<code>tbox_crawl_search_provider</code>）
@@ -1717,6 +1775,8 @@ export function CrawlPage() {
           {
             setSeeds: setCreateSeeds,
             setStrategy: setCreateStrategy,
+            setQuality: setCreateQuality,
+            setRelevance: setCreateRelevance,
           },
           discoverStatus,
         )}
@@ -1982,6 +2042,8 @@ export function CrawlPage() {
             {
               setSeeds: setEditSeeds,
               setStrategy: setEditStrategy,
+              setQuality: setEditQuality,
+              setRelevance: setEditRelevance,
             },
             discoverStatus,
           )}

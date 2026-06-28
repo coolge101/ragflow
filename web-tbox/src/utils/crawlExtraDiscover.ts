@@ -7,6 +7,16 @@ export const EXTRA_DISCOVER_MAX_URLS = "tbox_crawl_discover_max_urls";
 export const EXTRA_DISCOVER_MAX_QUERIES = "tbox_crawl_discover_max_queries";
 export const EXTRA_DISCOVER_MAX_RESULTS = "tbox_crawl_discover_max_results_per_query";
 export const EXTRA_TAVILY_DEPTH = "tbox_crawl_tavily_depth";
+export const EXTRA_QUERY_TEMPLATE = "tbox_crawl_query_template";
+export const EXTRA_DISCOVER_RANK_MODE = "tbox_crawl_discover_rank_mode";
+export const EXTRA_DISCOVER_RANK_MIN_SCORE = "tbox_crawl_discover_rank_min_score";
+
+export const QUERY_TEMPLATES = [
+  { value: "", label: "无" },
+  { value: "tech_trend", label: "技术趋势" },
+] as const;
+
+export type QueryTemplateValue = (typeof QUERY_TEMPLATES)[number]["value"];
 
 export const DISCOVER_EXTRA_KEYS = new Set([
   EXTRA_SEARCH_PROVIDER,
@@ -16,6 +26,9 @@ export const DISCOVER_EXTRA_KEYS = new Set([
   EXTRA_DISCOVER_MAX_QUERIES,
   EXTRA_DISCOVER_MAX_RESULTS,
   EXTRA_TAVILY_DEPTH,
+  EXTRA_QUERY_TEMPLATE,
+  EXTRA_DISCOVER_RANK_MODE,
+  EXTRA_DISCOVER_RANK_MIN_SCORE,
 ]);
 
 export type DiscoverProvider = "none" | "tavily" | "searxng" | "auto";
@@ -30,6 +43,7 @@ export type DiscoverFields = {
   maxQueries: string;
   maxResultsPerQuery: string;
   tavilyDepth: TavilyDepth;
+  queryTemplate: QueryTemplateValue;
 };
 
 export const EMPTY_DISCOVER_FIELDS: DiscoverFields = {
@@ -40,7 +54,16 @@ export const EMPTY_DISCOVER_FIELDS: DiscoverFields = {
   maxQueries: "",
   maxResultsPerQuery: "",
   tavilyDepth: "basic",
+  queryTemplate: "",
 };
+
+function parseQueryTemplate(raw: unknown): QueryTemplateValue {
+  const s = String(raw || "").trim().toLowerCase();
+  if (s === "tech_trend") {
+    return "tech_trend";
+  }
+  return "";
+}
 
 function parseDiscoverProvider(raw: unknown): DiscoverProvider {
   const s = String(raw || "none").trim().toLowerCase();
@@ -93,8 +116,31 @@ export function discoverFieldsFromExtra(ex: Record<string, unknown> | undefined)
     maxQueries: numStr(EXTRA_DISCOVER_MAX_QUERIES),
     maxResultsPerQuery: numStr(EXTRA_DISCOVER_MAX_RESULTS),
     tavilyDepth: parseTavilyDepth(ex?.[EXTRA_TAVILY_DEPTH]),
+    queryTemplate: parseQueryTemplate(ex?.[EXTRA_QUERY_TEMPLATE]),
   };
 }
+
+/** Phase 70：写入 query 模板与 SERP rank 键（质量/相关性由表单 merge，选择模板时在 UI 同步默认值）。 */
+export function mergeQueryTemplateIntoExtra(
+  out: Record<string, unknown>,
+  queryTemplate: QueryTemplateValue,
+): void {
+  if (queryTemplate === "tech_trend") {
+    out[EXTRA_QUERY_TEMPLATE] = "tech_trend";
+    out[EXTRA_DISCOVER_RANK_MODE] = "rules";
+    out[EXTRA_DISCOVER_RANK_MIN_SCORE] = 55;
+    return;
+  }
+  delete out[EXTRA_QUERY_TEMPLATE];
+  delete out[EXTRA_DISCOVER_RANK_MODE];
+  delete out[EXTRA_DISCOVER_RANK_MIN_SCORE];
+}
+
+/** 选择 tech_trend 时在 Discover 区应用的默认闸门（可被质量/相关性表单覆盖）。 */
+export const TECH_TREND_DISCOVER_DEFAULTS: Pick<DiscoverFields, "provider" | "queryTemplate"> = {
+  provider: "auto",
+  queryTemplate: "tech_trend",
+};
 
 function clampInt(text: string, fallback: number, lo: number, hi: number): number | null {
   const t = text.trim();
@@ -118,29 +164,41 @@ export function mergeDiscoverIntoExtra(
     .map((s) => s.trim())
     .filter(Boolean);
 
-  if ((fields.provider === "tavily" || fields.provider === "searxng" || fields.provider === "auto") && queries.length) {
-    out[EXTRA_SEARCH_PROVIDER] = fields.provider;
-    out[EXTRA_SEARCH_QUERIES] = queries;
-    out[EXTRA_SEARCH_LOCALE] = fields.locale;
-    const maxUrls = clampInt(fields.maxUrls, 10, 1, 100);
-    const maxQueries = clampInt(fields.maxQueries, 3, 1, 20);
-    const maxResults = clampInt(fields.maxResultsPerQuery, 5, 1, 10);
-    if (maxUrls != null) {
-      out[EXTRA_DISCOVER_MAX_URLS] = maxUrls;
-    } else {
-      delete out[EXTRA_DISCOVER_MAX_URLS];
+  const discoverActive =
+    fields.queryTemplate === "tech_trend" ||
+    ((fields.provider === "tavily" || fields.provider === "searxng" || fields.provider === "auto") &&
+      queries.length > 0);
+
+  if (discoverActive) {
+    if (fields.provider === "tavily" || fields.provider === "searxng" || fields.provider === "auto") {
+      out[EXTRA_SEARCH_PROVIDER] = fields.provider;
+      out[EXTRA_SEARCH_LOCALE] = fields.locale;
+      out[EXTRA_TAVILY_DEPTH] = fields.tavilyDepth;
+      const maxUrls = clampInt(fields.maxUrls, 10, 1, 100);
+      const maxQueries = clampInt(fields.maxQueries, 3, 1, 20);
+      const maxResults = clampInt(fields.maxResultsPerQuery, 5, 1, 10);
+      if (maxUrls != null) {
+        out[EXTRA_DISCOVER_MAX_URLS] = maxUrls;
+      } else {
+        delete out[EXTRA_DISCOVER_MAX_URLS];
+      }
+      if (maxQueries != null) {
+        out[EXTRA_DISCOVER_MAX_QUERIES] = maxQueries;
+      } else {
+        delete out[EXTRA_DISCOVER_MAX_QUERIES];
+      }
+      if (maxResults != null) {
+        out[EXTRA_DISCOVER_MAX_RESULTS] = maxResults;
+      } else {
+        delete out[EXTRA_DISCOVER_MAX_RESULTS];
+      }
     }
-    if (maxQueries != null) {
-      out[EXTRA_DISCOVER_MAX_QUERIES] = maxQueries;
+    if (queries.length) {
+      out[EXTRA_SEARCH_QUERIES] = queries;
     } else {
-      delete out[EXTRA_DISCOVER_MAX_QUERIES];
+      delete out[EXTRA_SEARCH_QUERIES];
     }
-    if (maxResults != null) {
-      out[EXTRA_DISCOVER_MAX_RESULTS] = maxResults;
-    } else {
-      delete out[EXTRA_DISCOVER_MAX_RESULTS];
-    }
-    out[EXTRA_TAVILY_DEPTH] = fields.tavilyDepth;
+    mergeQueryTemplateIntoExtra(out, fields.queryTemplate);
   } else {
     for (const k of DISCOVER_EXTRA_KEYS) {
       delete out[k];
@@ -162,8 +220,10 @@ export function formatDiscoverSummary(ex: Record<string, unknown> | undefined): 
   if (!ex) {
     return "";
   }
+  const template = parseQueryTemplate(ex[EXTRA_QUERY_TEMPLATE]);
+  const templateLabel = QUERY_TEMPLATES.find((t) => t.value === template)?.label;
   const provider = String(ex[EXTRA_SEARCH_PROVIDER] || "none").toLowerCase();
-  if (provider !== "tavily" && provider !== "searxng" && provider !== "auto") {
+  if (provider !== "tavily" && provider !== "searxng" && provider !== "auto" && !template) {
     return "";
   }
   const queries = ex[EXTRA_SEARCH_QUERIES];
@@ -171,5 +231,18 @@ export function formatDiscoverSummary(ex: Record<string, unknown> | undefined): 
   const locale = String(ex[EXTRA_SEARCH_LOCALE] || "both");
   const label =
     provider === "searxng" ? "SearXNG" : provider === "auto" ? "auto" : "Tavily";
-  return n > 0 ? `发现/${label}×${n}（${locale}）` : `发现/${label}`;
+  const providerPart =
+    provider === "tavily" || provider === "searxng" || provider === "auto"
+      ? n > 0
+        ? `发现/${label}×${n}（${locale}）`
+        : `发现/${label}`
+      : "";
+  const parts: string[] = [];
+  if (templateLabel) {
+    parts.push(`模板/${templateLabel}`);
+  }
+  if (providerPart) {
+    parts.push(providerPart);
+  }
+  return parts.join("、");
 }

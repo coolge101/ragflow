@@ -48,6 +48,14 @@ from common.tbox_crawl_relevance import passes_relevance_gate
 _LOG = logging.getLogger(__name__)
 
 
+def _maybe_prepend_title(text: str, title: str | None, min_chars: int) -> str:
+    t = (text or "").strip()
+    title = (title or "").strip()
+    if len(t) >= min_chars or not title:
+        return t
+    return f"# {title}\n\n{t}".strip()
+
+
 def _safe_base_name(s: str, max_bytes: int) -> str:
     raw = (s or "").strip() or "entry"
     safe = "".join(c if c.isalnum() or c in " ._-()" else "_" for c in raw)
@@ -83,6 +91,7 @@ def ingest_static_web_seeds_into_kb(
     seed_canonical: set[str] | None = None,
     task_id: str | None = None,
     task_name: str = "",
+    hit_by_url: dict[str, Any] | None = None,
 ) -> tuple[bool, str, dict[str, int]]:
     """
     Fetch each seed (SSRF-safe, capped), upload as a new file under *kb*, queue parse tasks.
@@ -169,6 +178,12 @@ def ingest_static_web_seeds_into_kb(
             )
             if extract_on:
                 text = extract_main_text(body, ctype)
+                hit = None
+                if hit_by_url:
+                    canon = canonicalize_url(url)
+                    hit = hit_by_url.get(url) or (hit_by_url.get(canon) if canon else None)
+                if hit is not None:
+                    text = _maybe_prepend_title(text, getattr(hit, "title", None), min_chars)
                 if len(text) < min_chars:
                     skipped_low_quality += 1
                     _LOG.info("tbox_crawl_ingest: quality skip (short extract) url=%s", url)

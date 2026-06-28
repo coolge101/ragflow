@@ -28,9 +28,10 @@ import urllib.request
 from dataclasses import dataclass
 from typing import Any, Protocol
 
-from common.tbox_crawl_dedup import canonicalize_url, merge_url_lists
+from common.tbox_crawl_dedup import canonicalize_url
+from common.tbox_crawl_query_templates import apply_query_template
 from common.tbox_crawl_ssrf_fetch import crawl_http_proxies
-from common.tbox_crawl_strategy import filter_urls_by_allowed_domains, url_allowed_by_domains
+from common.tbox_crawl_strategy import url_allowed_by_domains
 
 _LOG = logging.getLogger(__name__)
 
@@ -65,12 +66,56 @@ class DiscoverConfig:
 
 
 @dataclass(frozen=True)
+class DiscoverHit:
+    url: str
+    title: str = ""
+    snippet: str = ""
+    query: str = ""
+
+
+@dataclass(frozen=True)
 class DiscoverResult:
-    urls: list[str]
+    hits: list[DiscoverHit]
     provider: str
     queries_executed: int
     raw_result_count: int
     notes: str
+
+    @property
+    def urls(self) -> list[str]:
+        return [h.url for h in self.hits if h.url]
+
+
+def merge_discover_hits(hits: list[DiscoverHit]) -> list[DiscoverHit]:
+    """Preserve order; drop empty URLs; dedupe by canonical URL (keep first hit metadata)."""
+    seen: set[str] = set()
+    out: list[DiscoverHit] = []
+    for hit in hits:
+        url = (hit.url or "").strip()
+        if not url:
+            continue
+        canon = canonicalize_url(url)
+        if not canon or canon in seen:
+            continue
+        seen.add(canon)
+        out.append(hit)
+    return out
+
+
+def _search_item_snippet(item: dict[str, Any], *fields: str, max_len: int = 2000) -> str:
+    for field in fields:
+        val = (item.get(field) or "").strip()
+        if val:
+            return val[:max_len]
+    return ""
+
+
+def _filter_hits_by_allowed_domains(
+    hits: list[DiscoverHit], allowed_domains: tuple[str, ...]
+) -> list[DiscoverHit]:
+    if not allowed_domains:
+        return list(hits)
+    return [h for h in hits if url_allowed_by_domains(h.url, allowed_domains)]
 
 
 def _parse_string_list(val: Any) -> list[str]:
@@ -101,7 +146,7 @@ def parse_discover_config(extra_config: dict[str, Any] | None) -> DiscoverConfig
     extra = extra_config or {}
     raw_provider = str(extra.get(EXTRA_SEARCH_PROVIDER) or "none").strip().lower()
     provider = raw_provider if raw_provider in _VALID_PROVIDERS else "none"
-    queries = tuple(_parse_string_list(extra.get(EXTRA_SEARCH_QUERIES)))
+    queries = tuple(apply_query_template(extra))
     locale_raw = str(extra.get(EXTRA_SEARCH_LOCALE) or "both").strip().lower()
     locale = locale_raw if locale_raw in _VALID_LOCALES else "both"
     depth_raw = str(extra.get(EXTRA_TAVILY_DEPTH) or "basic").strip().lower()
@@ -156,7 +201,7 @@ class TavilyDiscoverProvider:
         from tavily import TavilyClient
 
         client = TavilyClient(api_key=self._api_key)
-        collected: list[str] = []
+        collected: list[DiscoverHit] = []
         raw_count = 0
         executed = 0
         qlist = [q for q in queries if (q or "").strip()][:max_queries]
@@ -164,9 +209,10 @@ class TavilyDiscoverProvider:
             if len(collected) >= max_urls:
                 break
             executed += 1
+            qstr = query.strip()
             try:
                 resp = client.search(
-                    query=query.strip(),
+                    query=qstr,
                     search_depth=tavily_depth,
                     max_results=max_results_per_query,
                 )
@@ -203,17 +249,18 @@ class TavilyDiscoverProvider:
                 raw_count += 1
                 if allowed_domains and not url_allowed_by_domains(url, allowed_domains):
                     continue
-                collected.append(url)
+                title = (item.get("title") or "").strip()
+                snippet = _search_item_snippet(item, "content", "raw_content")
+                collected.append(DiscoverHit(url=url, title=title, snippet=snippet, query=qstr))
                 if len(collected) >= max_urls:
                     break
 
-        merged = merge_url_lists(collected)
-        if allowed_domains:
-            merged, _skipped = filter_urls_by_allowed_domains(merged, allowed_domains)
+        merged = merge_discover_hits(collected)
+        merged = _filter_hits_by_allowed_domains(merged, allowed_domains)
         merged = merged[:max_urls]
         note = f"locale={locale}; queries={executed}; raw={raw_count}"
         return DiscoverResult(
-            urls=merged,
+            hits=merged,
             provider="tavily",
             queries_executed=executed,
             raw_result_count=raw_count,
@@ -238,7 +285,7 @@ class SearxngDiscoverProvider:
         engines: str | None = None,
     ) -> DiscoverResult:
         del tavily_depth  # unused for SearXNG
-        collected: list[str] = []
+        collected: list[DiscoverHit] = []
         raw_count = 0
         executed = 0
         qlist = [q for q in queries if (q or "").strip()][:max_queries]
@@ -247,8 +294,9 @@ class SearxngDiscoverProvider:
             if len(collected) >= max_urls:
                 break
             executed += 1
+            qstr = query.strip()
             params: dict[str, str] = {
-                "q": query.strip(),
+                "q": qstr,
                 "format": "json",
                 "language": lang,
             }
@@ -289,17 +337,18 @@ class SearxngDiscoverProvider:
                 raw_count += 1
                 if allowed_domains and not url_allowed_by_domains(url, allowed_domains):
                     continue
-                collected.append(url)
+                title = (item.get("title") or "").strip()
+                snippet = _search_item_snippet(item, "content", "snippet")
+                collected.append(DiscoverHit(url=url, title=title, snippet=snippet, query=qstr))
                 if len(collected) >= max_urls:
                     break
 
-        merged = merge_url_lists(collected)
-        if allowed_domains:
-            merged, _skipped = filter_urls_by_allowed_domains(merged, allowed_domains)
+        merged = merge_discover_hits(collected)
+        merged = _filter_hits_by_allowed_domains(merged, allowed_domains)
         merged = merged[:max_urls]
         note = f"locale={locale}; queries={executed}; raw={raw_count}"
         return DiscoverResult(
-            urls=merged,
+            hits=merged,
             provider="searxng",
             queries_executed=executed,
             raw_result_count=raw_count,

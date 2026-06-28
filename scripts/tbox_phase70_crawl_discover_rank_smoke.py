@@ -1,8 +1,5 @@
 #!/usr/bin/env python3
-"""Configure 技术趋势爬取任务并执行一次 tick，验证入库「技术发展趋势」知识库。
-
-Catalog deep-link seeds (Phase 70.2): ``uv run python scripts/tbox_seed_tech_catalog.py``
-"""
+"""Phase 70 crawl discover-rank smoke: tech_trend template + SERP pre-rank gates."""
 
 from __future__ import annotations
 
@@ -22,17 +19,6 @@ from api.utils.crypt import crypt  # noqa: E402
 
 BASE = os.environ.get("TBOX_SMOKE_BASE_URL", "http://127.0.0.1:9380").rstrip("/")
 TASK_ID = os.environ.get("TBOX_CRAWL_TECH_TASK_ID", "8ac2c9ae634311f186a045a2ee896efb")
-DATASET_ID = os.environ.get("TBOX_CRAWL_TECH_DATASET_ID", "50ba00ce634311f186a045a2ee896efb")
-
-# Discover-only: no homepage seeds (API rejects empty seed_urls on PATCH — omit when empty).
-TECH_SEEDS: list[str] = []
-
-TECH_KEYWORDS = [
-    "车联网",
-    "TBOX",
-    "技术",
-    "智能网联",
-]
 
 TECH_EXTRA_CONFIG = {
     "tbox_crawl_search_provider": "auto",
@@ -44,7 +30,7 @@ TECH_EXTRA_CONFIG = {
     "tbox_crawl_relevance_mode": "rules",
     "tbox_crawl_relevance_min_score": 60,
     "tbox_crawl_min_extract_chars": 300,
-    "tbox_crawl_keywords": TECH_KEYWORDS,
+    "tbox_crawl_keywords": ["车联网", "TBOX", "技术", "智能网联"],
     "tbox_skip_http_probe": True,
 }
 
@@ -75,41 +61,44 @@ def main() -> int:
     token = login()
     print("OK login")
 
-    patch: dict = {
-        "name": "技术趋势爬取",
-        "source_type": "static_web",
+    # discover-only: only patch extra_config (API requires non-empty seed_urls if sent)
+    patch = {
         "run_state": "ready",
-        "enabled": True,
-        "dataset_id": DATASET_ID,
         "extra_config": TECH_EXTRA_CONFIG,
     }
-    if TECH_SEEDS:
-        patch["seed_urls"] = TECH_SEEDS
-
     body, _ = req("PATCH", f"/v1/tbox/crawl/tasks/{TASK_ID}", patch, token)
     if body.get("code") != 0:
         print("FAIL patch:", body)
         return 1
-    print("OK patched task (discover-only tech_trend + rank/relevance gates)")
+    print("OK patched tech_trend discover-rank task")
 
     req("POST", f"/v1/tbox/crawl/tasks/{TASK_ID}/run", {}, token)
     body, _ = req("GET", f"/v1/tbox/crawl/tasks/{TASK_ID}", None, token)
     err = str((body.get("data") or {}).get("last_error") or "")
-    print("RUN last_error:", err[:400])
+    print("RUN", err[:500])
 
     if "[tbox:TICK_OK]" not in err:
-        print("FAIL: expected successful tick")
+        print("FAIL: expected [tbox:TICK_OK] in last_error")
         return 1
-    m = re.search(r"ingested=(\d+)", err)
-    n = int(m.group(1)) if m else 0
-    if n >= 1:
-        print(f"OK crawl ingested {n} document(s) into dataset {DATASET_ID}")
+
+    if "discover_hits=" not in err:
+        print("FAIL: last_error missing discover_hits=")
+        return 1
+    if "skipped_serp_rank=" not in err:
+        print("FAIL: last_error missing skipped_serp_rank=")
+        return 1
+
+    m_ing = re.search(r"ingested=(\d+)", err)
+    ingested = int(m_ing.group(1)) if m_ing else 0
+    if ingested >= 1:
+        print(f"OK ingested={ingested}")
         return 0
     if "skipped_dup_content=" in err or "skipped_dup_url=" in err:
         print("OK tick completed (dedup skipped duplicates)")
         return 0
-    print("WARN: tick OK but ingested=0 — check discover provider or dedup")
-    return 0
+
+    print("FAIL: expected ingested>=1 or dedup skip in last_error")
+    return 1
 
 
 if __name__ == "__main__":
