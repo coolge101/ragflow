@@ -43,6 +43,7 @@ class DocumentSource(str, Enum):
     RSS = "rss"
     S3 = "s3"
     NOTION = "notion"
+    REST_API = "rest_api"
     R2 = "r2"
     GOOGLE_CLOUD_STORAGE = "google_cloud_storage"
     OCI_STORAGE = "oci_storage"
@@ -68,6 +69,8 @@ class DocumentSource(str, Enum):
     MYSQL = "mysql"
     POSTGRESQL = "postgresql"
     DINGTALK_AI_TABLE = "dingtalk_ai_table"
+    ONEDRIVE = "onedrive"
+    OUTLOOK = "outlook"
 
 
 class FileOrigin(str, Enum):
@@ -196,6 +199,10 @@ CONFLUENCE_TIMEZONE_OFFSET = float(
 
 CONFLUENCE_SYNC_TIME_BUFFER_SECONDS = int(
     os.environ.get("CONFLUENCE_SYNC_TIME_BUFFER_SECONDS", ONE_DAY)
+)
+
+GOOGLE_DRIVE_SYNC_TIME_BUFFER_SECONDS = int(
+    os.environ.get("GOOGLE_DRIVE_SYNC_TIME_BUFFER_SECONDS", ONE_DAY)
 )
 
 GOOGLE_DRIVE_CONNECTOR_SIZE_THRESHOLD = int(

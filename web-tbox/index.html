@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>TBOX 知识库</title>
+  </head>
+  <body>
+    <div id="root">
+      <div
+        style="
+          padding: 2rem 1.25rem;
+          max-width: 38rem;
+          margin: 0 auto;
+          line-height: 1.55;
+          font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'PingFang SC', 'Microsoft YaHei', sans-serif;
+          color: #0f172a;
+        "
+      >
+        <h1 style="font-size: 1.2rem; margin-top: 0">TBOX 控制台</h1>
+        <p>
+          <strong>不要</strong>用资源管理器双击、或用浏览器直接打开本文件的 <code>file://</code> 地址。入口里脚本为
+          <code>/src/main.tsx</code>，在本地文件协议下无法正确加载，<strong>会一直空白或报错</strong>。
+        </p>
+        <p><strong>正确做法：</strong></p>
+        <ol style="padding-left: 1.2rem">
+          <li>在终端进入目录 <code>web-tbox</code>；</li>
+          <li>执行 <code>npm install</code>（首次），再执行 <code>npm run dev</code>；</li>
+          <li>在浏览器打开终端里给出的地址，一般为 <code>http://127.0.0.1:5174</code>。</li>
+        </ol>
+        <p style="color: #64748b; font-size: 0.92rem">
+          若只想看<strong>静态 HTML 线框</strong>，可打开同仓库下的
+          <code>web-tbox/public/ui-pages/index.html</code>（用 <code>file://</code> 打开该路径即可）。
+        </p>
+        <p style="color: #64748b; font-size: 0.92rem">若你已启动开发服务，下方脚本成功后会由 React 替换本段说明。</p>
+      </div>
+    </div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

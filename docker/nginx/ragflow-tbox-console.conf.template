@@ -1,0 +1,36 @@
+server {
+    listen 80;
+    server_name _;
+    root /usr/share/nginx/html/tbox;
+
+    gzip on;
+    gzip_min_length 1k;
+    gzip_comp_level 6;
+    gzip_types text/plain application/javascript application/x-javascript text/css application/xml text/javascript application/json;
+    gzip_vary on;
+
+    location ~ ^/(v1|api) {
+        proxy_pass http://${RAGFLOW_UPSTREAM};
+        include /etc/nginx/proxy.conf;
+        # Browser fetch often cannot read Authorization; mirror for web-tbox login.
+        add_header X-Ragflow-Authorization $upstream_http_authorization always;
+        add_header Access-Control-Expose-Headers "Authorization, X-Ragflow-Authorization" always;
+    }
+
+    # SPA shell must not be cached; hashed assets below can be long-lived.
+    location = /index.html {
+        add_header Cache-Control "no-cache, no-store, must-revalidate" always;
+        add_header Pragma "no-cache" always;
+    }
+
+    location / {
+        index index.html;
+        try_files $uri $uri/ /index.html;
+        add_header Cache-Control "no-cache" always;
+    }
+
+    location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2)$ {
+        expires 7d;
+        access_log off;
+    }
+}

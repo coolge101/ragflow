@@ -1,0 +1,20 @@
+# TBOX crawl-discover profile: enable JSON API for SearxngDiscoverProvider.
+use_default_settings: true
+
+server:
+  limiter: false
+  bind_address: "0.0.0.0"
+  secret_key: "tbox-crawl-discover-dev-key"
+
+# Phase 69.2 — engine allowlist (worker env mirrors this intent):
+#   TBOX_CRAWL_SEARXNG_ENGINE_ALLOWLIST=bing,sogou,360search
+# Worker passes ``engines=`` on each JSON search; unresponsive engines from
+# ping responses are excluded from the allowlist at runtime.
+#
+# To restrict engines at the SearXNG container level, override engines in
+# settings (see upstream searxng settings.yml ``engines:`` block).
+
+search:
+  formats:
+    - html
+    - json

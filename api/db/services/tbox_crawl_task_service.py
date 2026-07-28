@@ -1,0 +1,715 @@
+#
+#  Copyright 2026 The InfiniFlow Authors. All Rights Reserved.
+#
+#  Licensed under the Apache License, Version 2.0 (the "License");
+#  you may not use this file except in compliance with the License.
+#  You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+#  Unless required by applicable law or agreed to in writing, software
+#  distributed under the License is distributed on an "AS IS" BASIS,
+#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#  See the License for the specific language governing permissions and
+#  limitations under the License.
+#
+
+from __future__ import annotations
+
+from dataclasses import dataclass
+from datetime import datetime
+import logging
+import re
+from urllib.parse import urlparse
+
+from api.db import UserTenantRole
+from api.db.db_models import Knowledgebase, TboxCrawlTask, UserTenant
+from api.db.services.knowledgebase_service import KnowledgebaseService
+from api.db.services.tbox_crawl_seen_service import url_seen
+from api.db.services.tbox_crawl_ingest_service import (
+    ingest_http_api_seeds_into_kb,
+    ingest_rss_seeds_into_kb,
+    ingest_static_web_seeds_into_kb,
+)
+from api.db.services import tbox_crawl_health_service as crawl_health_svc
+from common.tbox_crawl_auth import validate_extra_config_no_secrets
+from common.constants import StatusEnum
+from common.misc_utils import get_uuid
+from common.tbox_crawl_dedup import canonicalize_url, filter_urls_not_seen, merge_url_lists
+from common.tbox_crawl_discover import (
+    DiscoverHit,
+    DiscoverProviderError,
+    parse_discover_config,
+    run_discover,
+)
+from common.tbox_crawl_discover_rank import (
+    parse_discover_max_fetch,
+    parse_discover_rank_min_score,
+    parse_discover_rank_mode,
+    rank_discover_hits,
+)
+from common.tbox_crawl_relevance import infer_relevance_topic
+from common.tbox_crawl_http_probe import probe_seed_urls
+from common.tbox_crawl_last_error import format_crawl_worker_error
+from common.tbox_crawl_strategy import CrawlStrategy, parse_strategy, resolve_target_urls
+from common.tbox_crawl_url_quality import (
+    discover_skip_bfs,
+    filter_urls_by_quality,
+    parse_url_quality_mode,
+    url_passes_quality,
+)
+
+_LOG = logging.getLogger(__name__)
+
+MAX_SEED_URLS = 100
+MAX_URL_LEN = 2048
+ALLOWED_SOURCE_TYPES = frozenset({"static_web", "rss", "http_api"})
+ALLOWED_RUN_STATES = frozenset({"draft", "ready", "paused"})
+_CRON_TOKEN_RE = re.compile(r"^[\d\*/,\-]+$")
+
+
+def tenant_ids_for_crawl(user_id: str, is_superuser: bool) -> list[str] | None:
+    """Tenants where the user may use crawl.manage; None means superuser (no tenant scope)."""
+    if is_superuser:
+        return None
+    q = UserTenant.select(UserTenant.tenant_id, UserTenant.role).where((UserTenant.user_id == user_id) & (UserTenant.status == StatusEnum.VALID.value)).dicts()
+    out: list[str] = []
+    for row in q:
+        r = str(row.get("role") or "")
+        if r in (UserTenantRole.OWNER.value, UserTenantRole.ADMIN.value, UserTenantRole.NORMAL.value):
+            out.append(row["tenant_id"])
+    return out
+
+
+def kb_valid_for_tenant(dataset_id: str, tenant_id: str) -> bool:
+    return Knowledgebase.select().where((Knowledgebase.id == dataset_id) & (Knowledgebase.tenant_id == tenant_id) & (Knowledgebase.status == StatusEnum.VALID.value)).exists()
+
+
+def validate_seed_urls(urls) -> tuple[list[str] | None, str | None]:
+    if not isinstance(urls, list):
+        return None, "seed_urls must be a list"
+    if len(urls) > MAX_SEED_URLS:
+        return None, f"seed_urls must have at most {MAX_SEED_URLS} entries"
+    cleaned: list[str] = []
+    for u in urls:
+        if not isinstance(u, str):
+            return None, "each seed_urls entry must be a string"
+        u = u.strip()
+        if not u:
+            return None, "empty URL in seed_urls"
+        if len(u) > MAX_URL_LEN:
+            return None, "URL too long"
+        parsed = urlparse(u)
+        if parsed.scheme not in ("http", "https"):
+            return None, "only http and https URLs are allowed"
+        if not parsed.netloc:
+            return None, "invalid URL (missing host)"
+        cleaned.append(u)
+    return cleaned, None
+
+
+def validate_extra_config(extra_config) -> str | None:
+    if extra_config is None:
+        return None
+    if not isinstance(extra_config, dict):
+        return "extra_config must be an object"
+    return validate_extra_config_no_secrets(extra_config)
+
+
+def validate_schedule_cron(expr: str) -> str | None:
+    """
+    Validate a lightweight cron expression.
+
+    Accepts empty string (manual mode) or 5 fields with digits/*/,-/ only.
+    """
+    s = (expr or "").strip()
+    if not s:
+        return None
+    parts = [p for p in s.split(" ") if p]
+    if len(parts) != 5:
+        return "schedule_cron must have 5 fields (min hour day month weekday)"
+    for p in parts:
+        if not _CRON_TOKEN_RE.fullmatch(p):
+            return "schedule_cron contains invalid characters"
+    return None
+
+
+def _expand_value_token(token: str, lo: int, hi: int) -> set[int]:
+    if token == "*":
+        return set(range(lo, hi + 1))
+    if "/" in token:
+        base, step_raw = token.split("/", 1)
+        if not step_raw.isdigit():
+            return set()
+        step = int(step_raw)
+        if step <= 0:
+            return set()
+        if base == "*":
+            base_values = set(range(lo, hi + 1))
+        else:
+            base_values = _expand_value_token(base, lo, hi)
+            if not base_values:
+                return set()
+        anchor = min(base_values)
+        return {v for v in sorted(base_values) if (v - anchor) % step == 0}
+    if "-" in token:
+        a_raw, b_raw = token.split("-", 1)
+        if not (a_raw.isdigit() and b_raw.isdigit()):
+            return set()
+        a, b = int(a_raw), int(b_raw)
+        if a > b:
+            return set()
+        return {v for v in range(max(lo, a), min(hi, b) + 1)}
+    if token.isdigit():
+        n = int(token)
+        if lo <= n <= hi:
+            return {n}
+    return set()
+
+
+def _cron_field_matches(field_expr: str, value: int, lo: int, hi: int) -> bool:
+    for token in field_expr.split(","):
+        token = token.strip()
+        if not token:
+            continue
+        if value in _expand_value_token(token, lo, hi):
+            return True
+    return False
+
+
+def is_task_due_now(task: TboxCrawlTask, now: datetime | None = None) -> bool:
+    """
+    Decide whether a task should run in this worker tick.
+
+    Rules:
+    - requires status=valid, enabled=true, run_state=ready
+    - empty schedule_cron => manual only (worker won't run it)
+    - cron must match current minute
+    - prevent duplicate run in the same minute via last_run_at
+    """
+    if task.status != StatusEnum.VALID.value:
+        return False
+    if not bool(task.enabled):
+        return False
+    if task.run_state != "ready":
+        return False
+
+    cron = (task.schedule_cron or "").strip()
+    if not cron:
+        return False
+    if validate_schedule_cron(cron):
+        return False
+
+    now_dt = now or datetime.now()
+    fields = [p for p in cron.split(" ") if p]
+    if len(fields) != 5:
+        return False
+    minute, hour, day, month, weekday = fields
+    # Python weekday: Mon=0..Sun=6. Cron weekday: Sun=0, Mon=1, ..., Sat=6.
+    cron_weekday = (now_dt.weekday() + 1) % 7
+
+    matched = (
+        _cron_field_matches(minute, now_dt.minute, 0, 59)
+        and _cron_field_matches(hour, now_dt.hour, 0, 23)
+        and _cron_field_matches(day, now_dt.day, 1, 31)
+        and _cron_field_matches(month, now_dt.month, 1, 12)
+        and _cron_field_matches(weekday, cron_weekday, 0, 6)
+    )
+    if not matched:
+        return False
+
+    if task.last_run_at is not None:
+        if (
+            task.last_run_at.year == now_dt.year
+            and task.last_run_at.month == now_dt.month
+            and task.last_run_at.day == now_dt.day
+            and task.last_run_at.hour == now_dt.hour
+            and task.last_run_at.minute == now_dt.minute
+        ):
+            return False
+    return True
+
+
+def resolve_list_tenant_id(tenant_id: str | None, allowed: list[str] | None) -> tuple[str | None, str | None]:
+    """
+    Resolve tenant filter for listing.
+    Returns (tenant_id_or_none, error). tenant_id None with allowed None = list all (superuser).
+    """
+    if allowed is None:
+        return tenant_id, None
+    if not allowed:
+        return None, "no tenant eligible for crawl operations"
+    if tenant_id:
+        if tenant_id not in allowed:
+            return None, "tenant_id is not permitted for this user"
+        return tenant_id, None
+    if len(allowed) == 1:
+        return allowed[0], None
+    return None, "tenant_id is required when the user belongs to multiple tenants"
+
+
+def task_row_to_dict(t: TboxCrawlTask) -> dict:
+    return {
+        "id": t.id,
+        "tenant_id": t.tenant_id,
+        "dataset_id": t.dataset_id or None,
+        "name": t.name,
+        "source_type": t.source_type,
+        "seed_urls": list(t.seed_urls or []),
+        "schedule_cron": t.schedule_cron or "",
+        "enabled": bool(t.enabled),
+        "run_state": t.run_state,
+        "last_run_at": t.last_run_at,
+        "last_error": t.last_error or "",
+        "extra_config": dict(t.extra_config or {}),
+        "created_by": t.created_by,
+        "create_time": t.create_time,
+        "update_time": t.update_time,
+        "status": t.status,
+    }
+
+
+def list_tasks(
+    tenant_filter: str | None,
+    allowed: list[str] | None,
+    page: int,
+    page_size: int,
+    dataset_id: str | None = None,
+) -> tuple[int, list[TboxCrawlTask]]:
+    q = TboxCrawlTask.select().where(TboxCrawlTask.status == StatusEnum.VALID.value)
+    if allowed is None:
+        if tenant_filter:
+            q = q.where(TboxCrawlTask.tenant_id == tenant_filter)
+    else:
+        q = q.where(TboxCrawlTask.tenant_id == tenant_filter)
+    if dataset_id:
+        q = q.where(TboxCrawlTask.dataset_id == dataset_id)
+    total = int(q.count())
+    rows = list(q.order_by(TboxCrawlTask.create_time.desc()).paginate(page, page_size))
+    return total, rows
+
+
+def get_task(task_id: str) -> TboxCrawlTask | None:
+    row = TboxCrawlTask.get_or_none(TboxCrawlTask.id == task_id)
+    if row is None or row.status != StatusEnum.VALID.value:
+        return None
+    return row
+
+
+def user_may_access_task(t: TboxCrawlTask, allowed: list[str] | None) -> bool:
+    if allowed is None:
+        return True
+    return t.tenant_id in allowed
+
+
+def create_task(
+    tenant_id: str,
+    created_by: str,
+    name: str,
+    source_type: str,
+    seed_urls: list[str],
+    schedule_cron: str,
+    enabled: bool,
+    run_state: str,
+    extra_config: dict,
+    dataset_id: str | None,
+) -> TboxCrawlTask:
+    tid = get_uuid()
+    TboxCrawlTask.insert(
+        id=tid,
+        tenant_id=tenant_id,
+        dataset_id=dataset_id or None,
+        name=name,
+        source_type=source_type,
+        seed_urls=seed_urls,
+        schedule_cron=schedule_cron or "",
+        enabled=enabled,
+        run_state=run_state,
+        extra_config=extra_config or {},
+        created_by=created_by,
+        status=StatusEnum.VALID.value,
+    ).execute()
+    return TboxCrawlTask.get_by_id(tid)
+
+
+def update_task_fields(t: TboxCrawlTask, fields: dict) -> TboxCrawlTask:
+    for key, val in fields.items():
+        setattr(t, key, val)
+    t.save()
+    return t
+
+
+def soft_delete_task(t: TboxCrawlTask) -> None:
+    t.status = StatusEnum.INVALID.value
+    t.save()
+
+
+def list_tasks_for_worker_poll(limit: int = 20) -> list[TboxCrawlTask]:
+    """
+    Tasks considered for a worker tick (skeleton).
+
+    Candidate rows only. Final due decision is in `is_task_due_now`.
+    """
+    lim = max(1, min(int(limit), 200))
+    return list(
+        TboxCrawlTask.select()
+        .where(
+            (TboxCrawlTask.status == StatusEnum.VALID.value)
+            & (TboxCrawlTask.enabled == True)  # noqa: E712
+            & (TboxCrawlTask.run_state == "ready")
+        )
+        .order_by(TboxCrawlTask.update_time.asc())
+        .limit(lim)
+    )
+
+
+def record_worker_tick(task_id: str, *, ok: bool, message: str = "") -> None:
+    """Update last_run_at and last_error after a worker attempt (no-op if task missing)."""
+    row = TboxCrawlTask.get_or_none((TboxCrawlTask.id == task_id) & (TboxCrawlTask.status == StatusEnum.VALID.value))
+    if row is None:
+        return
+    row.last_run_at = datetime.now()
+    if ok:
+        row.last_error = (message or "")[:65000]
+    else:
+        row.last_error = (message or "")[:65000]
+    row.save()
+
+
+@dataclass
+class CrawlTickStats:
+    discovered: int = 0
+    discover_hits: int = 0
+    skipped_serp_rank: int = 0
+    discover_rank_kept: int = 0
+    skipped_dup_url: int = 0
+    ingested: int = 0
+    skipped_dup_content: int = 0
+    skipped_kw: int = 0
+    skipped_low_quality_url: int = 0
+    skipped_low_quality: int = 0
+    skipped_relevance: int = 0
+    ingest_failures: int = 0
+
+    def summary(self) -> str:
+        return (
+            f"discovered={self.discovered} discover_hits={self.discover_hits} "
+            f"discover_rank_kept={self.discover_rank_kept} skipped_serp_rank={self.skipped_serp_rank} "
+            f"ingested={self.ingested} "
+            f"skipped_dup_url={self.skipped_dup_url} skipped_dup_content={self.skipped_dup_content} "
+            f"skipped_kw={self.skipped_kw} skipped_low_quality_url={self.skipped_low_quality_url} "
+            f"skipped_low_quality={self.skipped_low_quality} skipped_relevance={self.skipped_relevance} "
+            f"ingest_failures={self.ingest_failures}"
+        )
+
+
+def _filter_discover_hits_by_quality(
+    hits: list[DiscoverHit],
+    *,
+    mode: str,
+) -> tuple[list[DiscoverHit], int]:
+    if mode == "off":
+        return list(hits), 0
+    kept: list[DiscoverHit] = []
+    skipped = 0
+    for hit in hits:
+        if url_passes_quality(hit.url, mode):
+            kept.append(hit)
+        else:
+            skipped += 1
+    return kept, skipped
+
+
+def _prioritize_discovered_urls(
+    target_urls: list[str],
+    discovered_canonical: set[str],
+) -> list[str]:
+    """Try discover URLs before user seeds so one bad seed does not block fresh links."""
+    if not discovered_canonical:
+        return list(target_urls)
+    disc: list[str] = []
+    rest: list[str] = []
+    for url in target_urls:
+        canon = canonicalize_url(url)
+        if canon and canon in discovered_canonical:
+            disc.append(url)
+        else:
+            rest.append(url)
+    return merge_url_lists(disc + rest)
+
+
+def _resolve_crawl_target_urls(
+    row: TboxCrawlTask,
+    strategy: CrawlStrategy,
+    extra: dict,
+) -> tuple[list[str], str, CrawlTickStats, set[str], DiscoverProviderError | None, dict[str, DiscoverHit]]:
+    """
+    Discover + merge seeds + pre-fetch dedup + BFS expand.
+
+    Returns (target_urls, strategy_note, stats, discovered_canonical, discover_error, discover_hit_by_url).
+    """
+    stats = CrawlTickStats()
+    seeds = list(row.seed_urls or [])
+    skip_robots = bool(extra.get("tbox_skip_robots_check"))
+    dcfg = parse_discover_config(extra)
+    discovered: list[str] = []
+    discover_hits: list[DiscoverHit] = []
+    discover_hit_by_url: dict[str, DiscoverHit] = {}
+    discover_error: DiscoverProviderError | None = None
+    discover_attempted = dcfg.provider != "none" and bool(dcfg.queries)
+
+    if discover_attempted:
+        try:
+            result = run_discover(dcfg, strategy.allowed_domains, extra)
+            if result is not None:
+                discover_hits = list(result.hits)
+        except DiscoverProviderError as exc:
+            # 国内/隔离网络常无法访问 Tavily/SearXNG：有种子时降级为「仅种子 + BFS」，不阻断 tick
+            if exc.code in ("DISCOVER_NETWORK", "DISCOVER", "DISCOVER_NO_SEARXNG") and seeds:
+                _LOG.warning(
+                    "tbox_crawl discover provider failed (%s), falling back to seed_urls only: %s",
+                    exc.code,
+                    exc,
+                )
+            else:
+                discover_error = exc
+                return [], "", stats, set(), discover_error, {}
+
+    quality_mode = parse_url_quality_mode(extra)
+    discover_hits, q_skip = _filter_discover_hits_by_quality(discover_hits, mode=quality_mode)
+    stats.skipped_low_quality_url += q_skip
+    stats.discover_hits = len(discover_hits)
+
+    if discover_hits:
+        rank_mode = parse_discover_rank_mode(extra)
+        min_score = parse_discover_rank_min_score(extra)
+        max_fetch = parse_discover_max_fetch(extra)
+        topic = infer_relevance_topic(extra, task_name=str(row.name or ""))
+        ranked_hits, stats.skipped_serp_rank = rank_discover_hits(
+            discover_hits,
+            topic=topic,
+            mode=rank_mode,
+            min_score=min_score,
+            max_keep=max_fetch,
+        )
+        stats.discover_rank_kept = len(ranked_hits)
+        discovered = [h.url for h in ranked_hits if (h.url or "").strip()]
+        discover_hit_by_url = {h.url: h for h in ranked_hits if (h.url or "").strip()}
+    stats.discovered = len(discovered)
+
+    if (
+        discover_attempted
+        and not discovered
+        and not seeds
+        and discover_error is None
+    ):
+        if stats.discover_hits > 0 and stats.skipped_serp_rank > 0:
+            discover_error = DiscoverProviderError(
+                "DISCOVER_RANK_EMPTY",
+                "no URLs passed discover SERP rank filter",
+            )
+        else:
+            discover_error = DiscoverProviderError("DISCOVER_EMPTY", "no URLs after discover and quality filter")
+        return [], "", stats, set(), discover_error, {}
+
+    merged = merge_url_lists(discovered, seeds)
+    discovered_canonical = {canonicalize_url(u) for u in discovered if canonicalize_url(u)}
+    seed_canonical_set = {canonicalize_url(u) for u in seeds if canonicalize_url(u)}
+
+    ds = row.dataset_id
+    if ds and str(ds).strip():
+        merged, stats.skipped_dup_url = filter_urls_not_seen(str(ds), merged, seen_fn=url_seen)
+
+    if dcfg.provider in ("tavily", "searxng", "auto") and dcfg.queries and not merged and discover_error is None:
+        if not seeds:
+            discover_error = DiscoverProviderError("DISCOVER_EMPTY", "no URLs after discover and dedup")
+            return [], "", stats, discovered_canonical, discover_error, discover_hit_by_url
+
+    st = str(row.source_type or "static_web")
+    if st == "static_web" and discover_skip_bfs(extra):
+        expanded, strategy_note = resolve_target_urls(
+            seeds,
+            source_type=st,
+            strategy=strategy,
+            skip_robots=skip_robots,
+            extra_config=extra,
+        )
+        expand_only = [u for u in expanded if canonicalize_url(u) not in seed_canonical_set]
+        expand_only, q_expand = filter_urls_by_quality(expand_only, mode=quality_mode)
+        stats.skipped_low_quality_url += q_expand
+        seed_kept = [u for u in expanded if canonicalize_url(u) in seed_canonical_set]
+        target_urls = merge_url_lists(discovered + seed_kept + expand_only)
+        if not target_urls and strategy_note:
+            return [], strategy_note, stats, discovered_canonical, discover_error, discover_hit_by_url
+        if not target_urls:
+            note = strategy_note or "no URLs after quality filter"
+            if stats.skipped_low_quality_url > 0:
+                note = f"url quality skipped {stats.skipped_low_quality_url} URL(s)"
+            return [], note, stats, discovered_canonical, discover_error, discover_hit_by_url
+        return target_urls, strategy_note, stats, discovered_canonical, discover_error, discover_hit_by_url
+
+    target_urls, strategy_note = resolve_target_urls(
+        merged,
+        source_type=st,
+        skip_robots=skip_robots,
+        extra_config=extra,
+        strategy=strategy,
+    )
+    if st == "static_web" and quality_mode != "off":
+        non_seed = [u for u in target_urls if canonicalize_url(u) not in seed_canonical_set]
+        non_seed, q2 = filter_urls_by_quality(non_seed, mode=quality_mode)
+        stats.skipped_low_quality_url += q2
+        seed_kept = [u for u in target_urls if canonicalize_url(u) in seed_canonical_set]
+        target_urls = merge_url_lists(seed_kept + non_seed)
+    return target_urls, strategy_note, stats, discovered_canonical, discover_error, discover_hit_by_url
+
+
+def execute_crawl_task_stub_tick(task_id: str) -> None:
+    """
+    One crawl execution step: optional HTTP probe, then optional KB ingest.
+
+    Ingest runs when ``dataset_id`` is set (unless ``extra_config.tbox_skip_ingest``):
+    ``static_web`` uses SSRF-safe GET + upload; ``rss`` uses ``RSSConnector`` + per-entry ``.txt`` upload;
+    ``http_api`` GET JSON endpoints and uploads one ``.txt`` per array item.
+    ``robots.txt`` is consulted via ``common/tbox_crawl_robots.py`` unless ``extra_config.tbox_skip_robots_check``.
+    Strategy keys ``tbox_crawl_keywords``, ``tbox_crawl_max_depth``, ``tbox_crawl_allowed_domains`` are applied via
+    :mod:`common.tbox_crawl_strategy` (domain filter, optional link expansion, keyword filter at ingest).
+    Discover keys ``tbox_crawl_search_*`` via :mod:`common.tbox_crawl_discover` (v1 Tavily).
+    Transient HTTP retry whitelist: ``extra_config.tbox_crawl_retry_statuses`` (task full replace) /
+    ``tbox_crawl_retry_extra_statuses`` (union) are passed to ``common.tbox_crawl_ssrf_fetch.effective_retry_statuses``
+    for probe + ingest (process ``TBOX_CRAWL_RETRY_STATUSES`` overrides task keys when set).
+
+    Used by the background worker and by POST /v1/tbox/crawl/tasks/<id>/run.
+    Raises ValueError if task missing; RuntimeError if extra_config.worker_stub_fail is set.
+    """
+    heal_ingested_urls: list[str] = []
+    heal_discovered: set[str] = set()
+    try:
+        _execute_crawl_task_stub_tick_body(task_id, heal_ingested_urls, heal_discovered)
+    finally:
+        try:
+            from api.db.services import tbox_crawl_self_heal_service as self_heal_svc
+
+            self_heal_svc.run_self_heal(
+                task_id,
+                ingested_urls=heal_ingested_urls,
+                discovered_canonical=heal_discovered,
+            )
+        except Exception:
+            _LOG.exception("tbox_crawl self_heal failed task_id=%s", task_id)
+
+
+def _execute_crawl_task_stub_tick_body(
+    task_id: str,
+    heal_ingested_urls: list[str],
+    heal_discovered: set[str],
+) -> None:
+    row = get_task(task_id)
+    if row is None:
+        raise ValueError("crawl task not found or deleted")
+    extra = dict(row.extra_config or {})
+    if extra.get("worker_stub_fail"):
+        raise RuntimeError("worker_stub_fail is set on task extra_config")
+
+    skip_robots = bool(extra.get("tbox_skip_robots_check"))
+    strategy = parse_strategy(extra)
+    target_urls, strategy_note, tick_stats, discovered_canonical, discover_error, discover_hit_by_url = _resolve_crawl_target_urls(row, strategy, extra)
+    heal_discovered.update(discovered_canonical)
+    if discover_error is not None:
+        record_worker_tick(
+            task_id,
+            ok=False,
+            message=format_crawl_worker_error(discover_error.code, str(discover_error)),
+        )
+        return
+    if not target_urls:
+        if tick_stats.skipped_dup_url > 0 and discover_error is None:
+            record_worker_tick(task_id, ok=True, message=f"[tbox:TICK_OK] {tick_stats.summary()}")
+            return
+        record_worker_tick(
+            task_id,
+            ok=False,
+            message=format_crawl_worker_error("STRATEGY", strategy_note or "no URLs to crawl after strategy"),
+        )
+        return
+    if strategy_note:
+        _LOG.info("tbox_crawl_tick task_id=%s strategy: %s", task_id, strategy_note)
+
+    if not extra.get("tbox_skip_http_probe"):
+        ok, msg = probe_seed_urls(target_urls, skip_robots=skip_robots, extra_config=extra)
+        if not ok:
+            if msg and ":" in msg:
+                fail_url, _, fail_rest = msg.partition(":")
+                crawl_health_svc.record_url_outcome_from_error(
+                    tenant_id=row.tenant_id,
+                    task_id=task_id,
+                    url=fail_url.strip(),
+                    error_message=fail_rest.strip() or msg,
+                    source="seed",
+                )
+            record_worker_tick(task_id, ok=False, message=format_crawl_worker_error("HTTP_PROBE", msg))
+            return
+
+    if extra.get("tbox_skip_ingest"):
+        record_worker_tick(task_id, ok=True, message=f"[tbox:TICK_OK] {tick_stats.summary()}")
+        return
+
+    ds = row.dataset_id
+    if not ds or not str(ds).strip():
+        record_worker_tick(task_id, ok=True, message=f"[tbox:TICK_OK] {tick_stats.summary()}")
+        return
+
+    if not kb_valid_for_tenant(str(ds), row.tenant_id):
+        record_worker_tick(
+            task_id,
+            ok=False,
+            message=format_crawl_worker_error("DATASET_TENANT", "dataset_id is not valid for this task tenant"),
+        )
+        return
+
+    ok_kb, kb = KnowledgebaseService.get_by_id(ds)
+    if not ok_kb or kb is None:
+        record_worker_tick(task_id, ok=False, message=format_crawl_worker_error("KB_NOT_FOUND", "knowledge base not found"))
+        return
+
+    st = str(row.source_type or "static_web")
+    seed_canonical = {canonicalize_url(u) for u in (row.seed_urls or []) if canonicalize_url(u)}
+    ingest_urls = _prioritize_discovered_urls(target_urls, discovered_canonical)
+    if st == "static_web":
+        ok_i, msg_i, ingest_stats = ingest_static_web_seeds_into_kb(
+            kb,
+            row.tenant_id,
+            ingest_urls,
+            skip_robots=skip_robots,
+            extra_config=extra,
+            dataset_id=str(ds),
+            discovered_canonical=discovered_canonical,
+            seed_canonical=seed_canonical,
+            task_id=task_id,
+            task_name=str(row.name or ""),
+            hit_by_url=discover_hit_by_url or None,
+        )
+        tick_stats.ingested = ingest_stats.get("ingested", 0)
+        heal_ingested_urls.extend(ingest_stats.get("ingested_urls") or [])
+        tick_stats.skipped_dup_content = ingest_stats.get("skipped_dup_content", 0)
+        tick_stats.skipped_kw = ingest_stats.get("skipped_kw", 0)
+        tick_stats.skipped_low_quality = ingest_stats.get("skipped_low_quality", 0)
+        tick_stats.skipped_relevance = ingest_stats.get("skipped_relevance", 0)
+        tick_stats.ingest_failures = ingest_stats.get("ingest_failures", 0)
+    elif st == "rss":
+        ok_i, msg_i = ingest_rss_seeds_into_kb(kb, row.tenant_id, target_urls, skip_robots=skip_robots, extra_config=extra)
+    elif st == "http_api":
+        ok_i, msg_i = ingest_http_api_seeds_into_kb(kb, row.tenant_id, target_urls, skip_robots=skip_robots, extra_config=extra)
+    else:
+        _LOG.info("tbox_crawl_tick: unknown source_type=%s task_id=%s", row.source_type, task_id)
+        ok_i, msg_i = True, ""
+
+    summary = f"[tbox:TICK_OK] {tick_stats.summary()}"
+    if ok_i:
+        record_worker_tick(task_id, ok=True, message=summary)
+    elif st == "rss":
+        record_worker_tick(task_id, ok=False, message=format_crawl_worker_error("INGEST_RSS", msg_i))
+    elif st == "http_api":
+        record_worker_tick(task_id, ok=False, message=format_crawl_worker_error("INGEST_API", msg_i))
+    else:
+        record_worker_tick(task_id, ok=False, message=format_crawl_worker_error("INGEST_STATIC", msg_i))

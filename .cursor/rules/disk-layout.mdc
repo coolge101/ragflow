@@ -1,0 +1,35 @@
+---
+description: TBOX VM 磁盘布局、Docker 数据目录与清理约束（勿占满系统盘 /）
+alwaysApply: true
+---
+
+# 磁盘布局（本 VM）
+
+## 分区
+
+| 挂载点 | 设备 | 用途 |
+|--------|------|------|
+| **`/`** | `/dev/sda2`（~98GB） | 系统盘、代码 clone、用户缓存；**不要**在此堆积 Docker 镜像/build cache |
+| **`/data`** | `/dev/sdb1`（~200GB） | 数据盘；Docker 与 TBOX 正式数据 |
+
+## Docker
+
+- **Docker Root Dir**：`/data/docker`（`docker info` 可确认）
+- **API 镜像**：须 `RAGFLOW_IMAGE=ragflow-tbox:local`（勿用 `infiniflow/ragflow:*` Hub 镜像跑 TBOX）
+- **大 build 临时目录**：`TMPDIR=/data/tbox/tmp`、`DOCKER_TMPDIR=/data/tbox/tmp`（`docker/tbox-compose-up.sh` 已默认）
+
+## TBOX 路径
+
+- 开发 clone：常见 `~/ragflow`
+- 准生产（可选）：`/data/tbox/ragflow`
+- Build 临时：`/data/tbox/tmp`
+
+## 清理
+
+- 安全清理：`bash scripts/tbox_disk_cleanup.sh`（**不删** Docker volumes）
+- build 后根分区报 **no space left on device**：镜像可能已成功 → `docker builder prune -af`，再 `--force-recreate ragflow-cpu`（见 `docs/TBOX_UPSTREAM_MERGE_RUNBOOK.md` §3.1）
+
+## 禁止（与 file-del 规则一致）
+
+- **不得删除** MySQL/MinIO/ES/Redis 等 **Docker volumes** 或数据库文件；删除须两次确认用户。
+- 清理时只删：未使用镜像、dangling 镜像、builder cache、宿主机 `uv` cache。

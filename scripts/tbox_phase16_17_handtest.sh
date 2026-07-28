@@ -1,0 +1,58 @@
+#!/usr/bin/env bash
+# Phase 16–17 5180 手测辅助：bundle 自动化通过后打印 Citation / 检索高亮检查清单
+#
+# Usage:
+#   bash scripts/tbox_phase16_17_handtest.sh
+#   TBOX_CONSOLE_URL=http://127.0.0.1:5180 bash scripts/tbox_phase16_17_handtest.sh
+# 浏览器通过后归档 §5：
+#   bash scripts/tbox_phase16_17_finish.sh --archive
+set -euo pipefail
+
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+cd "$ROOT"
+
+CONSOLE_PORT="${TBOX_CONSOLE_PORT:-5180}"
+CONSOLE_URL="${TBOX_CONSOLE_URL:-http://127.0.0.1:${CONSOLE_PORT}}"
+LAN="$(hostname -I 2>/dev/null | awk '{print $1}' || true)"
+
+echo "==> Phase 16–17 hand-test helper @ $(git rev-parse --short HEAD 2>/dev/null || echo unknown)"
+echo "    Console: ${CONSOLE_URL}"
+[[ -n "${LAN}" ]] && echo "    LAN:     http://${LAN}:${CONSOLE_PORT}"
+echo "    Review:  ${CONSOLE_URL}/review/step/phase16-17"
+echo ""
+
+echo "==> [1/2] Console bundle smoke (must pass before UI hand-test)"
+bash scripts/tbox_console_bundle_smoke.sh
+echo ""
+
+echo "==> [2/2] Manual checklist (5180 — Walkthrough 步骤 D 准生产前置 + C §7 + D Phase 17)"
+cat <<EOF
+
+┌─ Phase 16：Citation 侧栏联动 ─────────────────────────────────────
+│ 1. 打开 ${CONSOLE_URL}/login ，admin 登录
+│ 2. 进入 ${CONSOLE_URL}/ ，选择已绑定知识库的对话应用
+│ 3. 提问直至回答含 [ID:0] 等引用标记
+│ 4. 点击 [ID:n] → 右侧「本轮引用」对应片段高亮并滚动
+│ 5. 点击侧栏片段 → 正文引用编号反向高亮
+└──────────────────────────────────────────────────────────────────
+
+┌─ Phase 17：检索结果高亮 ─────────────────────────────────────────
+│ 1. 打开 ${CONSOLE_URL}/search
+│ 2. 选择有内容的知识库，输入可命中关键词并检索
+│ 3. 点击某条结果 → 条目高亮（scrollIntoView）
+└──────────────────────────────────────────────────────────────────
+
+确认页：${CONSOLE_URL}/review/step/phase16-17
+
+通过后：
+  bash scripts/tbox_phase16_17_finish.sh --archive
+
+EOF
+
+echo "==> HAND-TEST CHECKLIST PRINTED"
+echo "    Next: complete browser steps above, then:"
+echo "    bash scripts/tbox_phase16_17_finish.sh --archive"
+echo "    Full chain: bash scripts/tbox_print_release_next_steps.sh"
+echo "    pre_release: bash scripts/tbox_pre_release.sh --help"
+echo "    Doc: docs/TBOX_SYSTEM_USER_MANUAL.md §5.4 · docs/TBOX_UI_ACCEPTANCE_WALKTHROUGH.md (step D)"
+echo "         docs/TBOX_CONSOLE_REBUILD.md · docs/TBOX_VM_PRODUCTION_ACCEPTANCE.md §5"

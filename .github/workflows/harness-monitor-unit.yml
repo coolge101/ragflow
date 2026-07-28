@@ -1,0 +1,49 @@
+name: harness-monitor-unit
+permissions:
+  contents: read
+
+on:
+  pull_request:
+    paths:
+      - "common/harness_monitor.py"
+      - "common/log_utils.py"
+      - "test/test_harness_monitor.py"
+      - "test/adversarial_tests.py"
+      - "pyproject.toml"
+      - "uv.lock"
+      - ".github/workflows/harness-monitor-unit.yml"
+  push:
+    branches:
+      - main
+      - "*.*.*"
+    paths:
+      - "common/harness_monitor.py"
+      - "common/log_utils.py"
+      - "test/test_harness_monitor.py"
+      - "test/adversarial_tests.py"
+      - "pyproject.toml"
+      - "uv.lock"
+      - ".github/workflows/harness-monitor-unit.yml"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  pytest:
+    name: pytest harness + adversarial (offline)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v6
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: Sync test dependencies
+        run: uv sync --python 3.12 --group test --frozen
+
+      - name: Run unit tests
+        run: uv run pytest test/test_harness_monitor.py test/adversarial_tests.py -v --tb=short

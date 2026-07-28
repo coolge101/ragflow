@@ -9,13 +9,15 @@ cat /ragflow/VERSION
 # Usage and command-line argument parsing
 # -----------------------------------------------------------------------------
 function usage() {
-    echo "Usage: $0 [--disable-webserver] [--disable-taskexecutor] [--disable-datasync] [--consumer-no-beg=<num>] [--consumer-no-end=<num>] [--workers=<num>] [--host-id=<string>]"
+    echo "Usage: $0 [--disable-webserver] [--disable-taskexecutor] [--disable-datasync] [--enable-tbox-crawl-worker] [--consumer-no-beg=<num>] [--consumer-no-end=<num>] [--workers=<num>] [--host-id=<string>]"
     echo
     echo "  --disable-webserver             Disables the web server (nginx + ragflow_server)."
     echo "  --disable-taskexecutor          Disables task executor workers."
     echo "  --disable-datasync              Disables synchronization of datasource workers."
+    echo "  --enable-tbox-crawl-worker      Enables TBOX crawl task worker (rag/svr/tbox_crawl_worker.py)."
     echo "  --enable-mcpserver              Enables the MCP server."
     echo "  --enable-adminserver            Enables the Admin server."
+    echo "  --init-model-provider-tables  Run model provider table migrations and exit."
     echo "  --init-superuser                Initializes the superuser."
     echo "  --consumer-no-beg=<num>         Start range for consumers (if using range-based)."
     echo "  --consumer-no-end=<num>         End range for consumers (if using range-based)."
@@ -37,7 +39,9 @@ ENABLE_TASKEXECUTOR=1  # Default to enable task executor
 ENABLE_DATASYNC=1
 ENABLE_MCP_SERVER=0
 ENABLE_ADMIN_SERVER=0 # Default close admin server
+ENABLE_TBOX_CRAWL_WORKER="${ENABLE_TBOX_CRAWL_WORKER:-0}"
 INIT_SUPERUSER_ARGS="" # Default to not initialize superuser
+INIT_MODEL_PROVIDER_TABLES=0
 CONSUMER_NO_BEG=0
 CONSUMER_NO_END=0
 WORKERS=1
@@ -81,12 +85,20 @@ for arg in "$@"; do
       ENABLE_DATASYNC=0
       shift
       ;;
+    --enable-tbox-crawl-worker)
+      ENABLE_TBOX_CRAWL_WORKER=1
+      shift
+      ;;
     --enable-mcpserver)
       ENABLE_MCP_SERVER=1
       shift
       ;;
     --enable-adminserver)
       ENABLE_ADMIN_SERVER=1
+      shift
+      ;;
+    --init-model-provider-tables)
+      INIT_MODEL_PROVIDER_TABLES=1
       shift
       ;;
     --init-superuser)
@@ -182,21 +194,28 @@ PY=python3
 # Select Nginx Configuration based on API_PROXY_SCHEME
 # -----------------------------------------------------------------------------
 NGINX_CONF_DIR="/etc/nginx/conf.d"
+apply_nginx_conf() {
+    local src="$1"
+    if [[ -f "$NGINX_CONF_DIR/$src" ]]; then
+        cp -f "$NGINX_CONF_DIR/$src" "$NGINX_CONF_DIR/ragflow.conf"
+        echo "Applied nginx config: $src"
+        return 0
+    fi
+    return 1
+}
 if [ -n "$API_PROXY_SCHEME" ]; then
     if [[ "${API_PROXY_SCHEME}" == "hybrid" ]]; then
-        cp -f "$NGINX_CONF_DIR/ragflow.conf.hybrid" "$NGINX_CONF_DIR/ragflow.conf"
-        echo "Applied nginx config: ragflow.conf.hybrid"
+        apply_nginx_conf "ragflow.conf.hybrid" || true
     elif [[ "${API_PROXY_SCHEME}" == "go" ]]; then
-        cp -f "$NGINX_CONF_DIR/ragflow.conf.golang" "$NGINX_CONF_DIR/ragflow.conf"
-        echo "Applied nginx config: ragflow.conf.golang (default)"
+        apply_nginx_conf "ragflow.conf.golang" || true
     else
-        cp -f "$NGINX_CONF_DIR/ragflow.conf.python" "$NGINX_CONF_DIR/ragflow.conf"
-        echo "Applied nginx config: ragflow.conf.python"
+        apply_nginx_conf "ragflow.conf.python" || apply_nginx_conf "ragflow.conf" || \
+            echo "WARNING: no ragflow.conf.python / ragflow.conf in image; leaving nginx as-is" >&2
     fi
 else
-    # Default to python backend
-    cp -f "$NGINX_CONF_DIR/ragflow.conf.python" "$NGINX_CONF_DIR/ragflow.conf"
-    echo "Default: applied nginx config: ragflow.conf.python"
+    # Default to python backend (older images may only ship ragflow.conf)
+    apply_nginx_conf "ragflow.conf.python" || apply_nginx_conf "ragflow.conf" || \
+        echo "WARNING: no ragflow.conf.python / ragflow.conf in image; leaving nginx as-is" >&2
 fi
 
 # -----------------------------------------------------------------------------
@@ -210,7 +229,7 @@ function task_exe() {
     JEMALLOC_PATH="$(pkg-config --variable=libdir jemalloc)/libjemalloc.so"
     while true; do
         LD_PRELOAD="$JEMALLOC_PATH" \
-        "$PY" rag/svr/task_executor.py "${host_id}_${consumer_id}"  &
+        "$PY" rag/svr/task_executor.py -i "${host_id}_${consumer_id}" -t "common" &
         wait;
         sleep 1;
     done
@@ -266,6 +285,15 @@ function wait_for_server() {
 ensure_docling
 ensure_db_init
 
+if [[ "${INIT_MODEL_PROVIDER_TABLES}" -eq 1 ]]; then
+    echo "Running model provider table migrations..."
+    "$PY" tools/scripts/mysql_migration.py --stages tenant_model_provider --config conf/service_conf.yaml --execute
+    "$PY" tools/scripts/mysql_migration.py --stages tenant_model_instance --config conf/service_conf.yaml --execute
+    "$PY" tools/scripts/mysql_migration.py --stages tenant_model --config conf/service_conf.yaml --execute
+    "$PY" tools/scripts/mysql_migration.py --stages model_id_config --config conf/service_conf.yaml --execute
+    echo "Model provider table migrations completed."
+fi
+
 if [[ "${ENABLE_WEBSERVER}" -eq 1 ]]; then
     echo "Starting nginx..."
     /usr/sbin/nginx
@@ -280,7 +308,7 @@ if [[ "${ENABLE_WEBSERVER}" -eq 1 ]]; then
     if [[ "${API_PROXY_SCHEME}" == "hybrid" ]]; then
         while true; do
             echo "Attempt to start RAGFlow go server..."
-            wait_for_server "http://127.0.0.1:9380/healthz" "ragflow_server"
+            wait_for_server "http://127.0.0.1:9380/api/v1/system/healthz" "ragflow_server"
             echo "Starting RAGFlow go server..."
             bin/server_main
             sleep 1;
@@ -312,6 +340,15 @@ if [[ "${ENABLE_DATASYNC}" -eq 1 ]]; then
     echo "Starting data sync..."
     while true; do
         "$PY" rag/svr/sync_data_source.py &
+        wait;
+        sleep 1;
+    done &
+fi
+
+if [[ "${ENABLE_TBOX_CRAWL_WORKER}" -eq 1 ]]; then
+    echo "Starting TBOX crawl worker..."
+    while true; do
+        "$PY" rag/svr/tbox_crawl_worker.py &
         wait;
         sleep 1;
     done &

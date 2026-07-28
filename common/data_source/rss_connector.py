@@ -1,49 +1,62 @@
+from __future__ import annotations
+
 import hashlib
-import ipaddress
-import socket
+import os
+import time
 from datetime import datetime, timezone
 from email.utils import parsedate_to_datetime
 from time import struct_time
 from typing import Any
-from urllib.parse import urlparse
+from urllib.parse import urljoin, urlparse
 
 import bs4
 import feedparser
 import requests
 
 from common.data_source.config import INDEX_BATCH_SIZE, REQUEST_TIMEOUT_SECONDS, DocumentSource
-from common.data_source.interfaces import LoadConnector, PollConnector
-from common.data_source.models import Document, GenerateDocumentsOutput, SecondsSinceUnixEpoch
+from common.data_source.interfaces import LoadConnector, PollConnector, SlimConnectorWithPermSync
+from common.data_source.models import (
+    Document,
+    GenerateDocumentsOutput,
+    GenerateSlimDocumentOutput,
+    SecondsSinceUnixEpoch,
+    SlimDocument,
+)
+from common.ssrf_guard import assert_url_is_safe, pin_dns as _pin_dns
+from common.tbox_crawl_ssrf_fetch import effective_retry_statuses, _retry_delay_seconds, _retry_max_for_status
+
+_MAX_REDIRECTS = 10
+_REDIRECT_STATUSES = frozenset({301, 302, 303, 307, 308})
+_RSS_HTTP_HEADERS = {
+    "User-Agent": os.environ.get(
+        "TBOX_CRAWL_HTTP_USER_AGENT",
+        "TBOX-RAGFlow-Crawl/1.0 (+https://github.com/infiniflow/ragflow)",
+    ),
+}
 
 
-def _is_private_ip(ip: str) -> bool:
-    try:
-        ip_obj = ipaddress.ip_address(ip)
-        return ip_obj.is_private or ip_obj.is_link_local or ip_obj.is_loopback
-    except ValueError:
-        return False
-
-
-def _validate_url_no_ssrf(url: str) -> None:
-    parsed = urlparse(url)
-    hostname = parsed.hostname
-    if not hostname:
-        raise ValueError("URL must have a valid hostname")
-
-    try:
-        ip = socket.gethostbyname(hostname)
-        if _is_private_ip(ip):
-            raise ValueError(f"URL resolves to private/internal IP address: {ip}")
-    except socket.gaierror as e:
-        raise ValueError(f"Failed to resolve hostname: {hostname}") from e
-
-
-class RSSConnector(LoadConnector, PollConnector):
-    def __init__(self, feed_url: str, batch_size: int = INDEX_BATCH_SIZE) -> None:
+class RSSConnector(LoadConnector, PollConnector, SlimConnectorWithPermSync):
+    def __init__(
+        self,
+        feed_url: str,
+        batch_size: int = INDEX_BATCH_SIZE,
+        *,
+        origin_throttle: Any | None = None,
+        robots_preflight: Any | None = None,
+        request_timeout_sec: float | None = None,
+        extra_config: dict[str, Any] | None = None,
+        retry_statuses: frozenset[int] | None = None,
+    ) -> None:
         self.feed_url = feed_url.strip()
         self.batch_size = batch_size
         self.credentials: dict[str, Any] = {}
         self._cached_feed: Any | None = None
+        self._origin_throttle = origin_throttle
+        self._robots_preflight = robots_preflight
+        self._retry_statuses = retry_statuses if retry_statuses is not None else effective_retry_statuses(extra_config)
+        self._http_timeout = float(
+            request_timeout_sec if request_timeout_sec is not None else REQUEST_TIMEOUT_SECONDS,
+        )
 
     def load_credentials(self, credentials: dict[str, Any]) -> dict[str, Any] | None:
         self.credentials = credentials or {}
@@ -60,6 +73,25 @@ class RSSConnector(LoadConnector, PollConnector):
 
     def poll_source(self, start: SecondsSinceUnixEpoch, end: SecondsSinceUnixEpoch) -> GenerateDocumentsOutput:
         yield from self._load_entries(start=start, end=end)
+
+    def retrieve_all_slim_docs_perm_sync(
+        self,
+        callback: Any = None,
+    ) -> GenerateSlimDocumentOutput:
+        del callback
+
+        feed = self._read_feed(require_entries=False)
+        batch: list[SlimDocument] = []
+
+        for entry in feed.entries:
+            batch.append(SlimDocument(id=self._build_document_id(entry)))
+
+            if len(batch) >= self.batch_size:
+                yield batch
+                batch = []
+
+        if batch:
+            yield batch
 
     def _load_entries(
         self,
@@ -87,7 +119,8 @@ class RSSConnector(LoadConnector, PollConnector):
         if batch:
             yield batch
 
-    def _validate_feed_url(self) -> None:
+    def _validate_feed_url(self) -> tuple[str, str]:
+        """Validate ``self.feed_url`` and return ``(hostname, resolved_ip)``."""
         if not self.feed_url:
             raise ValueError("feed_url is required")
 
@@ -95,7 +128,7 @@ class RSSConnector(LoadConnector, PollConnector):
         if parsed.scheme not in {"http", "https"} or not parsed.netloc:
             raise ValueError("feed_url must be a valid http or https URL")
 
-        _validate_url_no_ssrf(self.feed_url)
+        return assert_url_is_safe(self.feed_url)
 
     def _read_feed(self, require_entries: bool) -> Any:
         if self._cached_feed is not None:
@@ -103,31 +136,106 @@ class RSSConnector(LoadConnector, PollConnector):
                 raise ValueError("RSS feed contains no entries")
             return self._cached_feed
 
-        self._validate_feed_url()
+        # Validate once to get the pinned IP for the initial request.
+        current_hostname, current_ip = self._validate_feed_url()
+        current_url = self.feed_url
 
-        response = requests.get(self.feed_url, timeout=REQUEST_TIMEOUT_SECONDS, allow_redirects=True)
-        response.raise_for_status()
+        # Follow redirects manually: each hop is validated and DNS-pinned
+        # *before* the connection is made, closing the TOCTOU rebinding window
+        # that existed when allow_redirects=True was used with post-hoc checks.
+        #
+        # When *origin_throttle* / *robots_preflight* are set (TBOX crawl ingest), align with
+        # common.tbox_crawl_ssrf_fetch: per-hop robots, Crawl-delay spacing, transient HTTP backoff (self._retry_statuses).
+        response: requests.Response | None = None
+        try:
+            for _ in range(_MAX_REDIRECTS + 1):
+                attempt = 0
+                while True:
+                    if self._robots_preflight is not None:
+                        ok_r, msg_r = self._robots_preflight.allowed(current_url)
+                        if not ok_r:
+                            raise ValueError(msg_r)
+                    if self._origin_throttle is not None:
+                        self._origin_throttle.wait_before_hop(current_url)
+                    with _pin_dns(current_hostname, current_ip):
+                        response = requests.get(
+                            current_url,
+                            timeout=self._http_timeout,
+                            allow_redirects=False,
+                            headers=_RSS_HTTP_HEADERS,
+                        )
+                    if response.status_code in self._retry_statuses and attempt < _retry_max_for_status(response.status_code):
+                        wait_sec = _retry_delay_seconds(response, attempt)
+                        if self._origin_throttle is not None:
+                            try:
+                                self._origin_throttle.record_hop_finished(response.url or current_url)
+                            except Exception:
+                                pass
+                        response.close()
+                        response = None
+                        if wait_sec > 0.0:
+                            time.sleep(wait_sec)
+                        attempt += 1
+                        continue
+                    break
 
-        final_url = getattr(response, "url", self.feed_url)
-        if final_url != self.feed_url and urlparse(final_url).hostname:
-            _validate_url_no_ssrf(final_url)
+                if response is None:
+                    raise ValueError(f"RSS feed fetch failed for {self.feed_url!r}")
 
-        feed = feedparser.parse(response.content)
-        if getattr(feed, "bozo", False) and not feed.entries:
-            error = getattr(feed, "bozo_exception", None)
-            if error:
-                raise ValueError(f"Failed to parse RSS feed: {error}") from error
-            raise ValueError("Failed to parse RSS feed")
-        if require_entries and not feed.entries:
-            raise ValueError("RSS feed contains no entries")
+                if response.status_code not in _REDIRECT_STATUSES:
+                    break
 
-        self._cached_feed = feed
-        return feed
+                location = response.headers.get("Location")
+                if not location:
+                    break  # broken redirect; let raise_for_status() handle it
+
+                if self._origin_throttle is not None:
+                    try:
+                        self._origin_throttle.record_hop_finished(response.url or current_url)
+                    except Exception:
+                        pass
+                response.close()
+                response = None
+
+                redirect_url = urljoin(current_url, location)
+                current_hostname, current_ip = assert_url_is_safe(redirect_url)
+                current_url = redirect_url
+            else:
+                raise ValueError(f"Exceeded {_MAX_REDIRECTS} redirects fetching {self.feed_url!r}")
+
+            if response is None:
+                raise ValueError(f"RSS feed fetch failed for {self.feed_url!r}")
+
+            response.raise_for_status()
+
+            feed = feedparser.parse(response.content)
+            if getattr(feed, "bozo", False) and not feed.entries:
+                error = getattr(feed, "bozo_exception", None)
+                if error:
+                    raise ValueError(f"Failed to parse RSS feed: {error}") from error
+                raise ValueError("Failed to parse RSS feed")
+            if require_entries and not feed.entries:
+                raise ValueError("RSS feed contains no entries")
+
+            self._cached_feed = feed
+            return feed
+        finally:
+            if response is not None:
+                fin = getattr(response, "url", None) or current_url
+                try:
+                    response.close()
+                except Exception:
+                    pass
+                if self._origin_throttle is not None:
+                    try:
+                        self._origin_throttle.record_hop_finished(str(fin))
+                    except Exception:
+                        pass
 
     def _build_document(self, entry: Any, updated_at: datetime) -> Document:
         link = (entry.get("link") or "").strip()
         title = (entry.get("title") or "").strip()
-        stable_key = (entry.get("id") or link or title or self.feed_url).strip()
+        stable_key = self._resolve_stable_key(entry)
         semantic_identifier = title or link or stable_key
         content = self._build_content(entry, semantic_identifier)
         blob = content.encode("utf-8")
@@ -149,7 +257,7 @@ class RSSConnector(LoadConnector, PollConnector):
             metadata["categories"] = categories
 
         return Document(
-            id=f"rss:{hashlib.md5(stable_key.encode('utf-8')).hexdigest()}",
+            id=self._build_document_id(entry),
             source=DocumentSource.RSS,
             semantic_identifier=semantic_identifier,
             extension=".txt",
@@ -176,6 +284,15 @@ class RSSConnector(LoadConnector, PollConnector):
                 parts.append(normalized)
 
         return "\n\n".join(part for part in parts if part).strip()
+
+    def _build_document_id(self, entry: Any) -> str:
+        stable_key = self._resolve_stable_key(entry)
+        return f"rss:{hashlib.md5(stable_key.encode('utf-8')).hexdigest()}"
+
+    def _resolve_stable_key(self, entry: Any) -> str:
+        link = (entry.get("link") or "").strip()
+        title = (entry.get("title") or "").strip()
+        return (entry.get("id") or link or title or self.feed_url).strip()
 
     def _resolve_entry_time(self, entry: Any) -> datetime:
         for field in ("updated_parsed", "published_parsed"):

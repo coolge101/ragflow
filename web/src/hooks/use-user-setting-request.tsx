@@ -1,18 +1,15 @@
 import message from '@/components/ui/message';
-import { Modal } from '@/components/ui/modal/modal';
 import { ResponseGetType } from '@/interfaces/database/base';
 import { IToken } from '@/interfaces/database/chat';
-import { ITenantInfo } from '@/interfaces/database/knowledge';
+import { ITenantInfo } from '@/interfaces/database/dataset';
 import { ILangfuseConfig } from '@/interfaces/database/system';
 import {
-  ISystemStatus,
   ITenant,
   ITenantUser,
   IUserInfo,
 } from '@/interfaces/database/user-setting';
 import { ISetLangfuseConfigRequestBody } from '@/interfaces/request/system';
 import { DEFAULT_LANGUAGE_CODE, supportedLanguages } from '@/locales/config';
-import { Routes } from '@/routes';
 import userService, {
   addTenantUser,
   agreeTenant,
@@ -21,11 +18,10 @@ import userService, {
   listTenantUser,
 } from '@/services/user-service';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import DOMPurify from 'dompurify';
-import { isEmpty } from 'lodash';
 import { useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useNavigate } from 'react-router';
+
+import { useWarnEmptyModel } from './use-warn-empty-model';
 
 export const enum UserSettingApiAction {
   UserInfo = 'userInfo',
@@ -51,7 +47,7 @@ export const useFetchUserInfo = (): ResponseGetType<IUserInfo> => {
     initialData: {},
     gcTime: 0,
     queryFn: async () => {
-      const { data } = await userService.user_info();
+      const { data } = await userService.userInfo();
 
       if (data.code === 0) {
         const targetLng =
@@ -70,42 +66,20 @@ export const useFetchUserInfo = (): ResponseGetType<IUserInfo> => {
   return { data, loading };
 };
 
+// Stop using this interface to retrieve the default model; instead, directly call `useFetchDefaultModelDictionary`.
 export const useFetchTenantInfo = (
   showEmptyModelWarn = false,
 ): ResponseGetType<ITenantInfo> => {
-  const { t } = useTranslation();
-  const navigate = useNavigate();
   const { data, isFetching: loading } = useQuery({
     queryKey: [UserSettingApiAction.TenantInfo, showEmptyModelWarn],
     initialData: {},
     gcTime: 0,
     queryFn: async () => {
-      const { data: res } = await userService.get_tenant_info();
+      const { data: res } = await userService.getTenantInfo();
       if (res.code === 0) {
         // llm_id is chat_id
         // asr_id is speech2txt
         const { data } = res;
-        if (
-          showEmptyModelWarn &&
-          (isEmpty(data.embd_id) || isEmpty(data.llm_id))
-        ) {
-          Modal.warning({
-            title: t('common.warn'),
-            content: (
-              <div
-                dangerouslySetInnerHTML={{
-                  __html: DOMPurify.sanitize(t('setting.modelProvidersWarn')),
-                }}
-              ></div>
-            ),
-            closable: false,
-            showCancel: false,
-            onOk() {
-              // window.open('/user-setting/model', '_self');
-              navigate(`${Routes.UserSetting}${Routes.Model}`);
-            },
-          });
-        }
         data.chat_id = data.llm_id;
         data.speech2text_id = data.asr_id;
 
@@ -115,6 +89,8 @@ export const useFetchTenantInfo = (
       return res;
     },
   });
+
+  useWarnEmptyModel(showEmptyModelWarn, data?.embd_id, data?.llm_id);
 
   return { data, loading };
 };
@@ -214,33 +190,12 @@ export const useFetchSystemVersion = () => {
         setLoading(false);
       }
     } catch (error) {
+      console.warn(error);
       setLoading(false);
     }
   }, []);
 
   return { fetchSystemVersion, version, loading };
-};
-
-export const useFetchSystemStatus = () => {
-  const [systemStatus, setSystemStatus] = useState<ISystemStatus>(
-    {} as ISystemStatus,
-  );
-  const [loading, setLoading] = useState(false);
-
-  const fetchSystemStatus = useCallback(async () => {
-    setLoading(true);
-    const { data } = await userService.getSystemStatus();
-    if (data.code === 0) {
-      setSystemStatus(data.data);
-      setLoading(false);
-    }
-  }, []);
-
-  return {
-    systemStatus,
-    fetchSystemStatus,
-    loading,
-  };
 };
 
 export const useFetchManualSystemTokenList = () => {

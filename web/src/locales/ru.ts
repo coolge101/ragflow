@@ -121,8 +121,7 @@ export default {
         'Анализирует содержание диалога, извлекает ключевую информацию и формирует структурированные сводки памяти.',
       embeddingModelTooltip:
         'Преобразует текст в числовые векторы для семантического поиска и извлечения памяти.',
-      embeddingModelError:
-        'Тип памяти обязателен; тип «raw» нельзя удалить.',
+      embeddingModelError: 'Тип памяти обязателен; тип «raw» нельзя удалить.',
       memoryTypeTooltip: `Raw: исходный диалог пользователя и агента (обязателен по умолчанию).
 Семантическая память: обобщённые знания и факты о пользователе и мире.
 Эпизодическая память: события с привязкой ко времени.
@@ -235,7 +234,8 @@ export default {
           'Имя поля уже есть. Подтвердите объединение дубликатов.',
         fieldExists: 'Поле уже существует.',
         fieldSetting: 'Настройки поля',
-        changesAffectNewParses: 'Изменения применяются только к новым парсингам.',
+        changesAffectNewParses:
+          'Изменения применяются только к новым парсингам.',
         // editMetadataForDataset: 'View and edit metadata for ',
         restrictDefinedValues: 'Ограничить заданными значениями',
         metadataGenerationSettings: 'Настройки генерации метаданных',
@@ -250,8 +250,7 @@ export default {
         fieldName: 'Имя поля',
         editMetadata: 'Редактировать метаданные',
         addMetadata: 'Добавить метаданные',
-        deleteWarn:
-          'Поле «{{field}}» будет удалено из всех связанных файлов',
+        deleteWarn: 'Поле «{{field}}» будет удалено из всех связанных файлов',
         deleteManageFieldAllWarn:
           'Это поле и все его значения будут удалены из всех связанных файлов.',
         deleteManageValueAllWarn:
@@ -264,7 +263,8 @@ export default {
         deleteSettingValueWarn: `Значение будет удалено; существующие метаданные не затронуты.`,
       },
       redoAll: 'Очистите существующие фрагменты',
-      applyAutoMetadataSettings: 'Применить глобальные настройки авто-метаданных',
+      applyAutoMetadataSettings:
+        'Применить глобальные настройки авто-метаданных',
       parseFileTip: 'Запустить парсинг?',
       parseFile: 'Парсить файл',
       emptyMetadata: 'Нет метаданных',
@@ -539,7 +539,7 @@ export default {
       embeddingModelTip:
         'Модель эмбеддингов по умолчанию для базы знаний. После появления чанков при смене модели система случайно выбирает несколько чанков для проверки совместимости, перекодирует их новой моделью и вычисляет косинусное сходство. Переключение возможно только если среднее сходство ≥ 0.9. Иначе удалите все чанки в датасете.',
       permissionsTip:
-        "Если установлено значение «Команда», все члены команды смогут управлять базой знаний.",
+        'Если установлено значение «Команда», все члены команды смогут управлять базой знаний.',
       chunkTokenNumberTip:
         'Это своего рода устанавливает порог токенов для создания чанка. Сегмент с меньшим количеством токенов, чем этот порог, будет объединен со следующими сегментами до тех пор, пока количество токенов не превысит порог, после чего будет создан чанк. Новый чанк не создается, если не встречен разделитель, даже если порог превышен.',
       chunkMethod: 'Метод чанкинга',
@@ -719,7 +719,8 @@ export default {
       graphRagMethod: 'Метод',
       graphRagMethodTip: `
       Light: (по умолчанию) Промпты github.com/HKUDS/LightRAG для извлечения сущностей и связей. Меньше токенов, памяти и вычислений.</br>
-      General: Промпты github.com/microsoft/graphrag`,
+      General: Промпты github.com/microsoft/graphrag.</br>
+      NER: Использует spaCy NER и извлечение ключевых слов на основе правил для извлечения сущностей и связей. LLM не требуется для самого извлечения, что делает его быстрым и эффективным.`,
       resolution: 'Разрешение сущностей',
       resolutionTip: `Переключатель дедубликации сущностей. Когда включен, LLM объединяет похожие сущности (например «2025» и «год 2025») для более точного графа`,
       community: 'Отчёты сообществ',
@@ -767,6 +768,9 @@ export default {
       delete: 'Удалить',
     },
     chat: {
+      chatSupport: 'Чат-поддержка',
+      replyInstantly: 'Обычно мы отвечаем мгновенно',
+      typeYourMessage: 'Введите сообщение...',
       messagePlaceholder: 'Введите ваше сообщение здесь...',
       exit: 'Выход',
       multipleModels: 'Несколько моделей',
@@ -858,7 +862,8 @@ export default {
       maxTokensTip: `Максимальный размер контекста модели; неверное значение вызовет ошибку. По умолчанию 512.`,
       maxTokensInvalidMessage:
         'Пожалуйста, введите действительное число для макс. токенов.',
-      maxTokensMinMessage: 'Максимальное количество токенов не может быть меньше 0.',
+      maxTokensMinMessage:
+        'Максимальное количество токенов не может быть меньше 0.',
       quote: 'Показать цитату',
       quoteTip: 'Отображать ли исходный текст как ссылку.',
       selfRag: 'Self-RAG',
@@ -984,6 +989,7 @@ export default {
       selectModelPlaceholder: 'Выберите модель',
       configureModelTitle: 'Настроить модель',
       connectorNameTip: 'Укажите понятное имя для коннектора',
+      syncDeletedFiles: 'Синхронизировать удалённые файлы',
       confluenceIsCloudTip:
         'Отметьте, если это экземпляр Confluence Cloud, снимите для Confluence Server/Data Center',
       confluenceWikiBaseUrlTip:
@@ -1085,8 +1091,7 @@ export default {
       seafileAccountScopeTip:
         'Синхронизирует все библиотеки, видимые для указанного ниже токена API аккаунта.',
       seafileTokenPanelHeading: 'Укажите один из способов аутентификации:',
-      seafileTokenPanelAccountBullet:
-        '— доступ ко всем вашим библиотекам.',
+      seafileTokenPanelAccountBullet: '— доступ ко всем вашим библиотекам.',
       seafileTokenPanelLibraryBullet:
         '— только к одной библиотеке (безопаснее).',
       seafileValidationAccountTokenRequired:
@@ -1195,7 +1200,8 @@ export default {
       maxTokensTip: `Максимальный размер контекста mодель; недопустимое или неверное значение приведёт к ошибке. По умолчанию 512.`,
       maxTokensInvalidMessage:
         'Пожалуйста, введите действительное число для максимального количества токенов.',
-      maxTokensMinMessage: 'Максимальное количество токенов не может быть меньше 0.',
+      maxTokensMinMessage:
+        'Максимальное количество токенов не может быть меньше 0.',
       password: 'Пароль',
       passwordDescription:
         'Пожалуйста, введите ваш текущий пароль, чтобы изменить ваш пароль.',
@@ -1303,8 +1309,8 @@ export default {
       FishAudioLink: 'Как использовать FishAudio',
       TencentCloudLink: 'Как использовать TencentCloud ASR',
       volcModelNameMessage: 'Пожалуйста, введите название вашей модели!',
-      addEndpointID: 'EndpointID модели',
-      endpointIDMessage: 'Пожалуйста, введите EndpointID модели',
+      addEndpointID: 'Model ID',
+      endpointIDMessage: 'Пожалуйста, введите Model ID модели',
       addArkApiKey: 'VOLC ARK_API_KEY',
       ArkApiKeyMessage: 'Пожалуйста, введите ваш ARK_API_KEY',
       bedrockModelNameMessage: 'Пожалуйста, введите название вашей модели!',
@@ -1685,10 +1691,8 @@ export default {
       searXNG: 'SearXNG',
       searXNGDescription:
         'Компонент, который выполняет поиск через ваш предоставленный URL экземпляра SearXNG. Укажите TopN и URL экземпляра.',
-      pdfGenerator: 'Генератор документов',
-      pDFGenerator: 'Генератор документов',
-      pdfGeneratorDescription: `Компонент, который генерирует документы (PDF, DOCX, TXT) из содержимого в формате markdown с настраиваемым стилем, изображениями и таблицами. Поддерживает: **жирный**, *курсив*, # заголовки, - списки, таблицы с синтаксисом |.`,
-      pDFGeneratorDescription: `Компонент, который генерирует документы (PDF, DOCX, TXT) из содержимого в формате markdown с настраиваемым стилем, изображениями и таблицами. Поддерживает: **жирный**, *курсив*, # заголовки, - списки, таблицы с синтаксисом |.`,
+      docGenerator: 'Генератор документов',
+      docGeneratorDescription: `Создает файл из содержимого Markdown.`,
       subtitle: 'Подзаголовок',
       logoImage: 'Изображение логотипа',
       logoPosition: 'Позиция логотипа',
@@ -2792,8 +2796,7 @@ export default {
       noSessionsFound: 'Сессии не найдены',
       createFirstSession: 'Создайте первую сессию',
       noCanvasFound: 'Канвасы не найдены',
-      deleteSelectedConfirm:
-        'Удалить выбранные сеансы ({{count}})?',
+      deleteSelectedConfirm: 'Удалить выбранные сеансы ({{count}})?',
       batchDeleteSessions: 'Удалить сессии',
     },
   },

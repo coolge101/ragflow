@@ -55,7 +55,7 @@ from api.utils.configs import deserialize_b64, serialize_b64
 
 from common.time_utils import current_timestamp, timestamp_to_date, date_string_to_timestamp
 from common.decorator import singleton
-from common.constants import ParserType
+from common.constants import ParserType, MAXIMUM_TASK_PAGE_NUMBER
 from common import settings
 
 
@@ -269,19 +269,13 @@ class RetryingPooledMySQLDatabase(PooledMySQLDatabase):
                 return super().execute_sql(sql, params, commit)
             except (OperationalError, InterfaceError) as e:
                 error_codes = [2013, 2006]
-                error_messages = ['', 'Lost connection']
-                should_retry = (
-                    (hasattr(e, 'args') and e.args and e.args[0] in error_codes) or
-                    (str(e) in error_messages) or
-                    (hasattr(e, '__class__') and e.__class__.__name__ == 'InterfaceError')
-                )
+                error_messages = ["", "Lost connection"]
+                should_retry = (hasattr(e, "args") and e.args and e.args[0] in error_codes) or (str(e) in error_messages) or (hasattr(e, "__class__") and e.__class__.__name__ == "InterfaceError")
 
                 if should_retry and attempt < self.max_retries:
-                    logging.warning(
-                        f"Database connection issue (attempt {attempt+1}/{self.max_retries}): {e}"
-                    )
+                    logging.warning(f"Database connection issue (attempt {attempt + 1}/{self.max_retries}): {e}")
                     self._handle_connection_loss()
-                    time.sleep(self.retry_delay * (2 ** attempt))
+                    time.sleep(self.retry_delay * (2**attempt))
                 else:
                     logging.error(f"DB execution failure: {e}")
                     raise
@@ -311,20 +305,14 @@ class RetryingPooledMySQLDatabase(PooledMySQLDatabase):
                 return super().begin()
             except (OperationalError, InterfaceError) as e:
                 error_codes = [2013, 2006]
-                error_messages = ['', 'Lost connection']
+                error_messages = ["", "Lost connection"]
 
-                should_retry = (
-                    (hasattr(e, 'args') and e.args and e.args[0] in error_codes) or
-                    (str(e) in error_messages) or
-                    (hasattr(e, '__class__') and e.__class__.__name__ == 'InterfaceError')
-                )
+                should_retry = (hasattr(e, "args") and e.args and e.args[0] in error_codes) or (str(e) in error_messages) or (hasattr(e, "__class__") and e.__class__.__name__ == "InterfaceError")
 
                 if should_retry and attempt < self.max_retries:
-                    logging.warning(
-                        f"Lost connection during transaction (attempt {attempt+1}/{self.max_retries})"
-                    )
+                    logging.warning(f"Lost connection during transaction (attempt {attempt + 1}/{self.max_retries})")
                     self._handle_connection_loss()
-                    time.sleep(self.retry_delay * (2 ** attempt))
+                    time.sleep(self.retry_delay * (2**attempt))
                 else:
                     raise
         return None
@@ -348,17 +336,14 @@ class RetryingPooledPostgresqlDatabase(PooledPostgresqlDatabase):
                 # 08006: connection_failure
                 # 08003: connection_does_not_exist
                 # 08000: connection_exception
-                error_messages = ['connection', 'server closed', 'connection refused',
-                                'no connection to the server', 'terminating connection']
+                error_messages = ["connection", "server closed", "connection refused", "no connection to the server", "terminating connection"]
 
                 should_retry = any(msg in str(e).lower() for msg in error_messages)
 
                 if should_retry and attempt < self.max_retries:
-                    logging.warning(
-                        f"PostgreSQL connection issue (attempt {attempt+1}/{self.max_retries}): {e}"
-                    )
+                    logging.warning(f"PostgreSQL connection issue (attempt {attempt + 1}/{self.max_retries}): {e}")
                     self._handle_connection_loss()
-                    time.sleep(self.retry_delay * (2 ** attempt))
+                    time.sleep(self.retry_delay * (2**attempt))
                 else:
                     logging.error(f"PostgreSQL execution failure: {e}")
                     raise
@@ -385,17 +370,14 @@ class RetryingPooledPostgresqlDatabase(PooledPostgresqlDatabase):
             try:
                 return super().begin()
             except (OperationalError, InterfaceError) as e:
-                error_messages = ['connection', 'server closed', 'connection refused',
-                                'no connection to the server', 'terminating connection']
+                error_messages = ["connection", "server closed", "connection refused", "no connection to the server", "terminating connection"]
 
                 should_retry = any(msg in str(e).lower() for msg in error_messages)
 
                 if should_retry and attempt < self.max_retries:
-                    logging.warning(
-                        f"PostgreSQL connection lost during transaction (attempt {attempt+1}/{self.max_retries})"
-                    )
+                    logging.warning(f"PostgreSQL connection lost during transaction (attempt {attempt + 1}/{self.max_retries})")
                     self._handle_connection_loss()
-                    time.sleep(self.retry_delay * (2 ** attempt))
+                    time.sleep(self.retry_delay * (2**attempt))
                 else:
                     raise
         return None
@@ -407,6 +389,7 @@ class RetryingPooledOceanBaseDatabase(PooledMySQLDatabase):
     OceanBase is compatible with MySQL protocol, so we inherit from PooledMySQLDatabase.
     This class provides connection pooling and automatic retry for connection issues.
     """
+
     def __init__(self, *args, **kwargs):
         self.max_retries = kwargs.pop("max_retries", 5)
         self.retry_delay = kwargs.pop("retry_delay", 1)
@@ -421,20 +404,18 @@ class RetryingPooledOceanBaseDatabase(PooledMySQLDatabase):
                 # 2013: Lost connection to MySQL server during query
                 # 2006: MySQL server has gone away
                 error_codes = [2013, 2006]
-                error_messages = ['', 'Lost connection', 'gone away']
+                error_messages = ["", "Lost connection", "gone away"]
 
                 should_retry = (
-                    (hasattr(e, 'args') and e.args and e.args[0] in error_codes) or
-                    any(msg in str(e).lower() for msg in error_messages) or
-                    (hasattr(e, '__class__') and e.__class__.__name__ == 'InterfaceError')
+                    (hasattr(e, "args") and e.args and e.args[0] in error_codes)
+                    or any(msg in str(e).lower() for msg in error_messages)
+                    or (hasattr(e, "__class__") and e.__class__.__name__ == "InterfaceError")
                 )
 
                 if should_retry and attempt < self.max_retries:
-                    logging.warning(
-                        f"OceanBase connection issue (attempt {attempt+1}/{self.max_retries}): {e}"
-                    )
+                    logging.warning(f"OceanBase connection issue (attempt {attempt + 1}/{self.max_retries}): {e}")
                     self._handle_connection_loss()
-                    time.sleep(self.retry_delay * (2 ** attempt))
+                    time.sleep(self.retry_delay * (2**attempt))
                 else:
                     logging.error(f"OceanBase execution failure: {e}")
                     raise
@@ -462,20 +443,14 @@ class RetryingPooledOceanBaseDatabase(PooledMySQLDatabase):
                 return super().begin()
             except (OperationalError, InterfaceError) as e:
                 error_codes = [2013, 2006]
-                error_messages = ['', 'Lost connection']
+                error_messages = ["", "Lost connection"]
 
-                should_retry = (
-                    (hasattr(e, 'args') and e.args and e.args[0] in error_codes) or
-                    (str(e) in error_messages) or
-                    (hasattr(e, '__class__') and e.__class__.__name__ == 'InterfaceError')
-                )
+                should_retry = (hasattr(e, "args") and e.args and e.args[0] in error_codes) or (str(e) in error_messages) or (hasattr(e, "__class__") and e.__class__.__name__ == "InterfaceError")
 
                 if should_retry and attempt < self.max_retries:
-                    logging.warning(
-                        f"Lost connection during transaction (attempt {attempt+1}/{self.max_retries})"
-                    )
+                    logging.warning(f"Lost connection during transaction (attempt {attempt + 1}/{self.max_retries})")
                     self._handle_connection_loss()
-                    time.sleep(self.retry_delay * (2 ** attempt))
+                    time.sleep(self.retry_delay * (2**attempt))
                 else:
                     raise
         return None
@@ -500,13 +475,11 @@ class BaseDataBase:
         db_name = database_config.pop("name")
 
         pool_config = {
-            'max_retries': 5,
-            'retry_delay': 1,
+            "max_retries": 5,
+            "retry_delay": 1,
         }
         database_config.update(pool_config)
-        self.database_connection = PooledDatabase[settings.DATABASE_TYPE.upper()].value(
-            db_name, **database_config
-        )
+        self.database_connection = PooledDatabase[settings.DATABASE_TYPE.upper()].value(db_name, **database_config)
         # self.database_connection = PooledDatabase[settings.DATABASE_TYPE.upper()].value(db_name, **database_config)
         logging.info("init database on cluster mode successfully")
 
@@ -705,6 +678,8 @@ def fill_db_model_object(model_object, human_model_dict):
 
 
 class User(DataBaseModel, AuthUser):
+    SENSITIVE_FIELDS = {"password", "access_token", "email"}
+
     id = CharField(max_length=32, primary_key=True)
     access_token = CharField(max_length=255, null=True, index=True)
     nickname = CharField(max_length=100, null=False, help_text="nicky name", index=True)
@@ -726,8 +701,22 @@ class User(DataBaseModel, AuthUser):
         return self.email
 
     def get_id(self):
-        jwt = Serializer(secret_key=settings.SECRET_KEY)
+        jwt = Serializer(secret_key=settings.get_secret_key())
         return jwt.dumps(str(self.access_token))
+
+    def to_safe_dict(self, *, for_self: bool = False):
+        """Return a dict with sensitive fields stripped for API responses.
+
+        Email is treated as sensitive in generic serialization. Pass for_self=True
+        when returning the authenticated user's own record (login, profile, etc.).
+        """
+        result = {k: v for k, v in self.to_dict().items() if k not in self.SENSITIVE_FIELDS}
+        if for_self:
+            result["email"] = self.email
+            # Login/profile for the authenticated user: clients need the JWT (same as Authorization header).
+            result["access_token"] = self.get_id()
+        logging.debug("User %s serialized safely, filtered fields: %s", self.id, self.SENSITIVE_FIELDS)
+        return result
 
     class Meta:
         db_table = "user"
@@ -749,6 +738,7 @@ class Tenant(DataBaseModel):
     tenant_rerank_id = IntegerField(null=True, help_text="id in tenant_llm", index=True)
     tts_id = CharField(max_length=256, null=True, help_text="default tts model ID", index=True)
     tenant_tts_id = IntegerField(null=True, help_text="id in tenant_llm", index=True)
+    ocr_id = CharField(max_length=256, null=True, help_text="default OCR model ID", index=True)
     parser_ids = CharField(max_length=256, null=False, help_text="document processors", index=True)
     credit = IntegerField(default=512, index=True)
     status = CharField(max_length=1, null=True, help_text="is it validate(0: wasted, 1: validate)", default="1", index=True)
@@ -764,6 +754,8 @@ class UserTenant(DataBaseModel):
     role = CharField(max_length=32, null=False, help_text="UserTenantRole", index=True)
     invited_by = CharField(max_length=32, null=False, index=True)
     status = CharField(max_length=1, null=True, help_text="is it validate(0: wasted, 1: validate)", default="1", index=True)
+    # JSON array of TBOX UI permission keys; null/empty => derive from role only (see tbox_app).
+    tbox_permissions = LongTextField(null=True, help_text="TBOX permission override JSON list", default=None)
 
     class Meta:
         db_table = "user_tenant"
@@ -831,9 +823,7 @@ class TenantLLM(DataBaseModel):
 
     class Meta:
         db_table = "tenant_llm"
-        indexes = (
-            (("tenant_id", "llm_factory", "llm_name"), True),
-        )
+        indexes = ((("tenant_id", "llm_factory", "llm_name"), True),)
 
 
 class TenantLangfuse(DataBaseModel):
@@ -899,7 +889,7 @@ class Document(DataBaseModel):
     created_by = CharField(max_length=32, null=False, help_text="who created it", index=True)
     name = CharField(max_length=255, null=True, help_text="file name", index=True)
     location = CharField(max_length=255, null=True, help_text="where dose it store", index=True)
-    size = IntegerField(default=0, index=True)
+    size = BigIntegerField(default=0, index=True)
     token_num = IntegerField(default=0, index=True)
     chunk_num = IntegerField(default=0, index=True)
     progress = FloatField(default=0, index=True)
@@ -924,7 +914,7 @@ class File(DataBaseModel):
     created_by = CharField(max_length=32, null=False, help_text="who created it", index=True)
     name = CharField(max_length=255, null=False, help_text="file name or folder name", index=True)
     location = CharField(max_length=255, null=True, help_text="where dose it store", index=True)
-    size = IntegerField(default=0, index=True)
+    size = BigIntegerField(default=0, index=True)
     type = CharField(max_length=32, null=False, help_text="file extension", index=True)
     source_type = CharField(max_length=128, null=False, default="", help_text="where dose this document come from", index=True)
 
@@ -945,7 +935,7 @@ class Task(DataBaseModel):
     id = CharField(max_length=32, primary_key=True)
     doc_id = CharField(max_length=32, null=False, index=True)
     from_page = IntegerField(default=0)
-    to_page = IntegerField(default=100000000)
+    to_page = IntegerField(default=MAXIMUM_TASK_PAGE_NUMBER)
     task_type = CharField(max_length=32, null=False, default="")
     priority = IntegerField(default=0)
 
@@ -1051,6 +1041,7 @@ class UserCanvas(DataBaseModel):
     description = TextField(null=True, help_text="Canvas description")
     canvas_type = CharField(max_length=32, null=True, help_text="Canvas type", index=True)
     canvas_category = CharField(max_length=32, null=False, default="agent_canvas", help_text="Canvas category: agent_canvas|dataflow_canvas", index=True)
+    tags = CharField(max_length=512, null=False, default="", help_text="Comma-separated tags for organizing agents", index=True)
     dsl = JSONField(null=True, default={})
 
     class Meta:
@@ -1063,6 +1054,7 @@ class CanvasTemplate(DataBaseModel):
     title = JSONField(null=True, default=dict, help_text="Canvas title")
     description = JSONField(null=True, default=dict, help_text="Canvas description")
     canvas_type = CharField(max_length=32, null=True, help_text="Canvas type", index=True)
+    canvas_types = ListField(null=True, default=list, help_text="Canvas types")
     canvas_category = CharField(max_length=32, null=False, default="agent_canvas", help_text="Canvas category: agent_canvas|dataflow_canvas", index=True)
     dsl = JSONField(null=True, default={})
 
@@ -1199,9 +1191,9 @@ class Connector2Kb(DataBaseModel):
 
 
 class DateTimeTzField(CharField):
-    field_type = 'VARCHAR'
+    field_type = "VARCHAR"
 
-    def db_value(self, value: datetime|None) -> str|None:
+    def db_value(self, value: datetime | None) -> str | None:
         if value is not None:
             if value.tzinfo is not None:
                 return value.isoformat()
@@ -1209,11 +1201,12 @@ class DateTimeTzField(CharField):
                 return value.replace(tzinfo=timezone.utc).isoformat()
         return value
 
-    def python_value(self, value: str|None) -> datetime|None:
+    def python_value(self, value: str | None) -> datetime | None:
         if value is not None:
             dt = datetime.fromisoformat(value)
             if dt.tzinfo is None:
                 import pytz
+
                 return dt.replace(tzinfo=pytz.UTC)
             return dt
         return value
@@ -1222,6 +1215,7 @@ class DateTimeTzField(CharField):
 class SyncLogs(DataBaseModel):
     id = CharField(max_length=32, primary_key=True)
     connector_id = CharField(max_length=32, index=True)
+    task_type = CharField(max_length=32, null=False, default="sync", index=True)
     status = CharField(max_length=128, null=False, help_text="Processing status", index=True)
     from_beginning = CharField(max_length=1, null=True, help_text="", default="0", index=False)
     new_docs_indexed = IntegerField(default=0, index=False)
@@ -1239,8 +1233,110 @@ class SyncLogs(DataBaseModel):
         db_table = "sync_logs"
 
 
+class TboxCrawlTask(DataBaseModel):
+    """TBOX web crawl job configuration (fetch/schedule workers may consume this table later)."""
+
+    id = CharField(max_length=32, primary_key=True)
+    tenant_id = CharField(max_length=32, null=False, index=True)
+    dataset_id = CharField(max_length=32, null=True, index=True, help_text="Target knowledge base id")
+    name = CharField(max_length=256, null=False, help_text="Display name")
+    source_type = CharField(max_length=64, null=False, index=True, default="static_web", help_text="static_web|rss")
+    seed_urls = ListField(null=False, default=list, help_text="Seed URLs")
+    schedule_cron = CharField(max_length=128, null=True, default="", help_text="Cron; empty = manual only")
+    enabled = BooleanField(null=False, default=False, index=True)
+    run_state = CharField(max_length=32, null=False, default="draft", index=True, help_text="draft|ready|paused")
+    last_run_at = DateTimeField(null=True, index=True)
+    last_error = LongTextField(null=True, default="", help_text="Last error message")
+    extra_config = JSONField(null=False, default=dict, help_text="robots, depth, headers, etc.")
+    created_by = CharField(max_length=32, null=False, index=True)
+    status = CharField(max_length=1, null=True, help_text="1 valid 0 deleted", default="1", index=True)
+
+    class Meta:
+        db_table = "tbox_crawl_task"
+        indexes = ((("tenant_id", "status"), False),)
+
+
+class TboxCrawlSeen(DataBaseModel):
+    """Per-dataset crawl dedup index (canonical URL + optional content hash)."""
+
+    id = CharField(max_length=32, primary_key=True)
+    dataset_id = CharField(max_length=32, null=False, index=True)
+    url_canonical = CharField(max_length=2048, null=False)
+    url_canonical_hash = CharField(max_length=64, null=False)
+    content_sha256 = CharField(max_length=64, null=True, index=True)
+    source = CharField(max_length=16, null=False, default="crawl")
+    first_seen_at = DateTimeField(null=False)
+    last_seen_at = DateTimeField(null=False)
+
+    class Meta:
+        db_table = "tbox_crawl_seen"
+        indexes = ((("dataset_id", "url_canonical_hash"), True),)
+
+
+class TboxCrawlSourceCatalog(DataBaseModel):
+    """Curated reference URLs per tenant/topic for crawl seed lists (Phase 68)."""
+
+    id = CharField(max_length=32, primary_key=True)
+    tenant_id = CharField(max_length=32, null=False, index=True)
+    topic = CharField(max_length=32, null=False, index=True, help_text="regulations|tech|market|product")
+    label = CharField(max_length=256, null=False, default="")
+    url = CharField(max_length=2048, null=False)
+    url_canonical = CharField(max_length=2048, null=False)
+    url_canonical_hash = CharField(max_length=64, null=False)
+    domain = CharField(max_length=256, null=False, default="")
+    enabled = BooleanField(null=False, default=True, index=True)
+    created_by = CharField(max_length=32, null=False, index=True)
+    status = CharField(max_length=1, null=True, default="1", index=True, help_text="1 valid 0 deleted")
+
+    class Meta:
+        db_table = "tbox_crawl_source_catalog"
+        indexes = ((("tenant_id", "topic", "url_canonical_hash"), True),)
+
+
+class TboxCrawlUrlHealth(DataBaseModel):
+    """Per-task URL fetch/ingest health for self-heal (Phase 69.0)."""
+
+    id = CharField(max_length=32, primary_key=True)
+    tenant_id = CharField(max_length=32, null=False, index=True)
+    task_id = CharField(max_length=32, null=False, index=True)
+    url = CharField(max_length=2048, null=False)
+    url_canonical = CharField(max_length=2048, null=False)
+    url_canonical_hash = CharField(max_length=64, null=False)
+    source = CharField(max_length=16, null=False, default="seed", help_text="seed|discover|expand|catalog")
+    success_count = IntegerField(null=False, default=0)
+    fail_count = IntegerField(null=False, default=0)
+    last_outcome = CharField(max_length=32, null=False, default="unknown", index=True)
+    last_http_status = IntegerField(null=True)
+    health_score = IntegerField(null=False, default=50, index=True)
+    auto_disabled = BooleanField(null=False, default=False, index=True)
+    status = CharField(max_length=1, null=True, default="1", index=True, help_text="1 valid 0 deleted")
+
+    class Meta:
+        db_table = "tbox_crawl_url_health"
+        indexes = ((("tenant_id", "task_id", "url_canonical_hash"), True),)
+
+
+class TboxCrawlSelfHealAudit(DataBaseModel):
+    """Audit trail for automatic crawl task self-heal PATCH actions (Phase 69.1)."""
+
+    id = CharField(max_length=32, primary_key=True)
+    tenant_id = CharField(max_length=32, null=False, index=True)
+    task_id = CharField(max_length=32, null=False, index=True)
+    action = CharField(max_length=32, null=False, index=True, help_text="prune_seed|import_catalog|add_catalog_source")
+    before_json = JSONField(null=False, default=dict)
+    after_json = JSONField(null=False, default=dict)
+    reason = LongTextField(null=True, default="")
+    created_by = CharField(max_length=64, null=False, default="system:self_heal", index=True)
+    status = CharField(max_length=1, null=True, default="1", index=True, help_text="1 valid 0 deleted")
+
+    class Meta:
+        db_table = "tbox_crawl_self_heal_audit"
+        indexes = ((("tenant_id", "task_id", "create_time"), False),)
+
+
 class EvaluationDataset(DataBaseModel):
     """Ground truth dataset for RAG evaluation"""
+
     id = CharField(max_length=32, primary_key=True)
     tenant_id = CharField(max_length=32, null=False, index=True, help_text="tenant ID")
     name = CharField(max_length=255, null=False, index=True, help_text="dataset name")
@@ -1257,6 +1353,7 @@ class EvaluationDataset(DataBaseModel):
 
 class EvaluationCase(DataBaseModel):
     """Individual test case in an evaluation dataset"""
+
     id = CharField(max_length=32, primary_key=True)
     dataset_id = CharField(max_length=32, null=False, index=True, help_text="FK to evaluation_datasets")
     question = TextField(null=False, help_text="test question")
@@ -1272,6 +1369,7 @@ class EvaluationCase(DataBaseModel):
 
 class EvaluationRun(DataBaseModel):
     """A single evaluation run"""
+
     id = CharField(max_length=32, primary_key=True)
     dataset_id = CharField(max_length=32, null=False, index=True, help_text="FK to evaluation_datasets")
     dialog_id = CharField(max_length=32, null=False, index=True, help_text="dialog configuration being evaluated")
@@ -1289,6 +1387,7 @@ class EvaluationRun(DataBaseModel):
 
 class EvaluationResult(DataBaseModel):
     """Result for a single test case in an evaluation run"""
+
     id = CharField(max_length=32, primary_key=True)
     run_id = CharField(max_length=32, null=False, index=True, help_text="FK to evaluation_runs")
     case_id = CharField(max_length=32, null=False, index=True, help_text="FK to evaluation_cases")
@@ -1309,7 +1408,7 @@ class Memory(DataBaseModel):
     avatar = TextField(null=True, help_text="avatar base64 string")
     tenant_id = CharField(max_length=32, null=False, index=True)
     memory_type = IntegerField(null=False, default=1, index=True, help_text="Bit flags (LSB->MSB): 1=raw, 2=semantic, 4=episodic, 8=procedural. E.g., 5 enables raw + episodic.")
-    storage_type = CharField(max_length=32, default='table', null=False, index=True, help_text="table|graph")
+    storage_type = CharField(max_length=32, default="table", null=False, index=True, help_text="table|graph")
     embd_id = CharField(max_length=128, null=False, index=False, help_text="embedding model ID")
     tenant_embd_id = IntegerField(null=True, help_text="id in tenant_llm", index=True)
     llm_id = CharField(max_length=128, null=False, index=False, help_text="chat model ID")
@@ -1325,25 +1424,83 @@ class Memory(DataBaseModel):
     class Meta:
         db_table = "memory"
 
+
 class SystemSettings(DataBaseModel):
     name = CharField(max_length=128, primary_key=True)
     source = CharField(max_length=32, null=False, index=False)
     data_type = CharField(max_length=32, null=False, index=False)
     value = TextField(null=False, help_text="Configuration value (JSON, string, etc.)")
+
     class Meta:
         db_table = "system_settings"
+
+
+class TenantModelProvider(DataBaseModel):
+    id = CharField(max_length=32, primary_key=True)
+    provider_name = CharField(max_length=128, null=False, index=False, help_text="LLM provider name")
+    tenant_id = CharField(max_length=32, null=False, index=True)
+
+    class Meta:
+        db_table = "tenant_model_provider"
+        indexes = ((("tenant_id", "provider_name"), True),)
+
+
+class TenantModelInstance(DataBaseModel):
+    id = CharField(max_length=32, primary_key=True)
+    instance_name = CharField(max_length=128, null=False, index=False, help_text="Model instance name")
+    provider_id = CharField(max_length=32, null=False, index=False)
+    api_key = CharField(max_length=512, null=False, index=False, help_text="API key")
+    status = CharField(max_length=32, default="active", index=False)
+    extra = CharField(max_length=512, default="{}", index=False)
+
+    class Meta:
+        db_table = "tenant_model_instance"
+
+
+class TenantModel(DataBaseModel):
+    id = CharField(max_length=32, primary_key=True)
+    model_name = CharField(max_length=128, null=True, index=False, help_text="Model name")
+    provider_id = CharField(max_length=32, null=False, index=False)
+    instance_id = CharField(max_length=32, null=False, index=True)
+    model_type = CharField(max_length=32, null=False, index=False, help_text="Model type")
+    status = CharField(max_length=32, default="active", index=False)
+    extra = CharField(max_length=1024, default="{}", index=False)
+
+    class Meta:
+        db_table = "tenant_model"
+
+
+class TenantModelGroup(DataBaseModel):
+    id = CharField(max_length=32, primary_key=True)
+    group_type = CharField(max_length=32, null=False, index=False, help_text="Group type")
+    model_name = CharField(max_length=128, null=True, index=False, help_text="Model name")
+    strategy = CharField(max_length=32, default="weighted", index=False, help_text="Routing strategy")
+
+    class Meta:
+        db_table = "tenant_model_group"
+
+
+class TenantModelGroupMapping(DataBaseModel):
+    group_id = CharField(max_length=32, null=False, index=True, help_text="Group ID")
+    provider_id = CharField(max_length=32, null=False, index=False)
+    instance_id = CharField(max_length=32, null=False, index=False)
+    model_id = CharField(max_length=32, null=False, index=True)
+    weight = IntegerField(default=100, index=False, help_text="Routing weight")
+    status = CharField(max_length=32, default="active", index=False)
+
+    class Meta:
+        db_table = "tenant_model_group_mapping"
+        primary_key = CompositeKey("group_id", "provider_id", "instance_id", "model_id")
+
 
 def alter_db_add_column(migrator, table_name, column_name, column_type):
     try:
         migrate(migrator.add_column(table_name, column_name, column_type))
     except OperationalError as ex:
         error_codes = [1060]
-        error_messages = ['Duplicate column name']
+        error_messages = ["Duplicate column name"]
 
-        should_skip_error = (
-                (hasattr(ex, 'args') and ex.args and ex.args[0] in error_codes) or
-                (str(ex) in error_messages)
-        )
+        should_skip_error = (hasattr(ex, "args") and ex.args and ex.args[0] in error_codes) or (str(ex) in error_messages)
 
         if not should_skip_error:
             logging.critical(f"Failed to add {settings.DATABASE_TYPE.upper()}.{table_name} column {column_name}, operation error: {ex}")
@@ -1352,12 +1509,14 @@ def alter_db_add_column(migrator, table_name, column_name, column_type):
         logging.critical(f"Failed to add {settings.DATABASE_TYPE.upper()}.{table_name} column {column_name}, error: {ex}")
         pass
 
+
 def alter_db_column_type(migrator, table_name, column_name, new_column_type):
     try:
         migrate(migrator.alter_column_type(table_name, column_name, new_column_type))
     except Exception as ex:
         logging.critical(f"Failed to alter {settings.DATABASE_TYPE.upper()}.{table_name} column {column_name} type, error: {ex}")
         pass
+
 
 def alter_db_rename_column(migrator, table_name, old_column_name, new_column_name):
     try:
@@ -1366,6 +1525,7 @@ def alter_db_rename_column(migrator, table_name, old_column_name, new_column_nam
         # rename fail will lead to a weired error.
         # logging.critical(f"Failed to rename {settings.DATABASE_TYPE.upper()}.{table_name} column {old_column_name} to {new_column_name}, error: {ex}")
         pass
+
 
 def migrate_add_unique_email(migrator):
     """Deduplicates user emails and add UNIQUE constraint to email column (idempotent)"""
@@ -1411,13 +1571,7 @@ def migrate_add_unique_email(migrator):
         duplicates = User.select(User.email).group_by(User.email).having(fn.COUNT(User.id) > 1).tuples()
         for (dup_email,) in duplicates:
             # Keep the superuser row, or the oldest row if there is no superuser
-            rows = list(
-                User
-                    .select(User.id)
-                    .where(User.email == dup_email)
-                    .order_by(User.is_superuser.desc(), User.create_time.asc())
-                    .tuples()
-            )
+            rows = list(User.select(User.id).where(User.email == dup_email).order_by(User.is_superuser.desc(), User.create_time.asc()).tuples())
             for (uid,) in rows[1:]:
                 new_email = f"{dup_email}_DUPLICATE_{uid[:8]}"
                 User.update(email=new_email).where(User.id == uid).execute()
@@ -1438,7 +1592,6 @@ def migrate_add_unique_email(migrator):
             logging.critical("Failed to add UNIQUE constraint on user.email: %s", ex)
     except Exception as ex:
         logging.critical("Failed to add UNIQUE constraint on user.email: %s", ex)
-
 
 
 def update_tenant_llm_to_id_primary_key():
@@ -1615,6 +1768,7 @@ def migrate_db():
     alter_db_column_type(migrator, "canvas_template", "description", JSONField(null=True, default=dict, help_text="Canvas description"))
     alter_db_add_column(migrator, "user_canvas", "canvas_category", CharField(max_length=32, null=False, default="agent_canvas", help_text="agent_canvas|dataflow_canvas", index=True))
     alter_db_add_column(migrator, "canvas_template", "canvas_category", CharField(max_length=32, null=False, default="agent_canvas", help_text="agent_canvas|dataflow_canvas", index=True))
+    alter_db_add_column(migrator, "canvas_template", "canvas_types", ListField(null=True, default=list, help_text="Canvas types"))
     alter_db_add_column(migrator, "knowledgebase", "pipeline_id", CharField(max_length=32, null=True, help_text="Pipeline ID", index=True))
     alter_db_add_column(migrator, "document", "pipeline_id", CharField(max_length=32, null=True, help_text="Pipeline ID", index=True))
     alter_db_add_column(migrator, "knowledgebase", "graphrag_task_id", CharField(max_length=32, null=True, help_text="Gragh RAG task ID", index=True))
@@ -1629,6 +1783,7 @@ def migrate_db():
     alter_db_add_column(migrator, "llm_factories", "rank", IntegerField(default=0, index=False))
     alter_db_add_column(migrator, "api_4_conversation", "name", CharField(max_length=255, null=True, help_text="conversation name", index=False))
     alter_db_add_column(migrator, "api_4_conversation", "exp_user_id", CharField(max_length=255, null=True, help_text="exp_user_id", index=True))
+    alter_db_add_column(migrator, "sync_logs", "task_type", CharField(max_length=32, null=False, default="sync", index=True))
     # Migrate system_settings.value from CharField to TextField for longer sandbox configs
     alter_db_column_type(migrator, "system_settings", "value", TextField(null=False, help_text="Configuration value (JSON, string, etc.)"))
     alter_db_add_column(migrator, "document", "content_hash", CharField(max_length=32, null=True, help_text="xxhash128 of document content for change detection", default="", index=True))
@@ -1645,7 +1800,28 @@ def migrate_db():
     alter_db_add_column(migrator, "memory", "tenant_embd_id", IntegerField(null=True, help_text="id in tenant_llm", index=True))
     alter_db_add_column(migrator, "memory", "tenant_llm_id", IntegerField(null=True, help_text="id in tenant_llm", index=True))
     alter_db_add_column(migrator, "user_canvas_version", "release", BooleanField(null=False, help_text="is released", default=False, index=True))
+    alter_db_add_column(migrator, "user_canvas", "tags", CharField(max_length=512, null=False, default="", help_text="Comma-separated tags for organizing agents", index=True))
     alter_db_add_column(migrator, "api_4_conversation", "version_title", CharField(max_length=255, null=True, help_text="canvas version title when session created", index=False))
+    alter_db_column_type(migrator, "document", "size", BigIntegerField(default=0, index=True))
+    alter_db_column_type(migrator, "file", "size", BigIntegerField(default=0, index=True))
+    alter_db_add_column(migrator, "tenant", "ocr_id", CharField(max_length=128, null=True, help_text="default ocr model ID", index=True))
+    for table_name, index_name in [("tenant_model_instance", "idx_api_key_provider_id"), ("tenant_model", "idx_provider_model_instance")]:
+        try:
+            migrate(migrator.drop_index(table_name, index_name))
+        except (OperationalError, ProgrammingError) as ex:
+            msg = str(ex)
+            if "1091" in msg or "can't DROP" in msg.lower() or "does not exist" in msg.lower() or "already exists" in msg.lower():
+                pass
+            else:
+                logging.critical(f"Failed to drop index {index_name} on {table_name}: {ex}")
+        except Exception as ex:
+            logging.critical(f"Failed to drop index {index_name} on {table_name}: {ex}")
     logging.disable(logging.NOTSET)
     # this is after re-enabling logging to allow logging changed user emails
     migrate_add_unique_email(migrator)
+    alter_db_add_column(
+        migrator,
+        "user_tenant",
+        "tbox_permissions",
+        LongTextField(null=True, help_text="TBOX permission override JSON list", default=None),
+    )

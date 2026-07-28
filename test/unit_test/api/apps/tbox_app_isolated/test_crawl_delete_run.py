@@ -1,0 +1,523 @@
+#
+#  Copyright 2026 The InfiniFlow Authors. All Rights Reserved.
+#
+#  Licensed under the Apache License, Version 2.0 (the "License");
+#  you may not use this file except in compliance with the License.
+#  You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+#  Unless required by applicable law or agreed to in writing, software
+#  distributed under the License is distributed on an "AS IS" BASIS,
+#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#  See the License for the specific language governing permissions and
+#  limitations under the License.
+#
+
+from __future__ import annotations
+
+from types import SimpleNamespace
+
+import pytest
+
+from api.constants import API_VERSION
+from common.constants import RetCode
+
+from ._shared import TBOX_ROUTE_TEST_USER
+
+
+@pytest.mark.p2
+@pytest.mark.asyncio
+async def test_crawl_tasks_delete_ok(tbox_quart_app, monkeypatch: pytest.MonkeyPatch):
+    app, mod = tbox_quart_app
+    monkeypatch.setattr(mod, "_active_tenant_memberships", lambda _uid: [])
+    row = SimpleNamespace(id="d1", tenant_id="tbox-route-test-user")
+    deleted: list[str] = []
+
+    def soft_delete_task(t):
+        deleted.append(t.id)
+
+    fake = SimpleNamespace(
+        tenant_ids_for_crawl=lambda uid, is_sup: None,
+        get_task=lambda tid: row if tid == "d1" else None,
+        user_may_access_task=lambda t, allowed: True,
+        soft_delete_task=soft_delete_task,
+    )
+    monkeypatch.setattr(mod, "crawl_svc", fake)
+    TBOX_ROUTE_TEST_USER.is_superuser = True
+    async with app.test_client() as client:
+        resp = await client.delete(f"/{API_VERSION}/tbox/crawl/tasks/d1")
+    data = await resp.get_json()
+    assert data["code"] == 0
+    assert data["message"] == "deleted"
+    assert deleted == ["d1"]
+
+
+@pytest.mark.p2
+@pytest.mark.asyncio
+async def test_crawl_tasks_delete_server_error_when_tenant_ids_for_crawl_raises(tbox_quart_app, monkeypatch: pytest.MonkeyPatch):
+    app, mod = tbox_quart_app
+    monkeypatch.setattr(mod, "_active_tenant_memberships", lambda _uid: [])
+
+    def tenant_ids_for_crawl(_u, _s):
+        raise RuntimeError("delete scope failed")
+
+    fake = SimpleNamespace(
+        tenant_ids_for_crawl=tenant_ids_for_crawl,
+        get_task=lambda _tid: None,
+        user_may_access_task=lambda t, allowed: True,
+        soft_delete_task=lambda _t: None,
+    )
+    monkeypatch.setattr(mod, "crawl_svc", fake)
+    TBOX_ROUTE_TEST_USER.is_superuser = True
+    async with app.test_client() as client:
+        resp = await client.delete(f"/{API_VERSION}/tbox/crawl/tasks/dz0")
+    data = await resp.get_json()
+    assert data["code"] == RetCode.EXCEPTION_ERROR
+    assert "delete scope failed" in data["message"]
+
+
+@pytest.mark.p2
+@pytest.mark.asyncio
+async def test_crawl_tasks_delete_server_error_when_soft_delete_raises(tbox_quart_app, monkeypatch: pytest.MonkeyPatch):
+    app, mod = tbox_quart_app
+    monkeypatch.setattr(mod, "_active_tenant_memberships", lambda _uid: [])
+    row = SimpleNamespace(id="d1x", tenant_id="tbox-route-test-user")
+
+    def soft_delete_task(_t):
+        raise RuntimeError("db delete failed")
+
+    fake = SimpleNamespace(
+        tenant_ids_for_crawl=lambda uid, is_sup: None,
+        get_task=lambda tid: row if tid == "d1x" else None,
+        user_may_access_task=lambda t, allowed: True,
+        soft_delete_task=soft_delete_task,
+    )
+    monkeypatch.setattr(mod, "crawl_svc", fake)
+    TBOX_ROUTE_TEST_USER.is_superuser = True
+    async with app.test_client() as client:
+        resp = await client.delete(f"/{API_VERSION}/tbox/crawl/tasks/d1x")
+    data = await resp.get_json()
+    assert data["code"] == RetCode.EXCEPTION_ERROR
+    assert "db delete failed" in data["message"]
+
+
+@pytest.mark.p2
+@pytest.mark.asyncio
+async def test_crawl_tasks_delete_server_error_when_get_task_raises(tbox_quart_app, monkeypatch: pytest.MonkeyPatch):
+    app, mod = tbox_quart_app
+    monkeypatch.setattr(mod, "_active_tenant_memberships", lambda _uid: [])
+
+    def get_task(_tid):
+        raise RuntimeError("select failed")
+
+    fake = SimpleNamespace(
+        tenant_ids_for_crawl=lambda uid, is_sup: None,
+        get_task=get_task,
+        user_may_access_task=lambda t, allowed: True,
+        soft_delete_task=lambda _t: None,
+    )
+    monkeypatch.setattr(mod, "crawl_svc", fake)
+    TBOX_ROUTE_TEST_USER.is_superuser = True
+    async with app.test_client() as client:
+        resp = await client.delete(f"/{API_VERSION}/tbox/crawl/tasks/dy")
+    data = await resp.get_json()
+    assert data["code"] == RetCode.EXCEPTION_ERROR
+    assert "select failed" in data["message"]
+
+
+@pytest.mark.p2
+@pytest.mark.asyncio
+async def test_crawl_tasks_delete_server_error_when_user_may_access_task_raises(tbox_quart_app, monkeypatch: pytest.MonkeyPatch):
+    app, mod = tbox_quart_app
+    monkeypatch.setattr(mod, "_active_tenant_memberships", lambda _uid: [])
+    row = SimpleNamespace(id="dy1", tenant_id="tbox-route-test-user")
+
+    def user_may_access_task(_t, _allowed):
+        raise OSError("delete acl failed")
+
+    fake = SimpleNamespace(
+        tenant_ids_for_crawl=lambda uid, is_sup: None,
+        get_task=lambda tid: row if tid == "dy1" else None,
+        user_may_access_task=user_may_access_task,
+        soft_delete_task=lambda _t: None,
+    )
+    monkeypatch.setattr(mod, "crawl_svc", fake)
+    TBOX_ROUTE_TEST_USER.is_superuser = True
+    async with app.test_client() as client:
+        resp = await client.delete(f"/{API_VERSION}/tbox/crawl/tasks/dy1")
+    data = await resp.get_json()
+    assert data["code"] == RetCode.EXCEPTION_ERROR
+    assert "delete acl failed" in data["message"]
+
+
+@pytest.mark.p2
+@pytest.mark.asyncio
+async def test_crawl_tasks_delete_forbidden_wrong_tenant(tbox_quart_app, monkeypatch: pytest.MonkeyPatch):
+    app, mod = tbox_quart_app
+    monkeypatch.setattr(
+        mod,
+        "_active_tenant_memberships",
+        lambda _uid: [{"tenant_id": "allowed-ten", "role": "owner"}],
+    )
+    row = SimpleNamespace(id="d2", tenant_id="other-ten")
+
+    def soft_delete_task(_t):
+        raise AssertionError("soft_delete_task must not run")
+
+    fake = SimpleNamespace(
+        tenant_ids_for_crawl=lambda uid, is_sup: ["allowed-ten"],
+        get_task=lambda tid: row if tid == "d2" else None,
+        user_may_access_task=lambda t, allowed: t.tenant_id in (allowed or []),
+        soft_delete_task=soft_delete_task,
+    )
+    monkeypatch.setattr(mod, "crawl_svc", fake)
+    TBOX_ROUTE_TEST_USER.is_superuser = False
+    async with app.test_client() as client:
+        resp = await client.delete(f"/{API_VERSION}/tbox/crawl/tasks/d2")
+    data = await resp.get_json()
+    assert data["code"] == RetCode.FORBIDDEN
+
+
+@pytest.mark.p2
+@pytest.mark.asyncio
+async def test_crawl_tasks_run_ok(tbox_quart_app, monkeypatch: pytest.MonkeyPatch):
+    app, mod = tbox_quart_app
+    monkeypatch.setattr(mod, "_active_tenant_memberships", lambda _uid: [])
+    row = SimpleNamespace(id="r1", tenant_id="tbox-route-test-user", ran=False)
+    ticks: list[str] = []
+
+    def execute_crawl_task_stub_tick(tid):
+        ticks.append(tid)
+        row.ran = True
+
+    def task_row_to_dict(t):
+        return {"id": t.id, "ran": bool(getattr(t, "ran", False))}
+
+    fake = SimpleNamespace(
+        tenant_ids_for_crawl=lambda uid, is_sup: None,
+        get_task=lambda tid: row if tid == "r1" else None,
+        user_may_access_task=lambda t, allowed: True,
+        execute_crawl_task_stub_tick=execute_crawl_task_stub_tick,
+        record_worker_tick=lambda *a, **k: None,
+        task_row_to_dict=task_row_to_dict,
+    )
+    monkeypatch.setattr(mod, "crawl_svc", fake)
+    TBOX_ROUTE_TEST_USER.is_superuser = True
+    async with app.test_client() as client:
+        resp = await client.post(f"/{API_VERSION}/tbox/crawl/tasks/r1/run")
+    data = await resp.get_json()
+    assert data["code"] == 0
+    assert data["data"]["id"] == "r1"
+    assert data["data"]["ran"] is True
+    assert ticks == ["r1"]
+
+
+@pytest.mark.p2
+@pytest.mark.asyncio
+async def test_crawl_tasks_run_forbidden_wrong_tenant(tbox_quart_app, monkeypatch: pytest.MonkeyPatch):
+    app, mod = tbox_quart_app
+    monkeypatch.setattr(
+        mod,
+        "_active_tenant_memberships",
+        lambda _uid: [{"tenant_id": "allowed-ten", "role": "owner"}],
+    )
+    row = SimpleNamespace(id="r0", tenant_id="other-ten")
+
+    def execute_crawl_task_stub_tick(_tid):
+        raise AssertionError("execute must not run")
+
+    fake = SimpleNamespace(
+        tenant_ids_for_crawl=lambda uid, is_sup: ["allowed-ten"],
+        get_task=lambda tid: row if tid == "r0" else None,
+        user_may_access_task=lambda t, allowed: t.tenant_id in (allowed or []),
+        execute_crawl_task_stub_tick=execute_crawl_task_stub_tick,
+        record_worker_tick=lambda *a, **k: None,
+    )
+    monkeypatch.setattr(mod, "crawl_svc", fake)
+    TBOX_ROUTE_TEST_USER.is_superuser = False
+    async with app.test_client() as client:
+        resp = await client.post(f"/{API_VERSION}/tbox/crawl/tasks/r0/run")
+    data = await resp.get_json()
+    assert data["code"] == RetCode.FORBIDDEN
+
+
+@pytest.mark.p2
+@pytest.mark.asyncio
+async def test_crawl_tasks_run_valueerror_not_found(tbox_quart_app, monkeypatch: pytest.MonkeyPatch):
+    app, mod = tbox_quart_app
+    monkeypatch.setattr(mod, "_active_tenant_memberships", lambda _uid: [])
+    row = SimpleNamespace(id="r2", tenant_id="tbox-route-test-user")
+
+    def execute_crawl_task_stub_tick(tid):
+        raise ValueError("task vanished")
+
+    def record_worker_tick(*_a, **_k):
+        raise AssertionError("record_worker_tick should not run")
+
+    fake = SimpleNamespace(
+        tenant_ids_for_crawl=lambda uid, is_sup: None,
+        get_task=lambda tid: row if tid == "r2" else None,
+        user_may_access_task=lambda t, allowed: True,
+        execute_crawl_task_stub_tick=execute_crawl_task_stub_tick,
+        record_worker_tick=record_worker_tick,
+    )
+    monkeypatch.setattr(mod, "crawl_svc", fake)
+    TBOX_ROUTE_TEST_USER.is_superuser = True
+    async with app.test_client() as client:
+        resp = await client.post(f"/{API_VERSION}/tbox/crawl/tasks/r2/run")
+    data = await resp.get_json()
+    assert data["code"] == RetCode.NOT_FOUND
+    assert "vanished" in data["message"]
+
+
+@pytest.mark.p2
+@pytest.mark.asyncio
+async def test_crawl_tasks_run_runtimeerror_records_tick(tbox_quart_app, monkeypatch: pytest.MonkeyPatch):
+    app, mod = tbox_quart_app
+    monkeypatch.setattr(mod, "_active_tenant_memberships", lambda _uid: [])
+    row = SimpleNamespace(id="r3", tenant_id="tbox-route-test-user")
+    tick_args: list[tuple] = []
+
+    def execute_crawl_task_stub_tick(tid):
+        raise RuntimeError("stub failure")
+
+    def record_worker_tick(task_id, *, ok, message):
+        tick_args.append((task_id, ok, message))
+
+    fake = SimpleNamespace(
+        tenant_ids_for_crawl=lambda uid, is_sup: None,
+        get_task=lambda tid: row if tid == "r3" else None,
+        user_may_access_task=lambda t, allowed: True,
+        execute_crawl_task_stub_tick=execute_crawl_task_stub_tick,
+        record_worker_tick=record_worker_tick,
+    )
+    monkeypatch.setattr(mod, "crawl_svc", fake)
+    TBOX_ROUTE_TEST_USER.is_superuser = True
+    async with app.test_client() as client:
+        resp = await client.post(f"/{API_VERSION}/tbox/crawl/tasks/r3/run")
+    data = await resp.get_json()
+    assert data["code"] == RetCode.EXCEPTION_ERROR
+    assert "stub failure" in data["message"]
+    assert len(tick_args) == 1
+    assert tick_args[0][0] == "r3"
+    assert tick_args[0][1] is False
+    assert "[tbox:WORKER_STUB]" in tick_args[0][2]
+
+
+@pytest.mark.p2
+@pytest.mark.asyncio
+async def test_crawl_tasks_run_server_error_when_record_worker_tick_raises(tbox_quart_app, monkeypatch: pytest.MonkeyPatch):
+    app, mod = tbox_quart_app
+    monkeypatch.setattr(mod, "_active_tenant_memberships", lambda _uid: [])
+    row = SimpleNamespace(id="r3b", tenant_id="tbox-route-test-user")
+
+    def execute_crawl_task_stub_tick(_tid):
+        raise RuntimeError("stub failure")
+
+    def record_worker_tick(*_a, **_k):
+        raise OSError("tick persistence failed")
+
+    fake = SimpleNamespace(
+        tenant_ids_for_crawl=lambda uid, is_sup: None,
+        get_task=lambda tid: row if tid == "r3b" else None,
+        user_may_access_task=lambda t, allowed: True,
+        execute_crawl_task_stub_tick=execute_crawl_task_stub_tick,
+        record_worker_tick=record_worker_tick,
+    )
+    monkeypatch.setattr(mod, "crawl_svc", fake)
+    TBOX_ROUTE_TEST_USER.is_superuser = True
+    async with app.test_client() as client:
+        resp = await client.post(f"/{API_VERSION}/tbox/crawl/tasks/r3b/run")
+    data = await resp.get_json()
+    assert data["code"] == RetCode.EXCEPTION_ERROR
+    assert "tick persistence failed" in data["message"]
+
+
+@pytest.mark.p2
+@pytest.mark.asyncio
+async def test_crawl_tasks_run_server_error_when_refetch_get_task_raises(tbox_quart_app, monkeypatch: pytest.MonkeyPatch):
+    app, mod = tbox_quart_app
+    monkeypatch.setattr(mod, "_active_tenant_memberships", lambda _uid: [])
+    row = SimpleNamespace(id="r4", tenant_id="tbox-route-test-user", ran=False)
+    gt_calls = [0]
+
+    def get_task(tid):
+        if tid != "r4":
+            return None
+        gt_calls[0] += 1
+        if gt_calls[0] == 1:
+            return row
+        raise RuntimeError("refetch failed")
+
+    def execute_crawl_task_stub_tick(_tid):
+        row.ran = True
+
+    fake = SimpleNamespace(
+        tenant_ids_for_crawl=lambda uid, is_sup: None,
+        get_task=get_task,
+        user_may_access_task=lambda t, allowed: True,
+        execute_crawl_task_stub_tick=execute_crawl_task_stub_tick,
+        record_worker_tick=lambda *a, **k: None,
+        task_row_to_dict=lambda t: {"id": t.id},
+    )
+    monkeypatch.setattr(mod, "crawl_svc", fake)
+    TBOX_ROUTE_TEST_USER.is_superuser = True
+    async with app.test_client() as client:
+        resp = await client.post(f"/{API_VERSION}/tbox/crawl/tasks/r4/run")
+    data = await resp.get_json()
+    assert data["code"] == RetCode.EXCEPTION_ERROR
+    assert "refetch failed" in data["message"]
+    assert gt_calls[0] == 2
+
+
+@pytest.mark.p2
+@pytest.mark.asyncio
+async def test_crawl_tasks_run_server_error_when_first_get_task_raises(tbox_quart_app, monkeypatch: pytest.MonkeyPatch):
+    app, mod = tbox_quart_app
+    monkeypatch.setattr(mod, "_active_tenant_memberships", lambda _uid: [])
+
+    def get_task(_tid):
+        raise OSError("first load failed")
+
+    fake = SimpleNamespace(
+        tenant_ids_for_crawl=lambda uid, is_sup: None,
+        get_task=get_task,
+        user_may_access_task=lambda t, allowed: True,
+        execute_crawl_task_stub_tick=lambda _tid: None,
+        record_worker_tick=lambda *a, **k: None,
+        task_row_to_dict=lambda t: {},
+    )
+    monkeypatch.setattr(mod, "crawl_svc", fake)
+    TBOX_ROUTE_TEST_USER.is_superuser = True
+    async with app.test_client() as client:
+        resp = await client.post(f"/{API_VERSION}/tbox/crawl/tasks/r5/run")
+    data = await resp.get_json()
+    assert data["code"] == RetCode.EXCEPTION_ERROR
+    assert "first load failed" in data["message"]
+
+
+@pytest.mark.p2
+@pytest.mark.asyncio
+async def test_crawl_tasks_run_server_error_when_task_row_to_dict_raises_after_tick(tbox_quart_app, monkeypatch: pytest.MonkeyPatch):
+    app, mod = tbox_quart_app
+    monkeypatch.setattr(mod, "_active_tenant_memberships", lambda _uid: [])
+    row = SimpleNamespace(id="r6", tenant_id="tbox-route-test-user")
+
+    def execute_crawl_task_stub_tick(_tid):
+        row.after_tick = True
+
+    def task_row_to_dict(t):
+        if getattr(t, "after_tick", False):
+            raise ValueError("serialize after tick failed")
+        return {"id": t.id}
+
+    fake = SimpleNamespace(
+        tenant_ids_for_crawl=lambda uid, is_sup: None,
+        get_task=lambda tid: row if tid == "r6" else None,
+        user_may_access_task=lambda t, allowed: True,
+        execute_crawl_task_stub_tick=execute_crawl_task_stub_tick,
+        record_worker_tick=lambda *a, **k: None,
+        task_row_to_dict=task_row_to_dict,
+    )
+    monkeypatch.setattr(mod, "crawl_svc", fake)
+    TBOX_ROUTE_TEST_USER.is_superuser = True
+    async with app.test_client() as client:
+        resp = await client.post(f"/{API_VERSION}/tbox/crawl/tasks/r6/run")
+    data = await resp.get_json()
+    assert data["code"] == RetCode.EXCEPTION_ERROR
+    assert "serialize after tick failed" in data["message"]
+
+
+@pytest.mark.p2
+@pytest.mark.asyncio
+async def test_crawl_tasks_run_ok_returns_null_data_when_task_vanishes_after_tick(tbox_quart_app, monkeypatch: pytest.MonkeyPatch):
+    app, mod = tbox_quart_app
+    monkeypatch.setattr(mod, "_active_tenant_memberships", lambda _uid: [])
+    row = SimpleNamespace(id="r7", tenant_id="tbox-route-test-user")
+    gt_calls = [0]
+
+    def get_task(tid):
+        if tid != "r7":
+            return None
+        gt_calls[0] += 1
+        if gt_calls[0] == 1:
+            return row
+        return None
+
+    def execute_crawl_task_stub_tick(_tid):
+        return None
+
+    def task_row_to_dict(_t):
+        msg = "task_row_to_dict must not run when t2 is None"
+        raise AssertionError(msg)
+
+    fake = SimpleNamespace(
+        tenant_ids_for_crawl=lambda uid, is_sup: None,
+        get_task=get_task,
+        user_may_access_task=lambda t, allowed: True,
+        execute_crawl_task_stub_tick=execute_crawl_task_stub_tick,
+        record_worker_tick=lambda *a, **k: None,
+        task_row_to_dict=task_row_to_dict,
+    )
+    monkeypatch.setattr(mod, "crawl_svc", fake)
+    TBOX_ROUTE_TEST_USER.is_superuser = True
+    async with app.test_client() as client:
+        resp = await client.post(f"/{API_VERSION}/tbox/crawl/tasks/r7/run")
+    data = await resp.get_json()
+    assert data["code"] == 0
+    assert data["data"] is None
+    assert gt_calls[0] == 2
+
+
+@pytest.mark.p2
+@pytest.mark.asyncio
+async def test_crawl_tasks_run_server_error_when_tenant_ids_for_crawl_raises(tbox_quart_app, monkeypatch: pytest.MonkeyPatch):
+    app, mod = tbox_quart_app
+    monkeypatch.setattr(mod, "_active_tenant_memberships", lambda _uid: [])
+
+    def tenant_ids_for_crawl(_u, _s):
+        raise RuntimeError("run scope failed")
+
+    fake = SimpleNamespace(
+        tenant_ids_for_crawl=tenant_ids_for_crawl,
+        get_task=lambda _tid: None,
+        user_may_access_task=lambda t, allowed: True,
+        execute_crawl_task_stub_tick=lambda _tid: None,
+        record_worker_tick=lambda *a, **k: None,
+        task_row_to_dict=lambda t: {},
+    )
+    monkeypatch.setattr(mod, "crawl_svc", fake)
+    TBOX_ROUTE_TEST_USER.is_superuser = True
+    async with app.test_client() as client:
+        resp = await client.post(f"/{API_VERSION}/tbox/crawl/tasks/rz0/run")
+    data = await resp.get_json()
+    assert data["code"] == RetCode.EXCEPTION_ERROR
+    assert "run scope failed" in data["message"]
+
+
+@pytest.mark.p2
+@pytest.mark.asyncio
+async def test_crawl_tasks_run_server_error_when_user_may_access_task_raises(tbox_quart_app, monkeypatch: pytest.MonkeyPatch):
+    app, mod = tbox_quart_app
+    monkeypatch.setattr(mod, "_active_tenant_memberships", lambda _uid: [])
+    row = SimpleNamespace(id="rz1", tenant_id="tbox-route-test-user")
+
+    def user_may_access_task(_t, _allowed):
+        raise RuntimeError("run acl failed")
+
+    fake = SimpleNamespace(
+        tenant_ids_for_crawl=lambda uid, is_sup: None,
+        get_task=lambda tid: row if tid == "rz1" else None,
+        user_may_access_task=user_may_access_task,
+        execute_crawl_task_stub_tick=lambda _tid: None,
+        record_worker_tick=lambda *a, **k: None,
+        task_row_to_dict=lambda t: {},
+    )
+    monkeypatch.setattr(mod, "crawl_svc", fake)
+    TBOX_ROUTE_TEST_USER.is_superuser = True
+    async with app.test_client() as client:
+        resp = await client.post(f"/{API_VERSION}/tbox/crawl/tasks/rz1/run")
+    data = await resp.get_json()
+    assert data["code"] == RetCode.EXCEPTION_ERROR
+    assert "run acl failed" in data["message"]

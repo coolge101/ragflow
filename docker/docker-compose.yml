@@ -8,7 +8,13 @@ services:
         condition: service_healthy
     profiles:
       - cpu
-    image: ${RAGFLOW_IMAGE}
+    image: ${RAGFLOW_IMAGE:-ragflow-tbox:local}
+    build:
+      context: ..
+      dockerfile: Dockerfile
+      args:
+        BASE_IMAGE: ${RAGFLOW_BASE_IMAGE:-ubuntu:24.04}
+        NEED_MIRROR: ${NEED_MIRROR:-0}
     # Example configuration to set up an MCP server:
     # command:
     #   - --enable-mcpserver
@@ -28,6 +34,7 @@ services:
     # Example configuration to start Admin server:
     command:
       - --enable-adminserver
+      - --init-model-provider-tables
     ports:
       - ${SVR_WEB_HTTP_PORT}:80
       - ${SVR_WEB_HTTPS_PORT}:443
@@ -58,7 +65,13 @@ services:
         condition: service_healthy
     profiles:
       - gpu
-    image: ${RAGFLOW_IMAGE}
+    image: ${RAGFLOW_IMAGE:-ragflow-tbox:local}
+    build:
+      context: ..
+      dockerfile: Dockerfile
+      args:
+        BASE_IMAGE: ${RAGFLOW_BASE_IMAGE:-ubuntu:24.04}
+        NEED_MIRROR: ${NEED_MIRROR:-0}
     # Example configuration to set up an MCP server:
     # command:
     #   - --enable-mcpserver
@@ -107,6 +120,25 @@ services:
               count: all
               capabilities: [gpu]
 
+  # TBOX static console (web-tbox production build). Proxies /v1 and /api to the host
+  # port where RAGFlow publishes the API (match SVR_HTTP_PORT, or set TBOX_CONSOLE_RAGFLOW_UPSTREAM).
+  # Start with: docker compose --profile cpu --profile tbox-console up -d
+  tbox-console:
+    profiles:
+      - tbox-console
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.tbox-console
+    image: ${TBOX_CONSOLE_IMAGE:-ragflow-tbox-console:local}
+    ports:
+      - "${TBOX_CONSOLE_PORT:-5180}:80"
+    environment:
+      RAGFLOW_UPSTREAM: "${TBOX_CONSOLE_RAGFLOW_UPSTREAM:-host.docker.internal:9380}"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    networks:
+      - ragflow
+    restart: unless-stopped
 
   # executor:
   #   depends_on:

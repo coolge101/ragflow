@@ -21,6 +21,7 @@ Cargo.lock
 
 .idea/
 .vscode/
+.cursor/settings.json
 
 # Exclude Mac generated files
 .DS_Store
@@ -43,6 +44,7 @@ tika-server*.jar*
 cl100k_base.tiktoken
 chrome*
 huggingface.co/
+_incoming/
 nltk_data/
 uv-x86_64*.tar.gz
 
@@ -50,7 +52,21 @@ uv-x86_64*.tar.gz
 *[0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f]*
 .lh/
 .venv
+scripts/tbox_smoke.env
+scripts/tbox_sync.env
+backups/tbox-sync-*/
+backups/tbox-migration-*/
 docker/data
+
+# Nested full-repo checkouts / local platform trees (accidental copies; keep this repo lean)
+docker/ragflow/
+tbox-ragflow-platform/
+
+# Compose / editor backups under docker/
+docker/*.backup
+
+# Local agent chat exports (not shipped product docs)
+docs/ragflow-dev-chat-*.md
 
 # OceanBase data and conf
 docker/oceanbase/conf
@@ -145,6 +161,10 @@ web_modules/
 .env.test.local
 .env.production.local
 .env.local
+scripts/tbox_smoke.env
+scripts/tbox_sync.env
+backups/tbox-sync-*/
+backups/tbox-migration-*/
 
 # parcel-bundler cache (https://parceljs.org/)
 .cache
@@ -231,3 +251,4 @@ internal/cpp/cmake-build-debug/
 # Go server build output
 bin/*
 !bin/.gitkeep
+.claude/settings.local.json
