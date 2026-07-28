@@ -133,9 +133,9 @@ export function ChatAppEditPage() {
         }
         const newId = body.data?.id != null ? String(body.data.id) : "";
         if (newId) {
-          navigate(`/apps/${encodeURIComponent(newId)}`, { replace: true });
+          navigate(`/admin/apps/${encodeURIComponent(newId)}`, { replace: true });
         } else {
-          navigate("/apps", { replace: true });
+          navigate("/admin/apps", { replace: true });
         }
       } else if (id) {
         const { res, body } = await updateChat(id, payload);
@@ -160,7 +160,7 @@ export function ChatAppEditPage() {
   return (
     <div>
       <p style={{ marginTop: 0 }}>
-        <Link to="/apps">← 返回对话应用列表</Link>
+        <Link to="/admin/apps">← 返回对话应用列表</Link>
       </p>
 
       <h1 style={{ marginTop: "0.5rem" }}>{isNew ? "新建对话应用" : "编辑对话应用"}</h1>
@@ -181,11 +181,11 @@ export function ChatAppEditPage() {
           <div style={{ marginBottom: 6 }}>从场景模板预填（咨询 / 决策 / 辅导）：</div>
           <div style={{ display: "flex", flexWrap: "wrap", gap: "0.75rem" }}>
             {CHAT_APP_SCENARIOS.map((s) => (
-              <Link key={s.id} to={`/apps/new?template=${s.id}`}>
+              <Link key={s.id} to={`/admin/apps/new?template=${s.id}`}>
                 {s.label}
               </Link>
             ))}
-            <Link to="/apps/new">空白</Link>
+            <Link to="/admin/apps/new">空白</Link>
           </div>
         </div>
       ) : null}

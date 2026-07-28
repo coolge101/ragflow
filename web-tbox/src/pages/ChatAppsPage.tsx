@@ -155,9 +155,9 @@ export function ChatAppsPage() {
               {total > PAGE_SIZE ? `（本页最多 ${PAGE_SIZE} 条）` : null}
             </p>
             <div style={{ display: "flex", flexWrap: "wrap", gap: "0.75rem", alignItems: "center" }}>
-              <Link to="/apps/new">新建对话应用</Link>
+              <Link to="/admin/apps/new">新建对话应用</Link>
               {CHAT_APP_SCENARIOS.map((s) => (
-                <Link key={s.id} to={`/apps/new?template=${s.id}`} title={s.description}>
+                <Link key={s.id} to={`/admin/apps/new?template=${s.id}`} title={s.description}>
                   从模板：{s.label}
                 </Link>
               ))}
@@ -181,9 +181,9 @@ export function ChatAppsPage() {
                 暂无对话应用。可创建空白应用，或从<strong>咨询 / 决策 / 辅导</strong>场景模板预填提示词与检索参数。
               </p>
               <div style={{ display: "flex", flexWrap: "wrap", gap: "0.75rem" }}>
-                <Link to="/apps/new">新建空白应用</Link>
+                <Link to="/admin/apps/new">新建空白应用</Link>
                 {CHAT_APP_SCENARIOS.map((s) => (
-                  <Link key={s.id} to={`/apps/new?template=${s.id}`}>
+                  <Link key={s.id} to={`/admin/apps/new?template=${s.id}`}>
                     {s.label}模板
                   </Link>
                 ))}
@@ -246,7 +246,7 @@ export function ChatAppsPage() {
                         <td style={{ padding: "0.5rem" }}>
                           {id ? (
                             <div style={{ display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center" }}>
-                              <Link to={`/apps/${encodeURIComponent(id)}`}>编辑</Link>
+                              <Link to={`/admin/apps/${encodeURIComponent(id)}`}>编辑</Link>
                               <button
                                 type="button"
                                 disabled={busyId === id}

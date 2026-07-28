@@ -1,13 +1,20 @@
 import { type FormEvent, useCallback, useEffect, useRef, useState } from "react";
+import { Link } from "react-router-dom";
 import { ApiErrorBanner } from "../components/ApiErrorBanner";
+import { DocMoreMenu } from "../components/DocMoreMenu";
 import { G1IngestFormatGuide } from "../components/G1IngestFormatGuide";
+import { PipelineDocumentsPanel } from "../components/PipelineDocumentsPanel";
+import { PipelineStatusPanel } from "../components/PipelineStatusPanel";
 import { createDataset, deleteDatasets, getDataset, datasetsListTotal, listDatasets, type DatasetRow } from "../api/datasets";
 import { deleteDocuments, listDocuments, parseDocuments, reparseDocuments, uploadDocuments, type DocRow } from "../api/datasetDocuments";
 import { downloadDocumentOriginal, openDocumentOriginalInNewTab } from "../utils/documentOriginal";
+import { openWebSourceUrl, resolveSourceReadUrl } from "../utils/sourceUrl";
 import { exportDatasetZip, importDatasetZipFile } from "../utils/datasetZipTransfer";
 import { g1CreateModalHint, g1UploadChunkMethodWarning } from "../utils/g1IngestFormatGuide";
+import { DEFAULT_CRAWL_DATASET_ID, pickPreferredDatasetId } from "../constants/crawlDataset";
 import { hasPermission } from "../constants/permissions";
 import { useAuth } from "../context/AuthContext";
+import "../styles/documents.css";
 
 function runLabel(run: string | undefined): string {
   const m: Record<string, string> = {
@@ -125,6 +132,9 @@ export function DocumentsPage() {
   const canStartParse = canUpload;
   /** 阅读原文/下载原文：与文档页同一权限。 */
   const canViewOriginal = hasPermission(permissions, "doc.view");
+  const canManageCrawl = hasPermission(permissions, "crawl.manage");
+  const canViewDoc = hasPermission(permissions, "doc.view");
+  const [mainTab, setMainTab] = useState<"pipeline" | "knowledge">("pipeline");
 
   const [kbPage, setKbPage] = useState(1);
   const [rows, setRows] = useState<DatasetRow[]>([]);
@@ -237,6 +247,34 @@ export function DocumentsPage() {
   useEffect(() => {
     void load();
   }, [load]);
+
+  useEffect(() => {
+    if (mainTab !== "knowledge" || activeKb) {
+      return;
+    }
+    let cancelled = false;
+    void (async () => {
+      try {
+        const { body } = await listDatasets({ page: 1, page_size: 100 });
+        if (cancelled || body.code !== 0 || !Array.isArray(body.data)) {
+          return;
+        }
+        const preferred = pickPreferredDatasetId(body.data, DEFAULT_CRAWL_DATASET_ID);
+        if (!preferred) {
+          return;
+        }
+        const row = body.data.find((r) => String(r.id) === preferred);
+        setActiveKb(preferred);
+        setActiveKbName(String(row?.name || preferred));
+        setDocsPage(1);
+      } catch {
+        /* ignore auto-select failures */
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [mainTab, activeKb]);
 
   useEffect(() => {
     if (!activeKb) {
@@ -530,6 +568,17 @@ export function DocumentsPage() {
     }
   }
 
+  function onOpenWebSource(doc: DocRow) {
+    const url = resolveSourceReadUrl(doc.meta_fields);
+    if (!url) {
+      return;
+    }
+    const { ok, error } = openWebSourceUrl(url);
+    if (!ok) {
+      setDocsError(error || "无法打开网页原文");
+    }
+  }
+
   async function onExportZip() {
     if (!activeKb || !canExportZip) {
       return;
@@ -639,6 +688,63 @@ export function DocumentsPage() {
 
       <G1IngestFormatGuide />
 
+      <PipelineStatusPanel canManage={canManageCrawl} />
+
+      <div
+        style={{
+          marginTop: "1.25rem",
+          display: "flex",
+          gap: "0.5rem",
+          borderBottom: "1px solid #e2e8f0",
+          maxWidth: 960,
+        }}
+        role="tablist"
+        aria-label="文档视图"
+      >
+        <button
+          type="button"
+          role="tab"
+          aria-selected={mainTab === "pipeline"}
+          onClick={() => setMainTab("pipeline")}
+          style={{
+            border: "none",
+            background: "transparent",
+            padding: "0.55rem 0.85rem",
+            cursor: "pointer",
+            fontWeight: mainTab === "pipeline" ? 700 : 500,
+            borderBottom: mainTab === "pipeline" ? "2px solid #0f172a" : "2px solid transparent",
+          }}
+        >
+          爬取管线
+        </button>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={mainTab === "knowledge"}
+          onClick={() => setMainTab("knowledge")}
+          style={{
+            border: "none",
+            background: "transparent",
+            padding: "0.55rem 0.85rem",
+            cursor: "pointer",
+            fontWeight: mainTab === "knowledge" ? 700 : 500,
+            borderBottom: mainTab === "knowledge" ? "2px solid #0f172a" : "2px solid transparent",
+          }}
+        >
+          知识库
+        </button>
+      </div>
+
+      {mainTab === "pipeline" ? (
+        canViewDoc || canManageCrawl ? (
+          <PipelineDocumentsPanel enabled />
+        ) : (
+          <p className="muted">需要 doc.view 权限才能查看爬取管线文档。</p>
+        )
+      ) : null}
+
+      {mainTab === "knowledge" ? (
+        <>
       {error ? (
         <ApiErrorBanner
           style={{ marginTop: "1rem", marginBottom: "0.5rem", padding: "0.75rem 1rem", gap: "0.75rem" }}
@@ -816,7 +922,7 @@ export function DocumentsPage() {
                   {canConfigureKb ? (
                     <>
                       {" "}
-                      <a href="/kb">去知识库配置</a> 修改分块方式（当前：<code>{activeKbChunkMethod}</code>）。
+                      <Link to="/admin/kb">去知识库配置</Link> 修改分块方式（当前：<code>{activeKbChunkMethod}</code>）。
                     </>
                   ) : null}
                 </p>
@@ -826,7 +932,7 @@ export function DocumentsPage() {
               </p>
               {canViewOriginal ? (
                 <p className="muted" style={{ fontSize: "0.82rem", marginBottom: "0.65rem", maxWidth: 920 }}>
-                  列表中的<strong>「阅读原文」</strong>通过 <code>GET /api/v1/documents/:id/preview</code> 在新标签页打开上传或爬取的原始文件（如 HTML、PDF）；<strong>「下载原文」</strong>保存同一文件到本地。解析状态与分块数仅表示切片进度，不影响查看原文。
+                  操作列固定在右侧：<strong>阅读</strong>打开入库文件预览，<strong>下载</strong>保存入库文件，<strong>网页</strong>跳转发布方原文；解析 / 删除等在 <strong>⋯</strong> 中。
                 </p>
               ) : null}
               {docsError ? (
@@ -936,27 +1042,21 @@ export function DocumentsPage() {
               {docsLoading ? (
                 <p className="muted">加载文档…</p>
               ) : (
-                <div style={{ overflowX: "auto" }}>
-                  <table
-                    style={{
-                      borderCollapse: "collapse",
-                      width: "100%",
-                      fontSize: "0.9rem",
-                    }}
-                  >
+                <div className="docs-table-wrap">
+                  <table className="docs-table">
                     <thead>
-                      <tr style={{ borderBottom: "1px solid var(--border-subtle)", textAlign: "left" }}>
-                        <th style={{ padding: "0.4rem" }}>名称</th>
-                        <th style={{ padding: "0.4rem" }}>状态</th>
-                        <th style={{ padding: "0.4rem", minWidth: 140 }}>进度</th>
-                        <th style={{ padding: "0.4rem" }}>分块</th>
-                        <th style={{ padding: "0.4rem" }}>操作</th>
+                      <tr>
+                        <th className="docs-col-name">名称</th>
+                        <th>状态</th>
+                        <th style={{ minWidth: 140 }}>进度</th>
+                        <th>分块</th>
+                        <th className="docs-col-actions">操作</th>
                       </tr>
                     </thead>
                     <tbody>
                       {docs.length === 0 ? (
                         <tr>
-                          <td colSpan={5} className="muted" style={{ padding: "0.75rem" }}>
+                          <td colSpan={5} className="muted">
                             {docsPage > 1
                               ? "本页没有文档，请返回上一文档页或刷新列表。"
                               : "暂无文档，可上传或从其他入口同步。"}
@@ -965,12 +1065,30 @@ export function DocumentsPage() {
                       ) : (
                         docs.map((d) => {
                           const did = d.id as string | undefined;
-                          const dname = (d.name as string) || did;
+                          const dname = (d.name as string) || did || "";
+                          const webSourceUrl = resolveSourceReadUrl(d.meta_fields);
+                          const rowBusy =
+                            originalBusyId === did ||
+                            !!parseBusy ||
+                            parseRowBusy === did ||
+                            busyId === did ||
+                            zipBusy;
+                          const hasMoreActions = Boolean(
+                            did &&
+                              (isDocRunRunning(d.run) ||
+                                (canStartParse && isDocRunAwaitingParse(d.run)) ||
+                                (canReparse && isDocRunDoneOrFail(d.run)) ||
+                                (isDocRunDoneOrFail(d.run) && !canReparse) ||
+                                canDeleteDoc ||
+                                !canDeleteDoc),
+                          );
                           return (
-                            <tr key={did || dname} style={{ borderBottom: "1px solid #eee" }}>
-                              <td style={{ padding: "0.4rem" }}>{dname}</td>
-                              <td style={{ padding: "0.4rem" }}>{runLabel(d.run as string | undefined)}</td>
-                              <td style={{ padding: "0.4rem", verticalAlign: "top" }}>
+                            <tr key={did || dname}>
+                              <td className="docs-col-name" title={dname}>
+                                <span className="docs-col-name-text">{dname}</span>
+                              </td>
+                              <td style={{ whiteSpace: "nowrap" }}>{runLabel(d.run as string | undefined)}</td>
+                              <td style={{ verticalAlign: "top" }}>
                                 {isDocRunRunning(d.run) ? (
                                   <div style={{ minWidth: 120, maxWidth: 260 }}>
                                     <div
@@ -1014,84 +1132,99 @@ export function DocumentsPage() {
                                   </span>
                                 )}
                               </td>
-                              <td style={{ padding: "0.4rem" }}>{d.chunk_count ?? "—"}</td>
-                              <td style={{ padding: "0.4rem" }}>
-                                <div style={{ display: "flex", flexWrap: "wrap", gap: 6, alignItems: "center" }}>
+                              <td>{d.chunk_count ?? "—"}</td>
+                              <td className="docs-col-actions">
+                                <div className="docs-actions">
                                   {did && canViewOriginal ? (
                                     <>
                                       <button
                                         type="button"
-                                        disabled={
-                                          originalBusyId === did ||
-                                          !!parseBusy ||
-                                          parseRowBusy === did ||
-                                          busyId === did ||
-                                          zipBusy
-                                        }
+                                        className="docs-btn-pill docs-btn-pill--primary"
+                                        disabled={rowBusy}
+                                        title="阅读入库原文（新标签预览）"
                                         onClick={() => void onOpenOriginal(d)}
-                                        style={{ fontSize: "0.85rem" }}
                                       >
-                                        {originalBusyId === did ? "打开中…" : "阅读原文"}
+                                        {originalBusyId === did ? "…" : "阅读"}
                                       </button>
                                       <button
                                         type="button"
-                                        disabled={
-                                          originalBusyId === did ||
-                                          !!parseBusy ||
-                                          parseRowBusy === did ||
-                                          busyId === did ||
-                                          zipBusy
-                                        }
+                                        className="docs-btn-pill"
+                                        disabled={rowBusy}
+                                        title="下载入库原文到本地"
                                         onClick={() => void onDownloadOriginal(d)}
-                                        style={{ fontSize: "0.85rem" }}
                                       >
-                                        {originalBusyId === did ? "下载中…" : "下载原文"}
+                                        {originalBusyId === did ? "…" : "下载"}
                                       </button>
+                                      {webSourceUrl ? (
+                                        <button
+                                          type="button"
+                                          className="docs-btn-pill"
+                                          disabled={rowBusy}
+                                          title={webSourceUrl}
+                                          onClick={() => onOpenWebSource(d)}
+                                        >
+                                          网页
+                                        </button>
+                                      ) : (
+                                        <button
+                                          type="button"
+                                          className="docs-btn-pill"
+                                          disabled
+                                          title="无网页原文链接"
+                                        >
+                                          网页
+                                        </button>
+                                      )}
                                     </>
                                   ) : null}
-                                  {did && isDocRunRunning(d.run) ? (
-                                    <span className="muted" style={{ fontSize: "0.8rem" }}>
-                                      解析中…
-                                    </span>
-                                  ) : null}
-                                  {did && canStartParse && isDocRunAwaitingParse(d.run) ? (
-                                    <button
-                                      type="button"
-                                      disabled={!!parseBusy || parseRowBusy === did || busyId === did}
-                                      onClick={() => void onParseDocuments([did], "row")}
-                                      style={{ fontSize: "0.85rem" }}
-                                    >
-                                      {parseRowBusy === did ? "提交中…" : "开始解析"}
-                                    </button>
-                                  ) : null}
-                                  {did && canReparse && isDocRunDoneOrFail(d.run) ? (
-                                    <button
-                                      type="button"
-                                      disabled={!!parseBusy || parseRowBusy === did || busyId === did || zipBusy}
-                                      onClick={() => void onReparseDocument(d)}
-                                      style={{ fontSize: "0.85rem" }}
-                                    >
-                                      {parseRowBusy === did ? "提交中…" : "重新解析"}
-                                    </button>
-                                  ) : null}
-                                  {did && isDocRunDoneOrFail(d.run) && !canReparse ? (
-                                    <span className="muted" style={{ fontSize: "0.8rem" }}>
-                                      无重解析权限
-                                    </span>
-                                  ) : null}
-                                  {did && canDeleteDoc ? (
-                                    <button
-                                      type="button"
-                                      disabled={busyId === did || !!parseBusy || parseRowBusy === did}
-                                      onClick={() => void onDeleteDoc(d)}
-                                      style={{ color: "#b91c1c", fontSize: "0.85rem" }}
-                                    >
-                                      {busyId === did ? "…" : "删除"}
-                                    </button>
-                                  ) : did && !canDeleteDoc ? (
-                                    <span className="muted" style={{ fontSize: "0.8rem" }}>
-                                      无删除权限
-                                    </span>
+                                  {did && hasMoreActions ? (
+                                    <DocMoreMenu disabled={zipBusy}>
+                                      {isDocRunRunning(d.run) ? (
+                                        <button type="button" role="menuitem" disabled>
+                                          解析中…
+                                        </button>
+                                      ) : null}
+                                      {canStartParse && isDocRunAwaitingParse(d.run) ? (
+                                        <button
+                                          type="button"
+                                          role="menuitem"
+                                          disabled={!!parseBusy || parseRowBusy === did || busyId === did}
+                                          onClick={() => void onParseDocuments([did], "row")}
+                                        >
+                                          {parseRowBusy === did ? "提交中…" : "开始解析"}
+                                        </button>
+                                      ) : null}
+                                      {canReparse && isDocRunDoneOrFail(d.run) ? (
+                                        <button
+                                          type="button"
+                                          role="menuitem"
+                                          disabled={!!parseBusy || parseRowBusy === did || busyId === did || zipBusy}
+                                          onClick={() => void onReparseDocument(d)}
+                                        >
+                                          {parseRowBusy === did ? "提交中…" : "重新解析"}
+                                        </button>
+                                      ) : null}
+                                      {isDocRunDoneOrFail(d.run) && !canReparse ? (
+                                        <button type="button" role="menuitem" disabled>
+                                          无重解析权限
+                                        </button>
+                                      ) : null}
+                                      {canDeleteDoc ? (
+                                        <button
+                                          type="button"
+                                          role="menuitem"
+                                          className="docs-more-danger"
+                                          disabled={busyId === did || !!parseBusy || parseRowBusy === did}
+                                          onClick={() => void onDeleteDoc(d)}
+                                        >
+                                          {busyId === did ? "删除中…" : "删除"}
+                                        </button>
+                                      ) : (
+                                        <button type="button" role="menuitem" disabled>
+                                          无删除权限
+                                        </button>
+                                      )}
+                                    </DocMoreMenu>
                                   ) : null}
                                 </div>
                               </td>
@@ -1113,6 +1246,8 @@ export function DocumentsPage() {
           </p>
         </>
       )}
+        </>
+      ) : null}
 
       {createOpen ? (
         <div

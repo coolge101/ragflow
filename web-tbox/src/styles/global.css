@@ -1,12 +1,4 @@
-:root {
-  --color-primary: #2563eb;
-  --color-accent: #0d9488;
-  --bg-page: #f8fafc;
-  --text-primary: #0f172a;
-  --text-secondary: #475569;
-  --border-subtle: #e2e8f0;
-  --sidebar-width: 220px;
-}
+@import "./tokens.css";
 
 * {
   box-sizing: border-box;

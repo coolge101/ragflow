@@ -11,6 +11,7 @@ export type DocRow = Record<string, unknown> & {
   /** 0~1 为主，失败时后端可能为 -1 */
   progress?: number;
   progress_msg?: string | null;
+  meta_fields?: Record<string, unknown>;
 };
 
 export type ListDocumentsJson = {

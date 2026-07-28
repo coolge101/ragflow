@@ -8,12 +8,25 @@ export function pathToJourneyStepId(pathname: string): string | null {
   if (pathname === "/review" || pathname.startsWith("/review/")) {
     return null;
   }
-  if (pathname === "/apps" || pathname.startsWith("/apps/")) {
+  if (
+    pathname === "/admin/apps" ||
+    pathname.startsWith("/admin/apps/") ||
+    pathname === "/apps" ||
+    pathname.startsWith("/apps/")
+  ) {
     return "chat-apps";
   }
   const exact: Record<string, string> = {
     "/": "chat",
     "/search": "search",
+    "/admin": "shell",
+    "/admin/documents": "documents",
+    "/admin/crawl": "crawl",
+    "/admin/crawl/goals": "crawl",
+    "/admin/kb": "kb",
+    "/admin/audit": "audit",
+    "/admin/users": "users",
+    // 兼容旧书签未 redirect 前的瞬间
     "/documents": "documents",
     "/crawl": "crawl",
     "/kb": "kb",

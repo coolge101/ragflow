@@ -1,8 +1,14 @@
-import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
+import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { ApiErrorBanner } from "../components/ApiErrorBanner";
 import { SearchResultList, searchChunkSnippet } from "../components/SearchResultList";
 import { listDatasets, type DatasetRow } from "../api/datasets";
 import { searchDataset, type ChunkRow } from "../api/datasetSearch";
+import {
+  datasetLabelForId,
+  parseKbParam,
+  resolveDomainCrawlDatasetIds,
+} from "../constants/crawlDataset";
 import { maxChunkSimilarity } from "../utils/chunkDisplay";
 import {
   buildSearchPrintHtml,
@@ -19,19 +25,33 @@ import {
   parseSearchChunkRow,
 } from "../utils/exportOffice";
 
+function chunkScore(row: ChunkRow): number {
+  return maxChunkSimilarity([row as { similarity?: unknown }]);
+}
+
 export function SearchPage() {
+  const [searchParams] = useSearchParams();
+  const initialQuery = searchParams.get("q") ?? "";
+  const initialKbParam = searchParams.get("kb") ?? "";
+  const initialKbIds = useMemo(() => parseKbParam(initialKbParam), [initialKbParam]);
+  const autoSearchRef = useRef(Boolean(initialQuery.trim() && initialKbIds.length > 0));
+
   const [datasets, setDatasets] = useState<DatasetRow[]>([]);
-  const [datasetId, setDatasetId] = useState("");
-  const [question, setQuestion] = useState("");
+  const [selectedIds, setSelectedIds] = useState<string[]>(initialKbIds);
+  const [question, setQuestion] = useState(initialQuery);
   const [chunks, setChunks] = useState<ChunkRow[]>([]);
   const [total, setTotal] = useState(0);
   const [loadingList, setLoadingList] = useState(true);
   const [loadingSearch, setLoadingSearch] = useState(false);
   const [listError, setListError] = useState<string | null>(null);
   const [searchError, setSearchError] = useState<string | null>(null);
-  /** 最近一次「成功」检索对应的 `datasetId\\ttrim(question)`，用于区分未检索与 0 结果 */
   const [lastSuccessSearchKey, setLastSuccessSearchKey] = useState<string | null>(null);
   const [activeResultIndex, setActiveResultIndex] = useState<number | null>(null);
+
+  const domainOptions = useMemo(() => {
+    const ids = resolveDomainCrawlDatasetIds(datasets);
+    return ids.map((id) => ({ id, label: datasetLabelForId(datasets, id) }));
+  }, [datasets]);
 
   const loadDatasets = useCallback(async () => {
     setLoadingList(true);
@@ -50,33 +70,48 @@ export function SearchPage() {
       }
       const rows = Array.isArray(body.data) ? body.data : [];
       setDatasets(rows);
-      if (rows[0]?.id) {
-        setDatasetId(String(rows[0].id));
-      }
+      const domainIds = resolveDomainCrawlDatasetIds(rows);
+      setSelectedIds((prev) => {
+        if (prev.length > 0) {
+          const valid = prev.filter((id) => rows.some((r) => String(r.id) === id));
+          if (valid.length > 0) {
+            return valid;
+          }
+        }
+        if (initialKbIds.length > 0) {
+          const valid = initialKbIds.filter((id) => rows.some((r) => String(r.id) === id));
+          if (valid.length > 0) {
+            return valid;
+          }
+        }
+        return domainIds;
+      });
     } catch (e) {
       setListError(e instanceof Error ? e.message : String(e));
       setDatasets([]);
     } finally {
       setLoadingList(false);
     }
-  }, []);
+  }, [initialKbIds]);
 
   useEffect(() => {
     void loadDatasets();
   }, [loadDatasets]);
 
+  const selectionKey = selectedIds.slice().sort().join(",");
+
   useEffect(() => {
-    const key = `${datasetId}\t${question.trim()}`;
+    const key = `${selectionKey}\t${question.trim()}`;
     if (lastSuccessSearchKey !== null && lastSuccessSearchKey !== key) {
       setChunks([]);
       setTotal(0);
       setActiveResultIndex(null);
     }
-  }, [datasetId, question, lastSuccessSearchKey]);
+  }, [selectionKey, question, lastSuccessSearchKey]);
 
   const runSearch = useCallback(async () => {
     const q = question.trim();
-    if (!datasetId || !q) {
+    if (!selectedIds.length || !q) {
       return;
     }
     setLoadingSearch(true);
@@ -84,25 +119,53 @@ export function SearchPage() {
     setChunks([]);
     setActiveResultIndex(null);
     try {
-      const { res, body } = await searchDataset(datasetId, { question: q, top_k: 10 });
-      if (res.status === 401 || body.code === 401) {
+      const results = await Promise.all(
+        selectedIds.map(async (id) => {
+          const { res, body } = await searchDataset(id, { question: q, top_k: 10 });
+          return { id, res, body };
+        }),
+      );
+      if (results.some((r) => r.res.status === 401 || r.body.code === 401)) {
         setSearchError("未授权");
         return;
       }
-      if (body.code !== 0) {
-        setSearchError(body.message || `错误码 ${body.code}`);
+      const failed = results.find((r) => r.body.code !== 0);
+      if (failed) {
+        setSearchError(failed.body.message || `错误码 ${failed.body.code}`);
         return;
       }
-      const data = body.data;
-      setChunks(Array.isArray(data?.chunks) ? data.chunks : []);
-      setTotal(typeof data?.total === "number" ? data.total : data?.chunks?.length ?? 0);
-      setLastSuccessSearchKey(`${datasetId}\t${q}`);
+      const merged: ChunkRow[] = [];
+      for (const r of results) {
+        const label = datasetLabelForId(datasets, r.id);
+        const list = Array.isArray(r.body.data?.chunks) ? r.body.data!.chunks! : [];
+        for (const row of list) {
+          const docName = String(row.document_keyword || row.docnm_kwd || "");
+          merged.push({
+            ...row,
+            _dataset_id: r.id,
+            _dataset_label: label,
+            document_keyword: docName ? `[${label}] ${docName}` : `[${label}]`,
+          });
+        }
+      }
+      merged.sort((a, b) => chunkScore(b) - chunkScore(a));
+      setChunks(merged);
+      setTotal(merged.length);
+      setLastSuccessSearchKey(`${selectedIds.slice().sort().join(",")}\t${q}`);
     } catch (err) {
       setSearchError(err instanceof Error ? err.message : String(err));
     } finally {
       setLoadingSearch(false);
     }
-  }, [datasetId, question]);
+  }, [selectedIds, question, datasets]);
+
+  useEffect(() => {
+    if (!autoSearchRef.current || loadingList || !selectedIds.length || !question.trim()) {
+      return;
+    }
+    autoSearchRef.current = false;
+    void runSearch();
+  }, [loadingList, selectedIds, question, runSearch]);
 
   const onSearch = useCallback(
     async (e: FormEvent) => {
@@ -112,7 +175,7 @@ export function SearchPage() {
     [runSearch],
   );
 
-  const currentSearchKey = `${datasetId}\t${question.trim()}`;
+  const currentSearchKey = `${selectionKey}\t${question.trim()}`;
   const showNoHits =
     lastSuccessSearchKey !== null &&
     lastSuccessSearchKey === currentSearchKey &&
@@ -130,9 +193,9 @@ export function SearchPage() {
     const tab = lastSuccessSearchKey.indexOf("\t");
     return tab >= 0 ? lastSuccessSearchKey.slice(tab + 1) : "";
   }, [lastSuccessSearchKey]);
-  const showKbEmpty = !loadingList && !listError && datasets.length === 0;
+  const showKbEmpty = !loadingList && !listError && domainOptions.length === 0;
   const showHintBeforeSearch =
-    datasets.length > 0 &&
+    domainOptions.length > 0 &&
     !loadingList &&
     !listError &&
     lastSuccessSearchKey === null &&
@@ -148,10 +211,16 @@ export function SearchPage() {
     setLastSuccessSearchKey(null);
   }
 
+  function toggleId(id: string) {
+    setSelectedIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
+  }
+
   const datasetLabel =
-    datasets.find((d) => String(d.id) === datasetId)?.name != null
-      ? String(datasets.find((d) => String(d.id) === datasetId)?.name)
-      : datasetId || "—";
+    selectedIds.length === 0
+      ? "—"
+      : selectedIds.length === 1
+        ? datasetLabelForId(datasets, selectedIds[0])
+        : `已选 ${selectedIds.length} 个分库`;
 
   const canExport =
     lastSuccessSearchKey !== null &&
@@ -241,7 +310,7 @@ export function SearchPage() {
     <div style={{ maxWidth: 880 }}>
       <h1 style={{ marginTop: 0 }}>检索</h1>
       <p className="muted">
-        调用 <code>POST /api/v1/datasets/&lt;id&gt;/search</code> 在选定知识库内做向量检索试用。
+        默认多选四个分域爬取库（Product / Market / Technology / Regulatory），对选中库并行检索后按相似度合并。
       </p>
 
       {loadingList ? <p className="muted">加载知识库列表…</p> : null}
@@ -261,7 +330,7 @@ export function SearchPage() {
           style={{ marginTop: "0.75rem" }}
           onRetry={() => void runSearch()}
           retryLabel="重试检索"
-          retryDisabled={loadingSearch || !datasetId || !question.trim()}
+          retryDisabled={loadingSearch || !selectedIds.length || !question.trim()}
           retryBusy={loadingSearch}
         >
           {searchError}
@@ -280,7 +349,7 @@ export function SearchPage() {
             fontSize: "0.92rem",
           }}
         >
-          当前<strong>没有可用知识库</strong>。请先在「文档 / 知识库」中创建知识库并入库后，点下方「重试加载知识库」或刷新页面。
+          未找到四个分域爬取库。请确认已创建 TBOX-Crawl-Product / Market / Technology / Regulatory。
         </div>
       ) : null}
 
@@ -296,32 +365,40 @@ export function SearchPage() {
             fontSize: "0.9rem",
           }}
         >
-          选择知识库并输入问题后，点「检索」查看向量检索结果。
+          勾选分库并输入问题后，点「检索」查看合并结果。
         </div>
       ) : null}
 
-      <form onSubmit={(ev) => void onSearch(ev)} style={{ marginTop: "1rem", display: "flex", flexDirection: "column", gap: 12 }}>
-        <label>
-          <div className="muted" style={{ marginBottom: 4 }}>
-            知识库
+      <form
+        onSubmit={(ev) => void onSearch(ev)}
+        style={{ marginTop: "1rem", display: "flex", flexDirection: "column", gap: 12 }}
+      >
+        <fieldset style={{ border: "1px solid var(--border-subtle)", borderRadius: 8, padding: "0.75rem 1rem" }}>
+          <legend className="muted" style={{ padding: "0 0.35rem" }}>
+            分域知识库（可多选）
+          </legend>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: "0.75rem 1.25rem" }}>
+            {domainOptions.map((opt) => (
+              <label key={opt.id} style={{ display: "flex", alignItems: "center", gap: 6, cursor: "pointer" }}>
+                <input
+                  type="checkbox"
+                  checked={selectedIds.includes(opt.id)}
+                  onChange={() => toggleId(opt.id)}
+                  disabled={loadingList}
+                />
+                <span>{opt.label}</span>
+              </label>
+            ))}
           </div>
-          <select
-            value={datasetId}
-            onChange={(ev) => setDatasetId(ev.target.value)}
-            disabled={loadingList || datasets.length === 0}
-            style={{ minWidth: 280, padding: "0.4rem" }}
-          >
-            {datasets.length === 0 ? (
-              <option value="">暂无知识库</option>
-            ) : (
-              datasets.map((d) => (
-                <option key={String(d.id)} value={String(d.id)}>
-                  {(d.name as string) || d.id}
-                </option>
-              ))
-            )}
-          </select>
-        </label>
+          <div style={{ marginTop: "0.65rem", display: "flex", gap: "0.5rem" }}>
+            <button type="button" disabled={loadingList || !domainOptions.length} onClick={() => setSelectedIds(domainOptions.map((o) => o.id))}>
+              全选
+            </button>
+            <button type="button" disabled={loadingList} onClick={() => setSelectedIds([])}>
+              全不选
+            </button>
+          </div>
+        </fieldset>
         <label>
           <div className="muted" style={{ marginBottom: 4 }}>
             问题 / 关键词
@@ -334,7 +411,7 @@ export function SearchPage() {
           />
         </label>
         <div style={{ display: "flex", flexWrap: "wrap", gap: "0.5rem", alignItems: "center" }}>
-          <button type="submit" disabled={loadingSearch || !datasetId || !question.trim()}>
+          <button type="submit" disabled={loadingSearch || !selectedIds.length || !question.trim()}>
             {loadingSearch ? "检索中…" : "检索"}
           </button>
           <button type="button" disabled={loadingSearch} onClick={onClearSearchForm} style={{ cursor: "pointer" }}>
@@ -356,7 +433,7 @@ export function SearchPage() {
               fontSize: "0.92rem",
             }}
           >
-            本次检索<strong>无命中片段</strong>。可尝试换关键词、换知识库，或确认该库已解析入库。
+            本次检索<strong>无命中片段</strong>。可尝试换关键词、调整分库勾选，或确认该库已解析入库。
           </div>
           <p style={{ marginTop: "0.75rem" }}>
             <button type="button" onClick={onClearSearchForm} style={{ cursor: "pointer" }}>
@@ -382,7 +459,7 @@ export function SearchPage() {
             </button>
           </div>
           <p className="muted" style={{ fontSize: "0.85rem", margin: "0 0 0.75rem" }}>
-            点击结果条目可高亮查看；切换检索会清空选中。
+            片段标题前缀为来源分库；点击条目可高亮查看。
           </p>
           {showWeakHit ? (
             <div
@@ -396,7 +473,7 @@ export function SearchPage() {
                 fontSize: "0.88rem",
               }}
             >
-              最高相似度较低，结果可能与问题关联较弱。建议换关键词、换知识库，或在对话应用中增大 top_n。
+              最高相似度较低，结果可能与问题关联较弱。建议换关键词或调整分库勾选。
             </div>
           ) : null}
           <SearchResultList

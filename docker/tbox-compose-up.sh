@@ -75,6 +75,10 @@ if [[ "${TBOX_USE_STOCK_RAGFLOW_IMAGE:-0}" != "1" ]]; then
 fi
 
 need_build=0
+COMPOSE_FILES=(-f docker-compose.yml)
+if [[ -f docker-compose.override.yml ]]; then
+  COMPOSE_FILES+=(-f docker-compose.override.yml)
+fi
 if [[ "$TBOX_BUILD" == "1" || "$TBOX_BUILD" == "yes" ]]; then
   need_build=1
 elif [[ "$TBOX_BUILD" == "0" || "$TBOX_BUILD" == "no" ]]; then
@@ -137,7 +141,7 @@ if [[ "$need_build" == "1" ]]; then
   fi
 
   echo "==> Building API image ${RAGFLOW_IMAGE} (includes TBOX, may take several minutes)…"
-  docker compose -f docker-compose.yml --profile "${DEVICE}" build "ragflow-${DEVICE}"
+  docker compose "${COMPOSE_FILES[@]}" --profile "${DEVICE}" build "ragflow-${DEVICE}"
 elif [[ "${TBOX_BUILD:-}" != "0" && "${TBOX_BUILD:-}" != "no" ]]; then
   echo "==> Skip API image build (found ${RAGFLOW_IMAGE}). Rebuild: TBOX_BUILD_RAGFLOW=1 bash docker/tbox-compose-up.sh"
 fi
@@ -152,7 +156,7 @@ if [[ "${TBOX_CONSOLE:-0}" == "1" ]]; then
 fi
 
 echo "==> Starting RAGFlow (${DEVICE}, image: ${RAGFLOW_IMAGE:-unset}, pull: ${PULL_POLICY})"
-docker compose -f docker-compose.yml "${COMPOSE_EXTRA[@]}" up -d --pull "${PULL_POLICY}"
+docker compose "${COMPOSE_FILES[@]}" "${COMPOSE_EXTRA[@]}" up -d --pull "${PULL_POLICY}"
 
 API_PORT="${SVR_HTTP_PORT:-9380}"
 # Quart REST lives under /api/v1/... (see api/apps/__init__.register_page). Go hybrid used /v1/user/... — probe both.

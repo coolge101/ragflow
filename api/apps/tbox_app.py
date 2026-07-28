@@ -29,6 +29,7 @@ from api.db import UserTenantRole
 from api.db.db_models import UserTenant
 from api.db.services import tbox_crawl_task_service as crawl_svc
 from api.db.services import tbox_crawl_health_service as crawl_health_svc
+from api.db.services import tbox_crawl_platform_service as crawl_platform_svc
 from api.db.services import tbox_managed_user_service as managed_users
 from api.utils.api_utils import get_json_result, get_request_json, server_error_response
 from common.constants import RetCode, StatusEnum
@@ -36,7 +37,7 @@ from common.tbox_crawl_last_error import format_crawl_worker_error
 
 # Bumped when response shape or semantics change for external clients (e.g. web-tbox).
 # Keep aligned with web-tbox/src/constants/tboxContract.ts → TBOX_API_CONTRACT_VERSION_EXPECTED.
-TBOX_API_CONTRACT_VERSION = 7
+TBOX_API_CONTRACT_VERSION = 8
 
 # UI permission keys — aligned with docs/TBOX_UI_DESIGN_DETAIL.md §2.2
 _TBOX_PERMISSIONS_ALL = (
@@ -170,6 +171,16 @@ def _assert_crawl_manage():
     if "crawl.manage" not in _tbox_permissions_for_tenants(is_super, tenants):
         return _crawl_manage_denied_response()
     return None
+
+
+def _assert_doc_view_or_crawl_manage():
+    user = current_user
+    tenants = _active_tenant_memberships(user.id)
+    is_super = bool(getattr(user, "is_superuser", False))
+    perms = _tbox_permissions_for_tenants(is_super, tenants)
+    if "doc.view" in perms or "crawl.manage" in perms:
+        return None
+    return get_json_result(code=RetCode.FORBIDDEN, message="Permission doc.view or crawl.manage required")
 
 
 @manager.route("/health", methods=["GET"])  # noqa: F821
@@ -714,6 +725,252 @@ async def crawl_tasks_import_sources(task_id: str):
         except ValueError as exc:
             return get_json_result(code=RetCode.ARGUMENT_ERROR, message=str(exc))
         return get_json_result(data=crawl_svc.task_row_to_dict(t))
+    except Exception as e:  # noqa: BLE001
+        return server_error_response(e)
+
+
+@manager.route("/crawl/platform/overview", methods=["GET"])  # noqa: F821
+@login_required
+async def crawl_platform_overview():
+    """Unified crawl platform status (tbox-pipelines / PostgreSQL)."""
+    denied = _assert_crawl_manage()
+    if denied:
+        return denied
+    try:
+        lookback = int(request.args.get("lookback_days") or 7)
+        data = crawl_platform_svc.get_platform_overview(lookback_days=max(1, lookback))
+        return get_json_result(data=data)
+    except Exception as e:  # noqa: BLE001
+        return server_error_response(e)
+
+
+@manager.route("/crawl/platform/documents", methods=["GET"])  # noqa: F821
+@login_required
+async def crawl_platform_documents():
+    """List unified-crawl documents from tbox_meta (ready/quarantine/ingested)."""
+    denied = _assert_doc_view_or_crawl_manage()
+    if denied:
+        return denied
+    try:
+        status_raw = str(request.args.get("status") or "").strip()
+        statuses = [s.strip() for s in status_raw.split(",") if s.strip()] if status_raw else None
+        domain = str(request.args.get("domain") or "").strip() or None
+        limit = int(request.args.get("limit") or 50)
+        offset = int(request.args.get("offset") or 0)
+        data = crawl_platform_svc.list_platform_documents(
+            statuses=statuses,
+            domain=domain,
+            limit=max(1, min(limit, 200)),
+            offset=max(0, offset),
+        )
+        return get_json_result(data=data)
+    except Exception as e:  # noqa: BLE001
+        return server_error_response(e)
+
+
+@manager.route("/crawl/platform/tasks/<domain>/toggle", methods=["POST"])  # noqa: F821
+@login_required
+async def crawl_platform_toggle(domain: str):
+    denied = _assert_crawl_manage()
+    if denied:
+        return denied
+    try:
+        req = await get_request_json() or {}
+        enabled = bool(req.get("enabled", True))
+        data = crawl_platform_svc.toggle_platform_domain(domain, enabled=enabled)
+        return get_json_result(data=data)
+    except crawl_platform_svc.PlatformUnavailableError as exc:
+        return get_json_result(code=RetCode.OPERATING_ERROR, message=str(exc))
+    except ValueError as exc:
+        return get_json_result(code=RetCode.ARGUMENT_ERROR, message=str(exc))
+    except Exception as e:  # noqa: BLE001
+        return server_error_response(e)
+
+
+@manager.route("/crawl/platform/crawl", methods=["POST"])  # noqa: F821
+@login_required
+async def crawl_platform_trigger_crawl():
+    denied = _assert_crawl_manage()
+    if denied:
+        return denied
+    try:
+        req = await get_request_json() or {}
+        domain = str(req.get("domain") or "all").strip().lower() or "all"
+        data = crawl_platform_svc.trigger_platform_crawl(domain)
+        return get_json_result(data=data)
+    except crawl_platform_svc.PlatformUnavailableError as exc:
+        return get_json_result(code=RetCode.OPERATING_ERROR, message=str(exc))
+    except ValueError as exc:
+        return get_json_result(code=RetCode.ARGUMENT_ERROR, message=str(exc))
+    except Exception as e:  # noqa: BLE001
+        return server_error_response(e)
+
+
+@manager.route("/crawl/platform/expand-frontier", methods=["POST"])  # noqa: F821
+@login_required
+async def crawl_platform_expand_frontier():
+    denied = _assert_crawl_manage()
+    if denied:
+        return denied
+    try:
+        data = crawl_platform_svc.trigger_platform_expand_frontier()
+        return get_json_result(data=data)
+    except crawl_platform_svc.PlatformUnavailableError as exc:
+        return get_json_result(code=RetCode.OPERATING_ERROR, message=str(exc))
+    except Exception as e:  # noqa: BLE001
+        return server_error_response(e)
+
+
+@manager.route("/crawl/platform/discovery/overview", methods=["GET"])  # noqa: F821
+@login_required
+async def crawl_platform_discovery_overview():
+    """Search-first discovery stats (query bank, provider mix, contribution, recent URLs)."""
+    denied = _assert_doc_view_or_crawl_manage()
+    if denied:
+        return denied
+    try:
+        lookback = int(request.args.get("lookback_days") or 7)
+        data = crawl_platform_svc.get_discovery_overview(lookback_days=max(1, lookback))
+        return get_json_result(data=data)
+    except Exception as e:  # noqa: BLE001
+        return server_error_response(e)
+
+
+@manager.route("/crawl/platform/discovery/run", methods=["POST"])  # noqa: F821
+@login_required
+async def crawl_platform_discovery_run():
+    """Trigger a discovery-only run (search fan-out, no crawl/sync) for the given domains."""
+    denied = _assert_crawl_manage()
+    if denied:
+        return denied
+    try:
+        req = await get_request_json() or {}
+        domains = str(req.get("domains") or "TD,RS").strip() or "TD,RS"
+        data = crawl_platform_svc.trigger_discovery_run(domains)
+        return get_json_result(data=data)
+    except crawl_platform_svc.PlatformUnavailableError as exc:
+        return get_json_result(code=RetCode.OPERATING_ERROR, message=str(exc))
+    except ValueError as exc:
+        return get_json_result(code=RetCode.ARGUMENT_ERROR, message=str(exc))
+    except Exception as e:  # noqa: BLE001
+        return server_error_response(e)
+
+
+@manager.route("/crawl/platform/discovery/queries/<query_id>/status", methods=["POST"])  # noqa: F821
+@login_required
+async def crawl_platform_discovery_query_status(query_id: str):
+    """Enable/disable a discovery query bank entry."""
+    denied = _assert_crawl_manage()
+    if denied:
+        return denied
+    try:
+        req = await get_request_json() or {}
+        status = str(req.get("status") or "").strip().lower()
+        if not status:
+            return get_json_result(code=RetCode.ARGUMENT_ERROR, message="status is required")
+        data = crawl_platform_svc.set_discovery_query_status(query_id, status)
+        return get_json_result(data=data)
+    except crawl_platform_svc.PlatformUnavailableError as exc:
+        return get_json_result(code=RetCode.OPERATING_ERROR, message=str(exc))
+    except ValueError as exc:
+        return get_json_result(code=RetCode.ARGUMENT_ERROR, message=str(exc))
+    except Exception as e:  # noqa: BLE001
+        return server_error_response(e)
+
+
+@manager.route("/crawl/platform/goals/plan", methods=["POST"])  # noqa: F821
+@login_required
+async def crawl_platform_goals_plan():
+    """Parse NL crawl goal into a Goal Card; optional confirm+persist."""
+    denied = _assert_crawl_manage()
+    if denied:
+        return denied
+    try:
+        req = await get_request_json() or {}
+        text = str(req.get("text") or "").strip()
+        if not text:
+            return get_json_result(code=RetCode.ARGUMENT_ERROR, message="text is required")
+        domain = req.get("domain")
+        domain_s = str(domain).strip().upper() if domain else None
+        confirm = bool(req.get("confirm"))
+        data = crawl_platform_svc.plan_goal(text=text, domain=domain_s, confirm=confirm)
+        return get_json_result(data=data)
+    except crawl_platform_svc.PlatformUnavailableError as exc:
+        return get_json_result(code=RetCode.OPERATING_ERROR, message=str(exc))
+    except ValueError as exc:
+        return get_json_result(code=RetCode.ARGUMENT_ERROR, message=str(exc))
+    except Exception as e:  # noqa: BLE001
+        return server_error_response(e)
+
+
+@manager.route("/crawl/platform/goals", methods=["GET"])  # noqa: F821
+@login_required
+async def crawl_platform_goals_list():
+    denied = _assert_crawl_manage()
+    if denied:
+        return denied
+    try:
+        domain = request.args.get("domain")
+        limit = int(request.args.get("limit") or 50)
+        data = crawl_platform_svc.list_goals(
+            domain=str(domain).strip().upper() if domain else None,
+            limit=limit,
+        )
+        return get_json_result(data=data)
+    except crawl_platform_svc.PlatformUnavailableError as exc:
+        return get_json_result(code=RetCode.OPERATING_ERROR, message=str(exc))
+    except Exception as e:  # noqa: BLE001
+        return server_error_response(e)
+
+
+@manager.route("/crawl/platform/goals/<goal_id>/confirm", methods=["POST"])  # noqa: F821
+@login_required
+async def crawl_platform_goals_confirm(goal_id: str):
+    denied = _assert_crawl_manage()
+    if denied:
+        return denied
+    try:
+        data = crawl_platform_svc.confirm_goal(goal_id)
+        return get_json_result(data=data)
+    except crawl_platform_svc.PlatformUnavailableError as exc:
+        return get_json_result(code=RetCode.OPERATING_ERROR, message=str(exc))
+    except ValueError as exc:
+        return get_json_result(code=RetCode.ARGUMENT_ERROR, message=str(exc))
+    except Exception as e:  # noqa: BLE001
+        return server_error_response(e)
+
+
+@manager.route("/crawl/platform/goals/<goal_id>/optimize", methods=["POST"])  # noqa: F821
+@login_required
+async def crawl_platform_goals_optimize(goal_id: str):
+    denied = _assert_crawl_manage()
+    if denied:
+        return denied
+    try:
+        req = await get_request_json() or {}
+        dry_run = bool(req.get("dry_run"))
+        data = crawl_platform_svc.trigger_goal_optimize(goal_id, dry_run=dry_run)
+        return get_json_result(data=data)
+    except crawl_platform_svc.PlatformUnavailableError as exc:
+        return get_json_result(code=RetCode.OPERATING_ERROR, message=str(exc))
+    except ValueError as exc:
+        return get_json_result(code=RetCode.ARGUMENT_ERROR, message=str(exc))
+    except Exception as e:  # noqa: BLE001
+        return server_error_response(e)
+
+
+@manager.route("/crawl/platform/goals/<goal_id>/runs", methods=["GET"])  # noqa: F821
+@login_required
+async def crawl_platform_goals_runs(goal_id: str):
+    denied = _assert_crawl_manage()
+    if denied:
+        return denied
+    try:
+        limit = int(request.args.get("limit") or 20)
+        data = crawl_platform_svc.list_goal_runs(goal_id, limit=limit)
+        return get_json_result(data=data)
+    except crawl_platform_svc.PlatformUnavailableError as exc:
+        return get_json_result(code=RetCode.OPERATING_ERROR, message=str(exc))
     except Exception as e:  # noqa: BLE001
         return server_error_response(e)
 

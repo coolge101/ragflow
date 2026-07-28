@@ -1,0 +1,13 @@
+:root {
+  --color-primary: #2563eb;
+  --color-accent: #0d9488;
+  --bg-page: #f8fafc;
+  --bg-surface: #ffffff;
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+  --border-subtle: #e2e8f0;
+  --danger: #dc2626;
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --sidebar-width: 220px;
+}

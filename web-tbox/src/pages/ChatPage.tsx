@@ -550,7 +550,7 @@ export function ChatPage() {
           >
             导出 PPT
           </button>
-          {canConfigureKb ? <Link to="/apps">管理应用</Link> : null}
+          {canConfigureKb ? <Link to="/admin/apps">管理应用</Link> : null}
           {chatsLoading ? <span className="muted">加载应用列表…</span> : null}
           {selectedChatId && sessionsLoading ? <span className="muted">加载会话…</span> : null}
         </div>
@@ -570,11 +570,11 @@ export function ChatPage() {
             {canConfigureKb ? (
               <>
                 当前暂无可用对话应用。可{" "}
-                <Link to="/apps/new">新建空白应用</Link>
+                <Link to="/admin/apps/new">新建空白应用</Link>
                 {CHAT_APP_SCENARIOS.map((s, i) => (
                   <span key={s.id}>
                     {i === 0 ? "，或从模板创建：" : "、"}
-                    <Link to={`/apps/new?template=${s.id}`}>{s.label}</Link>
+                    <Link to={`/admin/apps/new?template=${s.id}`}>{s.label}</Link>
                   </span>
                 ))}
                 ；创建后点「刷新应用」。在此之前仍可使用「仅模型」对话。

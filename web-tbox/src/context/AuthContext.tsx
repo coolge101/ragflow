@@ -25,6 +25,11 @@ import {
 import { TBOX_API_CONTRACT_VERSION_EXPECTED } from "../constants/tboxContract";
 import type { TboxPermission } from "../constants/permissions";
 
+export type AuthSnapshot = {
+  me: TboxMeResponse["data"] | null;
+  permissions: TboxPermission[];
+};
+
 type AuthState = {
   me: TboxMeResponse["data"] | null;
   permissions: TboxPermission[];
@@ -32,7 +37,8 @@ type AuthState = {
   error: string | null;
   /** Non-fatal: backend `TBOX_API_CONTRACT_VERSION` ≠ frontend expected build. */
   contractWarning: string | null;
-  refresh: () => Promise<void>;
+  /** Resolves with the snapshot just applied (for post-login navigation). */
+  refresh: () => Promise<AuthSnapshot>;
 };
 
 const AuthContext = createContext<AuthState | null>(null);
@@ -45,7 +51,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [error, setError] = useState<string | null>(null);
   const [contractWarning, setContractWarning] = useState<string | null>(null);
 
-  const refresh = useCallback(async () => {
+  const refresh = useCallback(async (): Promise<AuthSnapshot> => {
     const auth = getAuthorizationHeader();
     if (!auth) {
       setMe(null);
@@ -53,7 +59,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setLoading(false);
       setError(null);
       setContractWarning(null);
-      return;
+      return { me: null, permissions: [] };
     }
     setLoading(true);
     setError(null);
@@ -66,19 +72,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setError(null);
         setContractWarning(null);
         navigate("/login", { replace: true });
-        return;
+        return { me: null, permissions: [] };
       }
       if (body.code !== 0) {
         if (isTboxMeUnavailable(res, body)) {
           const stored = getStoredUserInfo();
           const su = storedUserIsSuperuser(stored);
-          setMe({
+          const nextMe = {
             email: stored?.email,
             nickname: stored?.name,
             is_superuser: su,
             tenants: [],
-          });
-          setPermissions(fallbackPermissions({ is_superuser: su }));
+          };
+          const nextPermissions = fallbackPermissions({ is_superuser: su });
+          setMe(nextMe);
+          setPermissions(nextPermissions);
           setError(null);
           setContractWarning(
             [
@@ -87,23 +95,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               "自检：curl 或浏览器打开 /v1/tbox/health，应返回 JSON 且含 tbox_api_contract_version。",
             ].join("\n"),
           );
-        } else {
-          setError(body.message || `错误码 ${body.code}`);
-          setMe(null);
-          setPermissions([]);
-          setContractWarning(null);
+          return { me: nextMe, permissions: nextPermissions };
         }
-        return;
+        setError(body.message || `错误码 ${body.code}`);
+        setMe(null);
+        setPermissions([]);
+        setContractWarning(null);
+        return { me: null, permissions: [] };
       }
       const data = body.data || null;
+      const nextPermissions = fallbackPermissions({
+        ...data,
+        is_superuser:
+          Boolean(data?.is_superuser) || trustedSuperuserFromEmail(data?.email),
+      });
       setMe(data);
-      setPermissions(
-        fallbackPermissions({
-          ...data,
-          is_superuser:
-            Boolean(data?.is_superuser) || trustedSuperuserFromEmail(data?.email),
-        }),
-      );
+      setPermissions(nextPermissions);
 
       try {
         const c = await fetchTboxContract();
@@ -122,28 +129,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       } catch {
         setContractWarning(null);
       }
+      return { me: data, permissions: nextPermissions };
     } catch (e) {
       const authAfter = getAuthorizationHeader();
       if (authAfter && import.meta.env.VITE_TBOX_OFFLINE_PERMISSIONS === "1") {
         const stored = getStoredUserInfo();
         const su = storedUserIsSuperuser(stored);
-        setMe({
+        const nextMe = {
           email: stored?.email,
           nickname: stored?.name,
           is_superuser: su,
           tenants: [],
-        });
-        setPermissions(fallbackPermissions({ is_superuser: su }));
+        };
+        const nextPermissions = fallbackPermissions({ is_superuser: su });
+        setMe(nextMe);
+        setPermissions(nextPermissions);
         setError(null);
         setContractWarning(
           "无法请求 TBOX「/v1/tbox/me」（网络或 CORS）。已启用 VITE_TBOX_OFFLINE_PERMISSIONS=1，按登录信息授予默认权限。",
         );
-      } else {
-        setError(e instanceof Error ? e.message : String(e));
-        setMe(null);
-        setPermissions([]);
-        setContractWarning(null);
+        return { me: nextMe, permissions: nextPermissions };
       }
+      setError(e instanceof Error ? e.message : String(e));
+      setMe(null);
+      setPermissions([]);
+      setContractWarning(null);
+      return { me: null, permissions: [] };
     } finally {
       setLoading(false);
     }

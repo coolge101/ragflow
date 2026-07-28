@@ -77,12 +77,12 @@ export const JOURNEY_STEPS: JourneyStep[] = [
     id: "chat-apps",
     order: 3.5,
     title: "对话应用",
-    targetPath: "/apps",
+    targetPath: "/admin/apps",
     summary: "kb.configure 下创建/编辑对话应用，绑定知识库与 Prompt。",
     acceptance: [
       "侧栏可见「对话应用」（需 kb.configure）",
       "可新建应用并绑定知识库",
-      "可从咨询/决策/辅导模板预填（/apps/new?template=…）",
+      "可从咨询/决策/辅导模板预填（/admin/apps/new?template=…）",
       "保存后在对话页可选该应用",
       "发送消息后引用侧栏有 chunks（库内已有内容）",
       "点击回答中的引用编号，侧栏对应片段高亮并滚动可见",
@@ -111,7 +111,7 @@ export const JOURNEY_STEPS: JourneyStep[] = [
     id: "documents",
     order: 5,
     title: "文档 / 知识库",
-    targetPath: "/documents",
+    targetPath: "/admin/documents",
     summary: "知识库列表与文档上传、删除与状态展示。",
     acceptance: [
       "可展开知识库并列出文档及解析状态",
@@ -126,7 +126,7 @@ export const JOURNEY_STEPS: JourneyStep[] = [
     id: "kb",
     order: 6,
     title: "知识库配置",
-    targetPath: "/kb",
+    targetPath: "/admin/kb",
     summary: "单库 GET/PUT 官方 datasets 配置；整库删除需 kb.dangerous。",
     acceptance: [
       "有 kb.configure 时可选择知识库并加载详情",
@@ -138,7 +138,7 @@ export const JOURNEY_STEPS: JourneyStep[] = [
     id: "crawl",
     order: 7,
     title: "采集",
-    targetPath: "/crawl",
+    targetPath: "/admin/crawl",
     summary: "TBOX 采集任务 CRUD、调度与执行一次。",
     acceptance: [
       "列表、新建、编辑、删除、执行一次可用",
@@ -151,7 +151,7 @@ export const JOURNEY_STEPS: JourneyStep[] = [
     id: "audit",
     order: 8,
     title: "审计",
-    targetPath: "/audit",
+    targetPath: "/admin/audit",
     summary: "入库/流水线 ingestions 日志。",
     acceptance: [
       "可切换知识库与 log_type 查看日志",
@@ -162,7 +162,7 @@ export const JOURNEY_STEPS: JourneyStep[] = [
     id: "users",
     order: 9,
     title: "用户与角色",
-    targetPath: "/users",
+    targetPath: "/admin/users",
     summary: "工作区成员与 TBOX 权限、托管用户。",
     acceptance: [
       "可选工作区并管理成员（权限与后端一致）",
@@ -173,7 +173,7 @@ export const JOURNEY_STEPS: JourneyStep[] = [
     id: "vm-5180",
     order: 10.5,
     title: "准生产 5180",
-    targetPath: "/documents",
+    targetPath: "/admin/documents",
     summary: "Docker tbox-console（5180）；自动化 smoke + VM 手测 §3–4。",
     acceptance: [
       "bash scripts/tbox_pre_release.sh 或 tbox_vm_production_acceptance.sh 退出码 0",

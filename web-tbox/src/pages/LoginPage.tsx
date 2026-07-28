@@ -5,18 +5,19 @@ import { ApiErrorBanner } from "../components/ApiErrorBanner";
 import { PageReviewPanel } from "../components/PageReviewPanel";
 import { fetchTboxHealth } from "../api/tbox";
 import { getAuthorizationHeader } from "../auth/session";
+import { resolveUserHomePath } from "../constants/adminAccess";
 import { useAuth } from "../context/AuthContext";
 import { reviewPagesEnabled } from "../review/reviewGate";
 import { TBOX_API_CONTRACT_VERSION_EXPECTED } from "../constants/tboxContract";
 
 /** Only same-origin relative paths; avoid open redirects and `/login` loops. */
-function safeRedirectPath(raw: string | null): string {
+function safeRedirectPath(raw: string | null, fallback: string): string {
   if (!raw || !raw.startsWith("/") || raw.startsWith("//")) {
-    return "/";
+    return fallback;
   }
   const pathOnly = raw.split("?")[0] || "";
   if (pathOnly === "/login") {
-    return "/";
+    return fallback;
   }
   return raw;
 }
@@ -86,12 +87,13 @@ export function LoginPage() {
     }
     let cancelled = false;
     (async () => {
-      await refresh();
+      const snapshot = await refresh();
       if (cancelled) {
         return;
       }
       if (getAuthorizationHeader()) {
-        navigate(safeRedirectPath(redirectTarget), { replace: true });
+        const home = resolveUserHomePath(snapshot.permissions, snapshot.me);
+        navigate(safeRedirectPath(redirectTarget, home), { replace: true });
         return;
       }
       if (!cancelled) {
@@ -113,8 +115,9 @@ export function LoginPage() {
         setError(r.message);
         return;
       }
-      await refresh();
-      navigate(safeRedirectPath(redirectTarget), { replace: true });
+      const snapshot = await refresh();
+      const home = resolveUserHomePath(snapshot.permissions, snapshot.me);
+      navigate(safeRedirectPath(redirectTarget, home), { replace: true });
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
     } finally {

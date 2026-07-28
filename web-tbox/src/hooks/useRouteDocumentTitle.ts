@@ -19,20 +19,30 @@ export function routeTitle(pathname: string): string {
   const exact: Record<string, string> = {
     "/": "对话",
     "/search": "检索",
-    "/documents": "文档 / 知识库",
+    "/admin": "管理概览",
+    "/admin/documents": "文档 / 入库",
+    "/admin/crawl": "采集",
+    "/admin/crawl/goals": "采集目标",
+    "/admin/kb": "知识库配置",
+    "/admin/apps": "对话应用",
+    "/admin/audit": "审计",
+    "/admin/users": "用户与角色",
+    // 兼容旧书签未 redirect 前的瞬间
+    "/documents": "文档 / 入库",
     "/crawl": "采集",
     "/kb": "知识库配置",
     "/apps": "对话应用",
     "/audit": "审计",
     "/users": "用户与角色",
+    "/rag": "检索",
   };
   if (exact[pathname]) {
     return exact[pathname];
   }
-  if (pathname === "/apps/new") {
+  if (pathname === "/admin/apps/new" || pathname === "/apps/new") {
     return "新建对话应用";
   }
-  if (pathname.startsWith("/apps/")) {
+  if (pathname.startsWith("/admin/apps/") || pathname.startsWith("/apps/")) {
     return "编辑对话应用";
   }
   return "页面不存在";

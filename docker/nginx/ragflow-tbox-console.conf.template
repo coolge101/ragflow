@@ -17,9 +17,16 @@ server {
         add_header Access-Control-Expose-Headers "Authorization, X-Ragflow-Authorization" always;
     }
 
+    # SPA shell must not be cached; hashed assets below can be long-lived.
+    location = /index.html {
+        add_header Cache-Control "no-cache, no-store, must-revalidate" always;
+        add_header Pragma "no-cache" always;
+    }
+
     location / {
         index index.html;
         try_files $uri $uri/ /index.html;
+        add_header Cache-Control "no-cache" always;
     }
 
     location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2)$ {
